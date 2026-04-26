@@ -26,6 +26,7 @@ export default function LoginPage() {
       const loggedInUser = await loginUser(loginData);
 
       setUser({
+        userId: loggedInUser.userId,
         fullName: loggedInUser.fullName,
         email: loggedInUser.email,
         phone: loggedInUser.phone,

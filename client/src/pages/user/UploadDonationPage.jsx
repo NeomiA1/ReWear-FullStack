@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import { createDonationBag } from "../../services/donationBagService";
 
 export default function UploadDonationPage() {
 
   const navigate = useNavigate();
   // שולפים את addDonation מה-Context
-  const { addDonation } = useUser();
-
+  const { user, addDonation } = useUser();
   const [bags, setBags] = useState([
     { id: 1, size: "", age: "", gender: "", condition: "", description: "", hasMedia: false }
   ]);
@@ -44,7 +44,7 @@ export default function UploadDonationPage() {
     return { isValid: true, message: "" };
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const { isValid, message } = validateBags();
     if (!isValid) {
       alert(message);
@@ -52,11 +52,29 @@ export default function UploadDonationPage() {
     }
 
     // שומרים את השקים ב-Context
-    addDonation(bags);
-
-    // מודיעים למשתמש ועוברים לפרופיל
-    alert("התרומה נשלחה בהצלחה! 🎉");
-    navigate("/profile");
+    try {
+      for (const bag of bags) {
+        const donationBag = {
+          userId: user?.userId || 1,
+          shortDescription: bag.description,
+          sizes: bag.size,
+          targetAges: bag.age,
+          targetGender: bag.gender,
+          clothesCondition: bag.condition,
+        };
+    
+        await createDonationBag(donationBag);
+      }
+    
+      addDonation(bags);
+    
+      alert("התרומה נשלחה בהצלחה! 🎉");
+      navigate("/profile");
+    
+    } catch (error) {
+      console.log("Create donation bag error:", error);
+      alert("אירעה שגיאה בשליחת התרומה");
+    }
   };
 
   const sizeOptions      = ["XS", "S", "M", "L", "XL", "XXL"];

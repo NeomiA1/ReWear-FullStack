@@ -1,27 +1,44 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import { getDonationBagsByUserId } from "../../services/donationBagService";
 
 const MOCK_ORGS = [
-  { id: 1, name: "ויצו",     city: "תל אביב",  types: "בגדי נשים, ילדים",  area: "מרכז" },
-  { id: 2, name: "נעמת",     city: "חיפה",     types: "כל סוגי הבגדים",    area: "צפון" },
-  { id: 3, name: "לתת",      city: "ירושלים",  types: "בגדי חורף, מעילים", area: "ירושלים" },
-  { id: 4, name: "יד שרה",   city: "באר שבע",  types: "בגדים לקשישים",    area: "דרום" },
-  { id: 5, name: "קרן חיים", city: "רמת גן",   types: "בגדי ילדים",        area: "מרכז" },
+  { id: 1, name: "ויצו", city: "תל אביב", types: "בגדי נשים, ילדים", area: "מרכז" },
+  { id: 2, name: "נעמת", city: "חיפה", types: "כל סוגי הבגדים", area: "צפון" },
+  { id: 3, name: "לתת", city: "ירושלים", types: "בגדי חורף, מעילים", area: "ירושלים" },
+  { id: 4, name: "יד שרה", city: "באר שבע", types: "בגדים לקשישים", area: "דרום" },
+  { id: 5, name: "קרן חיים", city: "רמת גן", types: "בגדי ילדים", area: "מרכז" },
 ];
 
 export default function ProfilePage() {
-
   const navigate = useNavigate();
 
-  // הוספנו getOrgSettings לשליפת הגדרות עמותה
-  const { user, donations, sendDonationToOrg, logout, getOrgSettings } = useUser();
+  const { user, sendDonationToOrg, logout, getOrgSettings } = useUser();
 
-  const [selectedBag, setSelectedBag]   = useState(null);
-  const [selectedOrg, setSelectedOrg]   = useState(null);
-  const [search, setSearch]             = useState("");
-  const [sent, setSent]                 = useState(false);
+  const [bagsFromServer, setBagsFromServer] = useState([]);
+  const [selectedBag, setSelectedBag] = useState(null);
+  const [selectedOrg, setSelectedOrg] = useState(null);
+  const [search, setSearch] = useState("");
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    const fetchBags = async () => {
+      try {
+        const data = await getDonationBagsByUserId(user.userId);
+        setBagsFromServer(data);
+      } catch (error) {
+        console.log("Error fetching bags:", error);
+      }
+      console.log("USER:", user);
+      console.log("Fetching bags for userId:", user?.userId);
+    };
+
+    if (user?.userId) {
+      fetchBags();
+    }
+  }, [user]);
 
   const filteredOrgs = MOCK_ORGS.filter(org =>
     org.name.toLowerCase().includes(search.toLowerCase())
@@ -29,8 +46,10 @@ export default function ProfilePage() {
 
   const handleSendToOrg = () => {
     if (!selectedBag || !selectedOrg) return;
+
     sendDonationToOrg(selectedBag, selectedOrg);
     setSent(true);
+
     setTimeout(() => {
       setSent(false);
       setSelectedBag(null);
@@ -38,23 +57,30 @@ export default function ProfilePage() {
     }, 3000);
   };
 
+  useEffect(() => {
+    if (!user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+  
   if (!user) {
-    navigate("/");
     return null;
   }
 
-  const allBags = donations.flatMap(donation =>
-    donation.bags.map(bag => ({
-      ...bag,
-      donationDate: donation.date,
-      donationId: donation.id
-    }))
-  );
+  const allBags = bagsFromServer.map((bag) => ({
+    id: bag.bagId,
+    size: bag.sizes,
+    age: bag.targetAges,
+    gender: bag.targetGender,
+    condition: bag.clothesCondition,
+    description: bag.shortDescription,
+    donationDate: bag.createdAt,
+    donationId: bag.bagId
+  }));
 
   return (
     <div className="min-h-screen bg-rw-bg pb-28 overflow-y-auto">
 
-      {/* ── כותרת ── */}
       <div className="bg-rw-card px-5 pt-8 pb-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <button
@@ -64,6 +90,7 @@ export default function ProfilePage() {
           >
             התנתקות
           </button>
+
           <div className="flex items-center gap-3">
             <div className="flex flex-col items-end">
               <h1 className="font-bold text-rw-title text-lg">{user.fullName}</h1>
@@ -72,6 +99,7 @@ export default function ProfilePage() {
                 <p className="text-rw-sub text-xs mt-0.5">📍 {user.location}</p>
               )}
             </div>
+
             <div className="w-16 h-16 rounded-full bg-rw-logo
                             flex items-center justify-center">
               <span className="text-white text-2xl font-bold">
@@ -81,16 +109,16 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* סטטיסטיקות */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-rw-input rounded-xl p-3 text-center">
             <p className="text-2xl font-bold text-rw-title">
-              {donations.reduce((t, d) => t + d.bags.length, 0)}
+              {allBags.length}
             </p>
             <p className="text-xs text-rw-sub mt-1">שקים שנתרמו</p>
           </div>
+
           <div className="bg-rw-input rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-rw-title">{donations.length}</p>
+            <p className="text-2xl font-bold text-rw-title">{allBags.length}</p>
             <p className="text-xs text-rw-sub mt-1">תרומות שנשלחו</p>
           </div>
         </div>
@@ -98,7 +126,6 @@ export default function ProfilePage() {
 
       <div className="px-5 mt-5 flex flex-col gap-6">
 
-        {/* ── הודעת הצלחה ── */}
         {sent && (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4
                           flex items-center gap-3">
@@ -114,7 +141,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ── שלב 1: בחירת שק ── */}
         <div>
           <h2 className="font-bold text-rw-title text-base mb-3">
             שלב 1 – בחרי שק לשליחה
@@ -136,13 +162,12 @@ export default function ProfilePage() {
             <div className="flex flex-col gap-2">
               {allBags.map((bag, index) => (
                 <div
-                  key={`${bag.donationId}-${bag.id}`}
+                  key={bag.bagId || bag.id}
                   onClick={() => setSelectedBag(bag)}
                   className={`bg-rw-card rounded-2xl p-4 shadow-sm
                              flex items-center justify-between cursor-pointer
                              border-2 transition-all
-                             ${selectedBag?.id === bag.id &&
-                               selectedBag?.donationId === bag.donationId
+                             ${selectedBag?.id === bag.id
                                ? "border-rw-btn"
                                : "border-transparent"}`}
                 >
@@ -154,11 +179,13 @@ export default function ProfilePage() {
                       {[bag.size, bag.gender, bag.condition]
                         .filter(Boolean).join(" · ")}
                     </span>
-                    <span className="text-xs text-rw-sub">{bag.donationDate}</span>
+                    <span className="text-xs text-rw-sub">
+                      {bag.donationDate}
+                    </span>
                   </div>
+
                   <div className="flex items-center gap-2">
-                    {selectedBag?.id === bag.id &&
-                     selectedBag?.donationId === bag.donationId && (
+                    {selectedBag?.id === bag.id && (
                       <span className="text-rw-btn text-lg">✓</span>
                     )}
                     <span className="text-2xl">🛍️</span>
@@ -169,13 +196,11 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* ── שלב 2: בחירת עמותה ── */}
         <div>
           <h2 className="font-bold text-rw-title text-base mb-3">
             שלב 2 – בחרי עמותה
           </h2>
 
-          {/* חיפוש + מפה */}
           <div className="flex gap-2 mb-3">
             <input
               type="text"
@@ -186,6 +211,7 @@ export default function ProfilePage() {
                          text-sm text-right outline-none bg-rw-card
                          focus:border-rw-btn"
             />
+
             <button
               onClick={() => navigate("/map")}
               className="bg-rw-card border border-rw-border rounded-xl px-3
@@ -197,11 +223,8 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {/* ── רשימת עמותות עם סטטוס ── */}
           <div className="flex flex-col gap-3">
             {filteredOrgs.map((org) => {
-
-              // שולפים הגדרות של כל עמותה מה-Context
               const settings = getOrgSettings(org.name);
 
               return (
@@ -215,7 +238,6 @@ export default function ProfilePage() {
                                ? "border-rw-btn"
                                : "border-transparent"}`}
                 >
-                  {/* שורה עליונה: שם + סימון בחירה */}
                   <div className="flex items-center justify-between">
                     {selectedOrg?.id === org.id && (
                       <span className="text-rw-btn text-lg">✓</span>
@@ -225,30 +247,25 @@ export default function ProfilePage() {
                     </span>
                   </div>
 
-                  {/* מיקום */}
                   <span className="text-xs text-rw-sub text-right">
                     📍 {org.city} · {org.area}
                   </span>
 
-                  {/* סוגי תרומות */}
                   <span className="text-xs text-rw-sub text-right">
                     {org.types}
                   </span>
 
-                  {/* ── סטטוס זמינות ואופן קבלה ── */}
                   <div className="flex flex-wrap gap-2 justify-end mt-1">
-
-                    {/* סטטוס זמינות */}
                     <span className={`text-xs px-2 py-1 rounded-full font-medium
                       ${settings.isAvailable
                         ? "bg-green-50 text-green-600"
-                        : "bg-red-50 text-red-400"}`}>
+                        : "bg-red-50 text-red-400"}`}
+                    >
                       {settings.isAvailable
                         ? "✓ זמינה לתרומות"
                         : "✗ לא זמינה כרגע"}
                     </span>
 
-                    {/* איסוף מהבית */}
                     {settings.acceptsPickup && (
                       <span className="text-xs px-2 py-1 rounded-full
                                        bg-blue-50 text-blue-500 font-medium">
@@ -256,14 +273,12 @@ export default function ProfilePage() {
                       </span>
                     )}
 
-                    {/* הגעה לעמותה */}
                     {settings.acceptsDropoff && (
                       <span className="text-xs px-2 py-1 rounded-full
                                        bg-purple-50 text-purple-500 font-medium">
                         🏢 הגעה לעמותה
                       </span>
                     )}
-
                   </div>
                 </div>
               );
@@ -271,7 +286,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* ── כפתור שליחה ── */}
         {selectedBag && selectedOrg && !sent && (
           <div className="bg-rw-card rounded-2xl shadow-sm p-4">
             <div className="flex flex-col gap-1 mb-4 items-end">
@@ -284,6 +298,7 @@ export default function ProfilePage() {
                 עמותה: {selectedOrg.name} – {selectedOrg.city}
               </p>
             </div>
+
             <button
               onClick={handleSendToOrg}
               className="w-full bg-rw-btn text-white rounded-xl py-3

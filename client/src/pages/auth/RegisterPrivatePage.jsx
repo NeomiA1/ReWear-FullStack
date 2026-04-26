@@ -36,6 +36,7 @@ export default function RegisterPrivatePage() {
       const savedUser = await registerUser(newUser);
     
       setUser({
+        userId: 1,
         fullName,
         email,
         phone,
