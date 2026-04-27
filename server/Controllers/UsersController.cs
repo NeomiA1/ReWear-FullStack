@@ -11,24 +11,31 @@ namespace RewearApi.Controllers
     {
         private readonly UserDAL _userDal = new UserDAL();
 
-        [HttpPost("register")]
-        public ActionResult Register([FromBody] User user)
+      [HttpPost("register")]
+public ActionResult Register([FromBody] User user)
+{
+    try
+    {
+        if (user == null)
         {
-            if (user == null)
-            {
-                return BadRequest("User object is null");
-            }
-
-            var errors = user.Validate();
-            if (errors.Any())
-            {
-                return BadRequest(errors);
-            }
-            Console.WriteLine($"RegistrationMethod: {user.RegistrationMethod}");
-            _userDal.RegisterUser(user);
-
-            return Ok("User registered successfully");
+            return BadRequest("User object is null");
         }
+
+        var errors = user.Validate();
+        if (errors.Any())
+        {
+            return BadRequest(errors);
+        }
+
+        _userDal.RegisterUser(user);
+
+        return Ok("User registered successfully");
+    }
+    catch (Exception ex)
+    {
+        return BadRequest(ex.Message);
+    }
+}
 
         [HttpPost("login")]
         public ActionResult Login([FromBody] LoginRequest loginRequest)

@@ -18,8 +18,8 @@ export default function LoginPage() {
     }
 
     const loginData = {
-      email: email,
-      password: password
+      email: email.trim(),
+      password: password.trim()
     };
 
     try {
