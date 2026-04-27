@@ -25,9 +25,6 @@ export function UserProvider({ children }) {
     } catch { return []; }
   });
 
-  // ─── הגדרות עמותה ────────────────────────────────────
-  // שומרות את סטטוס הזמינות ואופן הקבלה של כל עמותה
-  // המפתח = שם העמותה, הערך = הגדרות
   const [orgSettings, setOrgSettingsState] = useState(() => {
     try {
       const saved = localStorage.getItem("rewear_org_settings");
@@ -54,13 +51,12 @@ export function UserProvider({ children }) {
 
   const setUser = (userData) => setUserState(userData);
 
+  // ✅ logout – מנקה רק את המשתמש, לא את הבקשות
+  // sentDonations נשמר כדי שהעמותה תוכל לראות את הבקשות אחרי החלפת משתמש
   const logout = () => {
     setUserState(null);
-    setDonationsState([]);
-    setSentDonationsState([]);
     localStorage.removeItem("rewear_user");
-    localStorage.removeItem("rewear_donations");
-    localStorage.removeItem("rewear_sent");
+    // donations ו-sentDonations נשארים בכוונה!
   };
 
   const addDonation = (bags) => {
@@ -91,8 +87,6 @@ export function UserProvider({ children }) {
     );
   };
 
-  // עדכון הגדרות עמותה
-  // orgName = שם העמותה, settings = ההגדרות החדשות
   const updateOrgSettings = (orgName, settings) => {
     setOrgSettingsState(prev => ({
       ...prev,
@@ -100,11 +94,10 @@ export function UserProvider({ children }) {
     }));
   };
 
-  // קבלת הגדרות עמותה לפי שם
   const getOrgSettings = (orgName) => {
     return orgSettings[orgName] || {
-      isAvailable: true,
-      acceptsPickup: true,
+      isAvailable:   true,
+      acceptsPickup:  true,
       acceptsDropoff: true,
     };
   };
