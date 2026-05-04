@@ -15,7 +15,7 @@ namespace RewearApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            // CORS - מאפשר ל-React להתחבר
+            // CORS - allows React to connect
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowReact", policy =>
@@ -32,11 +32,8 @@ namespace RewearApi
             // Middleware
             app.UseCors("AllowReact");
 
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseHttpsRedirection();
 
