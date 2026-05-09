@@ -16,17 +16,19 @@ namespace RewearApi
             builder.Services.AddSwaggerGen();
 
             // CORS - allows React to connect
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowReact", policy =>
-                {
-                    policy
-                        .WithOrigins("http://localhost:5173")
-                        .AllowAnyMethod()
-                        .AllowAnyHeader();
-                });
-            });
-
+          builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReact", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:5173",
+                "https://re-wear-full-stack.vercel.app"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
             var app = builder.Build();
 
             // Middleware
