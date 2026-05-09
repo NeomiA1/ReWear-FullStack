@@ -23,7 +23,7 @@ import OrgRequestsPage      from "./pages/org/OrgRequestsPage";
 import OrgPickupsPage       from "./pages/org/OrgPickupsPage";
 
 // Shop
-import ShopHomePage         from "./pages/Shop/ShopHomePage";
+import ShopHomePage         from "./pages/shop/ShopHomePage";
 
 function App() {
   return (
