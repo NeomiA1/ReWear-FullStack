@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
+import { registerUser } from "../../services/UserService";
 
 export default function RegisterPrivatePage() {
 
