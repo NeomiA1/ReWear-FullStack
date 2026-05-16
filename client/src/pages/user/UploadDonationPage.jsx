@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import { createDonationBag } from "../../services/donationBagService";
 
 export default function UploadDonationPage() {
   const navigate = useNavigate();
-  const { addDonation } = useUser();
-
+  const { user } = useUser();
   const [bags, setBags] = useState([
     { id: 1, size: "", age: "", gender: "", condition: "", description: "", imagePreview: null }
   ]);
@@ -39,9 +39,31 @@ export default function UploadDonationPage() {
     setBags(bags.filter(bag => bag.id !== bagId));
   };
 
-  const handleUpload = () => {
-    addDonation(bags);
-    setUploaded(true);
+  const handleUpload = async () => {
+    if (!user || !user.userId) {
+      alert("לא נמצא משתמש מחובר");
+      return;
+    }
+  
+    try {
+      for (const bag of bags) {
+        const donationBag = {
+          userId: user.userId,
+          shortDescription: bag.description,
+          sizes: bag.size,
+          targetAges: bag.age,
+          targetGender: bag.gender,
+          clothesCondition: bag.condition,
+        };
+  
+        await createDonationBag(donationBag);
+      }
+  
+      setUploaded(true);
+    } catch (error) {
+      console.error(error);
+      alert(error);
+    }
   };
 
   const sizeOptions      = ["XS", "S", "M", "L", "XL", "XXL"];
