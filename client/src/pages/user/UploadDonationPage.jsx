@@ -40,6 +40,9 @@ export default function UploadDonationPage() {
   };
 
   const handleUpload = async () => {
+    
+    console.log("Current user:", user);
+
     if (!user || !user.userId) {
       alert("לא נמצא משתמש מחובר");
       return;
