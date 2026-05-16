@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-import { registerUser } from "../../services/UserService";
+import { registerUser } from "../../services/userService";
 
 export default function RegisterPrivatePage() {
 
@@ -24,20 +24,36 @@ export default function RegisterPrivatePage() {
       return;
     }
 
-    // שמירה ישירה ב-Context + localStorage (ללא שרת)
-    // בעתיד: const savedUser = await registerUser(newUser); setUser(savedUser);
-    setUser({
-      userId:       Date.now(),
-      fullName,
-      email,
-      phone,
-      location,
-      type:         "private",
-      itemsDonated: 0,
-      waterSaved:   0,
-    });
+    try {
 
-    navigate("/home");
+      const newUser = {
+        fullName,
+        username: email,
+        email,
+        password,
+        phone,
+        city: location,
+        registrationMethod: "Email"
+      };
+    
+      await registerUser(newUser);
+    
+      setUser({
+        fullName,
+        email,
+        phone,
+        location,
+        type: "private"
+      });
+    
+      navigate("/home");
+    
+    } catch (error) {
+    
+      console.error(error);
+      alert(error);
+    
+    }
   };
 
   const handleFacebook  = () => console.log("פייסבוק");
