@@ -59,8 +59,11 @@ export default function UploadDonationPage() {
           clothesCondition: bag.condition,
         };
   
-        await createDonationBag(donationBag);
-      }
+        console.log("Donation bag payload:", donationBag);
+
+        const result = await createDonationBag(donationBag);
+        
+        console.log("Donation bag result:", result);      }
   
       setUploaded(true);
     } catch (error) {
