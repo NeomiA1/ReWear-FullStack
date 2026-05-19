@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace RewearApi.DAL
 {
   public class DonationBagDAL : DBServices
-{
+ {
     private const string CON_STR_NAME = "RewearDB";
 
     private const string SP_CREATE_DONATION_BAG = "sp_CreateDonationBag";
@@ -98,4 +98,5 @@ namespace RewearApi.DAL
 
         return bags;
     }
+  }    
 }
