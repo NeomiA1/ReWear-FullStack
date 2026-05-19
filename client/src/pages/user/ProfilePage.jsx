@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import { getDonationBagsByUserId } from "../../services/donationBagService";
 
 const MOCK_ORGS = [
   { id: 1, name: "ויצו",      city: "תל אביב",  types: "בגדי נשים, ילדים",  area: "מרכז"    },
@@ -14,13 +15,29 @@ const MOCK_ORGS = [
 export default function ProfilePage() {
   const navigate = useNavigate();
 
-  // ✅ donations מגיע מה-Context – לא מהשרת
-  const { user, donations, sendDonationToOrg, logout, getOrgSettings } = useUser();
-
+  // שליפת שקים מהשרת במקום מה- Context/localStorage
+  const { user, sendDonationToOrg, logout, getOrgSettings } = useUser();
+  
   const [selectedBag, setSelectedBag] = useState(null);
   const [selectedOrg, setSelectedOrg] = useState(null);
-  const [search,      setSearch]      = useState("");
-  const [sent,        setSent]        = useState(false);
+  const [search, setSearch] = useState("");
+  const [sent, setSent] = useState(false);
+  const [serverBags, setServerBags] = useState([]);
+
+  useEffect(() => {
+    const loadBags = async () => {
+      if (!user || !user.userId) return;
+  
+      try {
+        const bagsFromServer = await getDonationBagsByUserId(user.userId);
+        setServerBags(bagsFromServer);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+  
+    loadBags();
+  }, [user]);
 
   const filteredOrgs = MOCK_ORGS.filter(org =>
     org.name.toLowerCase().includes(search.toLowerCase())
@@ -39,16 +56,18 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
-  // ✅ שקים מה-Context ישירות – לא מהשרת
-  const allBags = (donations || []).map((bag, index) => ({
-    id:           bag.id,
-    size:         bag.bags?.[0]?.size         || bag.size         || "",
-    gender:       bag.bags?.[0]?.gender       || bag.gender       || "",
-    condition:    bag.bags?.[0]?.condition    || bag.condition    || "",
-    description:  bag.bags?.[0]?.description || bag.description  || "",
-    imagePreview: bag.bags?.[0]?.imagePreview || bag.imagePreview || null,
-    donationDate: bag.date || "",
-    index:        index + 1,
+  // שליפת שקים מה- API
+  const allBags = (serverBags || []).map((bag, index) => ({
+    id: bag.bagId,
+    size: bag.sizes || "",
+    gender: bag.targetGender || "",
+    condition: bag.clothesCondition || "",
+    description: bag.shortDescription || "",
+    imagePreview: null,
+    donationDate: bag.createdAt
+      ? new Date(bag.createdAt).toLocaleDateString("he-IL")
+      : "",
+    index: index + 1,
   }));
 
   return (

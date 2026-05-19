@@ -41,10 +41,8 @@ export default function UploadDonationPage() {
 
   const handleUpload = async () => {
     
-    console.log("Current user:", user);
-
     if (!user || !user.userId) {
-      alert("לא נמצא משתמש מחובר");
+      alert("לא נמצא משתמש מחובר"); 
       return;
     }
   
@@ -58,12 +56,7 @@ export default function UploadDonationPage() {
           targetGender: bag.gender,
           clothesCondition: bag.condition,
         };
-  
-        console.log("Donation bag payload:", donationBag);
-
-        const result = await createDonationBag(donationBag);
-        
-        console.log("Donation bag result:", result);      }
+      }
   
       setUploaded(true);
     } catch (error) {
