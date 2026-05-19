@@ -30,6 +30,9 @@ export default function ProfilePage() {
   
       try {
         const bagsFromServer = await getDonationBagsByUserId(user.userId);
+
+        console.log("Bags from API:", bagsFromServer);
+        
         setServerBags(bagsFromServer);
       } catch (error) {
         console.error(error);
