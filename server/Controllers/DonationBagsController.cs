@@ -31,6 +31,22 @@ namespace RewearApi.Controllers
             return Ok("Donation bag created successfully");
         }
 
+        [HttpGet("user/{userId}")]
+        public ActionResult GetDonationBagsByUserId(int userId)
+        {
+            try
+            {
+                var bags = _donationBagDal.GetDonationBagsByUserId(userId);
+                return Ok(bags);
+            }
+
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+        }
+
         [HttpPost("media")]
         public ActionResult AddBagMedia([FromBody] BagMedia media)
         {
