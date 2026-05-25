@@ -21,6 +21,15 @@ const DEMO_ORG = {
   type:    "org",
 };
 
+const DEMO_SHOP = {
+  userId:   3,
+  shopName: "חנות חמד",
+  email:    "shop@test.com",
+  city:     "חיפה",
+  items:    "בגדים ונעליים",
+  type:     "shop",
+};
+
 export default function LoginPage() {
 
   const [email, setEmail]       = useState("");
@@ -34,29 +43,23 @@ export default function LoginPage() {
       alert("אנא מלאי אימייל וסיסמה");
       return;
     }
-  
+
     try {
       const response = await fetch(
         "https://rewear-api-ruppin-bkfvbye2fpdtfegm.israelcentral-01.azurewebsites.net/api/Users/login",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
         }
       );
-  
+
       if (!response.ok) {
         alert("אימייל או סיסמה שגויים");
         return;
       }
-  
+
       const user = await response.json();
-  
       setUser(user);
       navigate("/home");
     } catch (error) {
@@ -65,6 +68,10 @@ export default function LoginPage() {
     }
   };
 
+  // ─── כניסות דמו מהירות ───────────────────────────────────────────────────
+  const handleDemoUser = () => { setUser(DEMO_USER); navigate("/home");      };
+  const handleDemoOrg  = () => { setUser(DEMO_ORG);  navigate("/org/home");  };
+  const handleDemoShop = () => { setUser(DEMO_SHOP); navigate("/shop/home"); };
 
   return (
     <div className="min-h-screen bg-rw-bg flex flex-col items-center justify-center px-6">
@@ -103,6 +110,40 @@ export default function LoginPage() {
           התחברות
         </button>
 
+      </div>
+
+      {/* מפריד */}
+      <div className="flex items-center gap-3 w-full mt-6 mb-4">
+        <div className="flex-1 h-px bg-rw-border"></div>
+        <span className="text-rw-sub text-xs">כניסה מהירה לבדיקה</span>
+        <div className="flex-1 h-px bg-rw-border"></div>
+      </div>
+
+      {/* כפתורי דמו */}
+      <div className="w-full flex flex-col gap-3">
+        <button onClick={handleDemoUser}
+          className="w-full border-2 border-rw-btn text-rw-btn rounded-xl py-3
+                     text-sm font-semibold active:bg-rw-btn/10
+                     flex items-center justify-center gap-2">
+          <span>👤</span>
+          <span>משתמש פרטי – טליה כהן</span>
+        </button>
+
+        <button onClick={handleDemoOrg}
+          className="w-full border-2 border-rw-title text-rw-title rounded-xl py-3
+                     text-sm font-semibold active:bg-rw-title/10
+                     flex items-center justify-center gap-2">
+          <span>🏢</span>
+          <span>עמותה – ויצו</span>
+        </button>
+
+        <button onClick={handleDemoShop}
+          className="w-full border-2 border-rw-green text-rw-green rounded-xl py-3
+                     text-sm font-semibold active:bg-rw-green/10
+                     flex items-center justify-center gap-2">
+          <span>🏪</span>
+          <span>חנות יד שנייה – חנות חמד</span>
+        </button>
       </div>
 
       <p className="text-sm text-rw-sub mt-6">

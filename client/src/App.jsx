@@ -23,7 +23,11 @@ import OrgRequestsPage      from "./pages/org/OrgRequestsPage";
 import OrgPickupsPage       from "./pages/org/OrgPickupsPage";
 
 // Shop
-import ShopHomePage         from "./pages/shop/ShopHomePage";
+import ShopHomePage         from "./pages/Shop/ShopHomePage";
+import ShopPartnersPage     from "./pages/shop/ShopPartnersPage";
+
+// Chat
+import CollaborationChatPage from "./pages/CollaborationChatPage";
 
 function App() {
   return (
@@ -53,9 +57,15 @@ function App() {
 
         {/* Shop */}
         <Route path="/shop/home"         element={<ShopHomePage />} />
+        <Route path="/shop/partners"     element={<ShopPartnersPage />} />
+
+        {/* Chat שיתוף פעולה */}
+        <Route path="/org/chat/:id"      element={<CollaborationChatPage />} />
+        <Route path="/shop/chat/:id"     element={<CollaborationChatPage />} />
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
+

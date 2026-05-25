@@ -35,6 +35,8 @@ export default function RegisterShopPage() {
       return;
     }
     console.log("חנות נרשמה:", { shopName, bizNumber, contact, phone, email, address });
+
+    navigate("/shop/home");
   };
 
   return (

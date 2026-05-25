@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-
 const KPI_DATA = [
   { id: 1, label: "ציון אימפקט",    value: "0", change: "אין נתונים עדיין", positive: false, icon: "🌿" },
   { id: 2, label: "פריטים שהתקבלו", value: "0", change: "אין נתונים עדיין", positive: false, icon: "📦" },
@@ -45,7 +44,10 @@ function OrgBottomNav({ active }) {
 
 export default function OrgHomePage() {
   const navigate = useNavigate();
-  const { user, logout } = useUser();
+  const { user, logout, collaborations, sendCollaborationRequest } = useUser();
+
+  // sent: מעקב אחר חנויות שנשלחה להן בקשה בסשן הנוכחי (לעדכון UI מיידי)
+  const [sentRequests, setSentRequests] = useState({});
 
   const [selectedStore, setSelectedStore] = useState(null);
   const [searchQuery,   setSearchQuery]   = useState("");
@@ -183,16 +185,39 @@ export default function OrgHomePage() {
                 return store.name.toLowerCase().includes(q) ||
                        store.city.toLowerCase().includes(q) ||
                        store.items.toLowerCase().includes(q);
-              }).map((store) => (
+              }).map((store) => {
+                const existing = collaborations.find(
+                  c => c.shopName === store.name && c.status !== "rejected"
+                );
+                return (
                 <div key={store.id}
                   className="bg-rw-card rounded-2xl shadow-sm p-4
                              flex items-center justify-between">
-                  <button onClick={() => setSelectedStore(store)}
-                    className="bg-rw-btn text-white rounded-xl px-3 py-2
-                               text-xs font-semibold active:bg-rw-btn-hover
-                               whitespace-nowrap shrink-0">
-                    בחרי לשיתוף פעולה
-                  </button>
+                  {/* כפתור לפי סטטוס */}
+                  {existing?.status === "approved" ? (
+                    <button onClick={() => navigate(`/org/chat/${existing.id}`)}
+                      className="bg-rw-btn/10 text-rw-btn border border-rw-btn/30
+                                 rounded-xl px-3 py-2 text-xs font-semibold
+                                 whitespace-nowrap shrink-0 flex items-center gap-1">
+                      <span>💬</span><span>צ׳אט</span>
+                    </button>
+                  ) : existing?.status === "pending" ? (
+                    <span className="bg-amber-50 text-amber-500 text-[10px]
+                                     font-bold px-2 py-1 rounded-full shrink-0">
+                      ממתין לאישור
+                    </span>
+                  ) : (
+                    <button onClick={() => {
+                        const org = { name: orgName, city: "", types: "" };
+                        const sent = sendCollaborationRequest(org, store);
+                        if (!sent) alert("כבר נשלחה בקשה לחנות זו");
+                      }}
+                      className="bg-rw-btn text-white rounded-xl px-3 py-2
+                                 text-xs font-semibold active:bg-rw-btn-hover
+                                 whitespace-nowrap shrink-0">
+                      שלחי בקשת שיתוף
+                    </button>
+                  )}
                   <div className="flex items-center gap-3">
                     <div className="flex flex-col items-end gap-0.5">
                       <span className="font-semibold text-rw-title text-sm">{store.name}</span>
@@ -205,7 +230,8 @@ export default function OrgHomePage() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               {AVAILABLE_STORES.filter((store) => {
                 const q = searchQuery.trim().toLowerCase();
