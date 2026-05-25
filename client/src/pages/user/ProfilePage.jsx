@@ -20,7 +20,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
 
   // שליפת שקים מהשרת במקום מה- Context/localStorage
-  const { user, sendDonationToOrg, logout, getOrgSettings } = useUser();
+  const { user, logout, getOrgSettings } = useUser();
   
   const [selectedBag, setSelectedBag] = useState(null);
   const [selectedOrg, setSelectedOrg] = useState(null);
@@ -58,7 +58,7 @@ export default function ProfilePage() {
         userId: user.userId,
         bagId: selectedBag.id,
         associationId: selectedOrg.id,
-        deliveryMethod: "Dropoff",
+        deliveryMethod: "SelfArrival",
         status: "Pending"
       };
   
