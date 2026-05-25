@@ -13,26 +13,32 @@ namespace RewearApi.DAL
         private const string SP_LINK_BAG_TO_DONATION_REQUEST = "sp_LinkBagToDonationRequest";
         private const string SP_RESPOND_DONATION_REQUEST = "sp_RespondDonationRequest";
 
-        public void CreateDonationRequest(DonationRequest request)
+        
+        public int CreateDonationRequest(DonationRequest request)
         {
             try
             {
-                using (SqlConnection con = Connect(CON_STR_NAME))
-                {
-                    var paramDic = new Dictionary<string, object>
+            
+              using (SqlConnection con = Connect(CON_STR_NAME))
+              {
+                  var paramDic = new Dictionary<string, object>
                     {
-                        { "@user_id", request.UserId },
-                        { "@association_id", request.AssociationId },
-                        { "@delivery_type", request.DeliveryMethod }
+                         { "@user_id", request.UserId },
+                         { "@association_id", request.AssociationId },
+                         { "@delivery_type", request.DeliveryMethod }
                     };
 
-                    SqlCommand cmd = CreateCommand(SP_CREATE_DONATION_REQUEST, con, paramDic);
-                    cmd.ExecuteNonQuery();
-                }
+                SqlCommand cmd = CreateCommand(SP_CREATE_DONATION_REQUEST, con, paramDic);
+
+                object result = cmd.ExecuteScalar();
+
+                return Convert.ToInt32(result);
+              }
+
             }
             catch (Exception)
             {
-                throw;
+            throw;
             }
         }
 

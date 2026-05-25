@@ -24,10 +24,9 @@ namespace RewearApi.Controllers
             {
                 return BadRequest(errors);
             }
-
-            _donationRequestDal.CreateDonationRequest(request);
-
-            return Ok("Donation request created successfully");
+                
+            int requestId = _donationRequestDal.CreateDonationRequest(request);
+            return Ok(new { requestId });
         }
 
         [HttpPost("{requestId}/bags/{bagId}")]
