@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
 import { getDonationBagsByUserId } from "../../services/donationBagService";
+import {
+  createDonationRequest,
+  linkBagToDonationRequest
+} from "../../services/donationRequestService";
 
 const MOCK_ORGS = [
   { id: 1, name: "ויצו",      city: "תל אביב",  types: "בגדי נשים, ילדים",  area: "מרכז"    },
@@ -46,15 +50,33 @@ export default function ProfilePage() {
     org.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleSendToOrg = () => {
-    if (!selectedBag || !selectedOrg) return;
-    sendDonationToOrg(selectedBag, selectedOrg);
-    setSent(true);
-    setTimeout(() => {
-      setSent(false);
-      setSelectedBag(null);
-      setSelectedOrg(null);
-    }, 3000);
+  const handleSendToOrg = async () => {
+    if (!selectedBag || !selectedOrg || !user) return;
+  
+    try {
+      const request = {
+        userId: user.userId,
+        bagId: selectedBag.id,
+        associationId: selectedOrg.id,
+        deliveryMethod: "Dropoff",
+        status: "Pending"
+      };
+  
+      const result = await createDonationRequest(request);
+  
+      await linkBagToDonationRequest(result.requestId, selectedBag.id);
+  
+      setSent(true);
+  
+      setTimeout(() => {
+        setSent(false);
+        setSelectedBag(null);
+        setSelectedOrg(null);
+      }, 3000);
+    } catch (error) {
+      console.error(error);
+      alert(error);
+    }
   };
 
   if (!user) return null;
