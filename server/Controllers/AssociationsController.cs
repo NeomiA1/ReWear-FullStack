@@ -11,20 +11,43 @@ namespace RewearApi.Controllers
     {
         private readonly AssociationDAL _associationDal = new AssociationDAL();
 
+        // ── New endpoint ─────────────────────────────────────────────────
+        [HttpPost("register")]
+        public ActionResult<User> RegisterOrganization([FromBody] RegisterOrgDto dto)
+        {
+            if (dto == null)
+                return BadRequest("Request body is null");
+
+            var errors = dto.Validate();
+            if (errors.Any())
+                return BadRequest(errors);
+
+            try
+            {
+                User createdUser = _associationDal.RegisterOrganization(dto);
+                return Ok(createdUser);
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // ── Existing endpoints — unchanged ───────────────────────────────
+
         [HttpGet("check")]
-        public ActionResult<Association> CheckAssociationExists([FromQuery] string name, [FromQuery] string email)
+        public ActionResult<Association> CheckAssociationExists(
+            [FromQuery] string name,
+            [FromQuery] string email)
         {
             if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(email))
-            {
                 return BadRequest("name and email are required");
-            }
 
             Association? association = _associationDal.CheckAssociationExists(name, email);
 
             if (association == null)
-            {
                 return NotFound("Association was not found");
-            }
 
             return Ok(association);
         }
@@ -33,15 +56,11 @@ namespace RewearApi.Controllers
         public ActionResult CreateAssociation([FromBody] Association association)
         {
             if (association == null)
-            {
                 return BadRequest("Association object is null");
-            }
 
             var errors = association.Validate();
             if (errors.Any())
-            {
                 return BadRequest(errors);
-            }
 
             _associationDal.CreateAssociation(association);
 
@@ -49,23 +68,19 @@ namespace RewearApi.Controllers
         }
 
         [HttpPut("{id}")]
-        public ActionResult UpdateAssociationSettings(int id, [FromBody] Association association)
+        public ActionResult UpdateAssociationSettings(
+            int id,
+            [FromBody] Association association)
         {
             if (association == null)
-            {
                 return BadRequest("Association object is null");
-            }
 
             if (id != association.AssociationId)
-            {
                 return BadRequest("Id in URL does not match Association.AssociationId");
-            }
 
             var errors = association.Validate();
             if (errors.Any())
-            {
                 return BadRequest(errors);
-            }
 
             _associationDal.UpdateAssociationSettings(association);
 
@@ -73,12 +88,12 @@ namespace RewearApi.Controllers
         }
 
         [HttpPut("{id}/availability")]
-        public ActionResult UpdateAssociationAvailability(int id, [FromBody] bool isAvailable)
+        public ActionResult UpdateAssociationAvailability(
+            int id,
+            [FromBody] bool isAvailable)
         {
             if (id <= 0)
-            {
                 return BadRequest("Association id must be greater than 0");
-            }
 
             _associationDal.UpdateAssociationAvailability(id, isAvailable);
 

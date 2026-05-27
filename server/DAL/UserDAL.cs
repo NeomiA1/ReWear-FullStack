@@ -25,7 +25,8 @@ namespace RewearApi.DAL
                         { "@email", user.Email },
                         { "@phone", (object?)user.Phone ?? DBNull.Value },
                         { "@location", (object?)user.City ?? DBNull.Value },
-                        { "@signup_method", user.RegistrationMethod }
+                        { "@signup_method", user.RegistrationMethod },
+                        { "@user_type", user.UserType }
 
                     };
 
@@ -66,6 +67,7 @@ namespace RewearApi.DAL
                             user.Phone = reader["phone"] == DBNull.Value ? null : reader["phone"].ToString();
                             user.City = reader["location"] == DBNull.Value ? null : reader["location"].ToString();
                             user.RegistrationMethod = reader["signup_method"].ToString();
+                            user.UserType = reader["user_type"].ToString();
 
                             return user;
                         }

@@ -11,6 +11,7 @@ namespace RewearApi.BL
         public string FullName { get; set; } = "";
         public string Username { get; set; } = "";
         public string Email { get; set; } = "";
+        public string UserType { get; set; } = "Private";
 
         public string? Password { get; set; }
         public string PasswordHash { get; set; } = "";
@@ -41,6 +42,12 @@ namespace RewearApi.BL
                 errors.Add("Email חובה");
             else if (!Regex.IsMatch(Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
                 errors.Add("Email לא תקין");
+
+            if (string.IsNullOrWhiteSpace(UserType))
+                errors.Add("UserType חובה");
+                
+            if (UserType != "Private" && UserType != "Association" && UserType != "Store")
+                errors.Add("UserType לא תקין");
 
             if (string.IsNullOrWhiteSpace(RegistrationMethod))
                 errors.Add("RegistrationMethod חובה");

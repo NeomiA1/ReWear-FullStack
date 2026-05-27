@@ -1,20 +1,43 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
+import { registerOrganization } from "../../services/associationService";
+
+// Exact values accepted by the DB CHECK constraints.
+const WORK_MODE_OPTIONS = [
+  { value: "SecondHandStores", label: "חנויות יד שנייה"  },
+  { value: "OwnStore",         label: "חנות עצמאית"      },
+  { value: "PhysicalOnly",     label: "מחסן / פיזי בלבד" },
+];
+
+const DELIVERY_MODE_OPTIONS = [
+  { value: "Both",        label: "איסוף + הגעה עצמית" },
+  { value: "Pickup",      label: "איסוף מהתורם בלבד"  },
+  { value: "SelfArrival", label: "הגעה עצמית בלבד"    },
+];
 
 export default function RegisterOrgPage() {
 
-  const [orgName, setOrgName]         = useState("");
-  const [orgNumber, setOrgNumber]     = useState("");
-  const [contact, setContact]         = useState("");
-  const [phone, setPhone]             = useState("");
-  const [email, setEmail]             = useState("");
-  const [password, setPassword]       = useState("");
-  const [address, setAddress]         = useState("");
-  const [logoPreview, setLogoPreview] = useState(null);
+  // Original form state
+  const [orgName,      setOrgName]      = useState("");
+  const [orgNumber,    setOrgNumber]    = useState("");
+  const [contact,      setContact]      = useState("");
+  const [phone,        setPhone]        = useState("");
+  const [email,        setEmail]        = useState("");
+  const [password,     setPassword]     = useState("");
+  const [address,      setAddress]      = useState("");
+  const [logoPreview,  setLogoPreview]  = useState(null);
+
+  // New: required by DB CHECK constraints
+  const [workMode,     setWorkMode]     = useState("");
+  const [deliveryMode, setDeliveryMode] = useState("");
+
+  // UI state
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(null);
 
   const { setUser } = useUser();
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
@@ -22,62 +45,96 @@ export default function RegisterOrgPage() {
     setLogoPreview(URL.createObjectURL(file));
   };
 
-  const handleRegister = () => {
-    if (!orgName || !orgNumber || !contact || !phone || !email || !password || !address) {
-      alert("אנא מלאי את כל השדות");
+  const handleRegister = async () => {
+
+    // Client-side guard — server validates too but this gives
+    // instant feedback without a network round-trip.
+    if (!orgName || !orgNumber || !contact || !phone ||
+        !email || !password || !address || !workMode || !deliveryMode) {
+      setError("אנא מלאי את כל השדות");
       return;
     }
     if (password.length < 6) {
-      alert("הסיסמה חייבת להכיל לפחות 6 תווים");
+      setError("הסיסמה חייבת להכיל לפחות 6 תווים");
       return;
     }
 
-    const userData = {
-      orgName,
-      orgNumber,
-      contact,
-      phone,
-      email,
-      address,
-      type: "org",
-    };
+    setLoading(true);
+    setError(null);
 
-    localStorage.setItem("rewear_user", JSON.stringify(userData));
-    setUser(userData);
-    window.location.href = "/org/home";
+    try {
+      // Single call — the server creates both the user and association
+      // rows in one transaction and returns the created user object.
+      const createdUser = await registerOrganization({
+        fullName:        contact,       // contact person is the user's full name
+        email:           email,
+        password:        password,
+        phone:           phone,
+        city:            null,          // city is not on the form; address holds it
+        associationName: orgName,
+        orgNumber:       orgNumber,
+        address:         address,
+        workMode:        workMode,
+        deliveryMode:    deliveryMode,
+      });
+
+      // Store in UserContext. The server returns userType = 'Association'
+      // so routing logic elsewhere can use it. We also attach orgName
+      // as a convenience field used by OrgHomePage for display.
+      setUser({
+        ...createdUser,
+        orgName: orgName,   // display field — not in Users table
+        type:    "org",     // local routing alias used by existing pages
+      });
+
+      navigate("/org/home");
+
+    } catch (err) {
+      // err is a plain string thrown by associationService.registerOrganization
+      setError(typeof err === "string" ? err : "שגיאה בהרשמה. אנא נסי שוב.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-rw-bg overflow-y-auto px-6 py-8">
 
-      {/* חץ חזרה */}
+      {/* Back arrow */}
       <div className="flex justify-end mb-6">
         <button onClick={() => navigate("/register")} className="text-rw-sub text-2xl">
           →
         </button>
       </div>
 
-      {/* העלאת לוגו */}
+      {/* Logo upload */}
       <div className="flex flex-col items-center mb-6">
         <div className="relative w-24 h-24 rounded-full bg-rw-input
                         border-2 border-dashed border-rw-border
                         flex items-center justify-center cursor-pointer">
           {logoPreview ? (
-            <img src={logoPreview} alt="לוגו" className="w-full h-full rounded-full object-cover" />
+            <img src={logoPreview} alt="לוגו"
+              className="w-full h-full rounded-full object-cover" />
           ) : (
             <span className="text-3xl">📷</span>
           )}
-          <input
-            type="file" accept="image/*" onChange={handleLogoChange}
-            className="absolute inset-0 opacity-0 cursor-pointer"
-          />
+          <input type="file" accept="image/*" onChange={handleLogoChange}
+            className="absolute inset-0 opacity-0 cursor-pointer" />
         </div>
         <p className="text-rw-green text-sm mt-2">העלאת לוגו העמותה</p>
       </div>
 
-      {/* טופס */}
+      {/* Form card */}
       <div className="bg-rw-card rounded-2xl shadow-sm p-6 flex flex-col gap-5">
 
+        {/* Inline error banner */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <p className="text-red-600 text-sm text-right">{error}</p>
+          </div>
+        )}
+
+        {/* Org name */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">שם העמותה</label>
           <input type="text" placeholder="שם העמותה" value={orgName}
@@ -86,6 +143,7 @@ export default function RegisterOrgPage() {
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
+        {/* Org number */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">מספר עמותה (ח.פ)</label>
           <input type="text" placeholder="מספר עמותה (ח.פ)" value={orgNumber}
@@ -94,6 +152,7 @@ export default function RegisterOrgPage() {
                        text-sm text-left outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
+        {/* Contact + phone */}
         <div className="flex flex-row gap-3">
           <div className="flex flex-col gap-1 flex-1">
             <label className="text-sm text-rw-sub text-right">איש קשר</label>
@@ -111,6 +170,7 @@ export default function RegisterOrgPage() {
           </div>
         </div>
 
+        {/* Email */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">אימייל</label>
           <input type="email" placeholder="אימייל" value={email}
@@ -119,6 +179,7 @@ export default function RegisterOrgPage() {
                        text-sm text-left outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
+        {/* Password */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">סיסמה</label>
           <input type="password" placeholder="מינימום 6 תווים" value={password}
@@ -127,6 +188,7 @@ export default function RegisterOrgPage() {
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
+        {/* Address */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">כתובת</label>
           <input type="text" placeholder="עיר / כתובת" value={address}
@@ -135,17 +197,48 @@ export default function RegisterOrgPage() {
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
-        <button onClick={handleRegister}
+        {/* Work mode — required by DB CHECK constraint */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-rw-sub text-right">אופן פעילות העמותה</label>
+          <select value={workMode} onChange={(e) => setWorkMode(e.target.value)}
+            className="border border-rw-border rounded-xl px-4 py-3
+                       text-sm text-right outline-none bg-rw-input focus:border-rw-btn
+                       appearance-none cursor-pointer">
+            <option value="">בחרי אופן פעילות</option>
+            {WORK_MODE_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Delivery mode — required by DB CHECK constraint */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-rw-sub text-right">אופן קבלת תרומות</label>
+          <select value={deliveryMode} onChange={(e) => setDeliveryMode(e.target.value)}
+            className="border border-rw-border rounded-xl px-4 py-3
+                       text-sm text-right outline-none bg-rw-input focus:border-rw-btn
+                       appearance-none cursor-pointer">
+            <option value="">בחרי אופן קבלה</option>
+            {DELIVERY_MODE_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Submit */}
+        <button onClick={handleRegister} disabled={loading}
           className="w-full bg-rw-btn text-white rounded-xl py-3
-                     text-sm font-semibold mt-2 active:bg-rw-btn-hover">
-          סיום הרשמה
+                     text-sm font-semibold mt-2 active:bg-rw-btn-hover
+                     disabled:opacity-50">
+          {loading ? "רושמת..." : "סיום הרשמה"}
         </button>
 
       </div>
 
       <p className="text-sm text-rw-sub text-center mt-6">
         כבר יש לך חשבון?{" "}
-        <span onClick={() => navigate("/")} className="text-rw-green font-semibold cursor-pointer">
+        <span onClick={() => navigate("/")}
+          className="text-rw-green font-semibold cursor-pointer">
           התחברות
         </span>
       </p>
