@@ -22,8 +22,7 @@ namespace RewearApi.DAL
         private const string SP_CREATE_ASSOCIATION              = "sp_CreateAssociation";
         private const string SP_UPDATE_ASSOCIATION_SETTINGS     = "sp_UpdateAssociationSettings";
         private const string SP_UPDATE_ASSOCIATION_AVAILABILITY = "sp_UpdateAssociationAvailability";
-        private const string SP_REGISTER_ORGANIZATION           = "sp_RegisterOrganization";  // new
-
+private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
         // ── New method ───────────────────────────────────────────────────
 
         /// <summary>

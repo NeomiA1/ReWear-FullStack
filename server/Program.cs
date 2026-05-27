@@ -29,6 +29,7 @@ namespace RewearApi
             .AllowAnyHeader();
     });
 });
+
             var app = builder.Build();
 
             // Middleware

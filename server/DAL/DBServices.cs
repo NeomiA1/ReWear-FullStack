@@ -11,9 +11,10 @@ namespace RewearApi.DAL
         protected SqlConnection Connect(string conStrName)
         {
             IConfigurationRoot configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: true)
-                .AddEnvironmentVariables()
-                .Build();
+             .AddJsonFile("appsettings.json", optional: true)
+             .AddJsonFile("appsettings.Development.json", optional: true)
+             .AddEnvironmentVariables()
+             .Build();
 
             string connectionString = configuration.GetConnectionString(conStrName);
 

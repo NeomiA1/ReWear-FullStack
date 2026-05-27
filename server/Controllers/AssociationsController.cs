@@ -12,6 +12,7 @@ namespace RewearApi.Controllers
         private readonly AssociationDAL _associationDal = new AssociationDAL();
 
         // ── New endpoint ─────────────────────────────────────────────────
+
         [HttpPost("register")]
         public ActionResult<User> RegisterOrganization([FromBody] RegisterOrgDto dto)
         {
@@ -27,11 +28,30 @@ namespace RewearApi.Controllers
                 User createdUser = _associationDal.RegisterOrganization(dto);
                 return Ok(createdUser);
             }
+            
             catch (Exception ex)
             {
-
-                return BadRequest(ex.Message);
+                return BadRequest(TranslateRegistrationError(ex.Message));
             }
+        }
+
+        
+        private static string TranslateRegistrationError(string exceptionMessage)
+        {
+            if (exceptionMessage.Contains("An account with this email already exists"))
+                return "כתובת האימייל כבר קיימת במערכת";
+
+            if (exceptionMessage.Contains("An account with this username already exists"))
+                return "שם המשתמש כבר קיים במערכת";
+
+            if (exceptionMessage.Contains("An association with this email already exists"))
+                return "כבר קיימת עמותה עם כתובת אימייל זו";
+
+            if (exceptionMessage.Contains("An association with this name already exists"))
+                return "כבר קיימת עמותה עם שם זה";
+
+            // Fallback — safe generic message, no raw SQL exposed to client.
+            return "אירעה שגיאה בתהליך ההרשמה. אנא נסי שוב מאוחר יותר.";
         }
 
         // ── Existing endpoints — unchanged ───────────────────────────────

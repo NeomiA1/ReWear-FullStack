@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { registerOrganization } from "../../services/associationService";
 
-// Exact values accepted by the DB CHECK constraints.
 const WORK_MODE_OPTIONS = [
   { value: "SecondHandStores", label: "חנויות יד שנייה"  },
   { value: "OwnStore",         label: "חנות עצמאית"      },
@@ -18,7 +17,6 @@ const DELIVERY_MODE_OPTIONS = [
 
 export default function RegisterOrgPage() {
 
-  // Original form state
   const [orgName,      setOrgName]      = useState("");
   const [orgNumber,    setOrgNumber]    = useState("");
   const [contact,      setContact]      = useState("");
@@ -27,14 +25,10 @@ export default function RegisterOrgPage() {
   const [password,     setPassword]     = useState("");
   const [address,      setAddress]      = useState("");
   const [logoPreview,  setLogoPreview]  = useState(null);
-
-  // New: required by DB CHECK constraints
   const [workMode,     setWorkMode]     = useState("");
   const [deliveryMode, setDeliveryMode] = useState("");
-
-  // UI state
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState(null);
 
   const { setUser } = useUser();
   const navigate    = useNavigate();
@@ -46,9 +40,6 @@ export default function RegisterOrgPage() {
   };
 
   const handleRegister = async () => {
-
-    // Client-side guard — server validates too but this gives
-    // instant feedback without a network round-trip.
     if (!orgName || !orgNumber || !contact || !phone ||
         !email || !password || !address || !workMode || !deliveryMode) {
       setError("אנא מלאי את כל השדות");
@@ -63,14 +54,12 @@ export default function RegisterOrgPage() {
     setError(null);
 
     try {
-      // Single call — the server creates both the user and association
-      // rows in one transaction and returns the created user object.
       const createdUser = await registerOrganization({
-        fullName:        contact,       // contact person is the user's full name
+        fullName:        contact,
         email:           email,
         password:        password,
         phone:           phone,
-        city:            null,          // city is not on the form; address holds it
+        city:            null,
         associationName: orgName,
         orgNumber:       orgNumber,
         address:         address,
@@ -78,19 +67,18 @@ export default function RegisterOrgPage() {
         deliveryMode:    deliveryMode,
       });
 
-      // Store in UserContext. The server returns userType = 'Association'
-      // so routing logic elsewhere can use it. We also attach orgName
-      // as a convenience field used by OrgHomePage for display.
+   
+      const { userType, ...userWithoutServerType } = createdUser;
+
       setUser({
-        ...createdUser,
-        orgName: orgName,   // display field — not in Users table
-        type:    "org",     // local routing alias used by existing pages
+        ...userWithoutServerType,
+        orgName,        // display field — not in Users table
+        type: "org",    // client-side routing alias
       });
 
       navigate("/org/home");
 
     } catch (err) {
-      // err is a plain string thrown by associationService.registerOrganization
       setError(typeof err === "string" ? err : "שגיאה בהרשמה. אנא נסי שוב.");
     } finally {
       setLoading(false);
@@ -130,7 +118,7 @@ export default function RegisterOrgPage() {
         {/* Inline error banner */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-            <p className="text-red-600 text-sm text-right">{error}</p>
+            <p className="text-red-600 text-sm text-right whitespace-pre-line">{error}</p>
           </div>
         )}
 
@@ -197,7 +185,7 @@ export default function RegisterOrgPage() {
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
-        {/* Work mode — required by DB CHECK constraint */}
+        {/* Work mode */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">אופן פעילות העמותה</label>
           <select value={workMode} onChange={(e) => setWorkMode(e.target.value)}
@@ -211,7 +199,7 @@ export default function RegisterOrgPage() {
           </select>
         </div>
 
-        {/* Delivery mode — required by DB CHECK constraint */}
+        {/* Delivery mode */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">אופן קבלת תרומות</label>
           <select value={deliveryMode} onChange={(e) => setDeliveryMode(e.target.value)}
