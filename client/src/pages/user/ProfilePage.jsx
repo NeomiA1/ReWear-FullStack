@@ -7,14 +7,7 @@ import {
   createDonationRequest,
   linkBagToDonationRequest
 } from "../../services/donationRequestService";
-
-const MOCK_ORGS = [
-  { id: 1, name: "ויצו",      city: "תל אביב",  types: "בגדי נשים, ילדים",  area: "מרכז"    },
-  { id: 2, name: "נעמת",      city: "חיפה",     types: "כל סוגי הבגדים",    area: "צפון"    },
-  { id: 3, name: "לתת",       city: "ירושלים",  types: "בגדי חורף, מעילים", area: "ירושלים" },
-  { id: 4, name: "יד שרה",    city: "באר שבע",  types: "בגדים לקשישים",     area: "דרום"    },
-  { id: 5, name: "קרן חיים",  city: "רמת גן",   types: "בגדי ילדים",        area: "מרכז"    },
-];
+import { getAssociations } from "../../services/associationService";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -27,26 +20,39 @@ export default function ProfilePage() {
   const [search, setSearch] = useState("");
   const [sent, setSent] = useState(false);
   const [serverBags, setServerBags] = useState([]);
+  const [orgs, setOrgs] = useState([]);
 
   useEffect(() => {
     const loadBags = async () => {
       if (!user || !user.userId) return;
-  
       try {
         const bagsFromServer = await getDonationBagsByUserId(user.userId);
-
-        console.log("Bags from API:", bagsFromServer);
-        
         setServerBags(bagsFromServer);
       } catch (error) {
         console.error(error);
       }
     };
-  
+
+    const loadOrgs = async () => {
+      try {
+        const data = await getAssociations();
+        setOrgs(data.map(a => ({
+          id:    a.associationId,
+          name:  a.associationName,
+          city:  a.city  ?? "",
+          area:  a.area  ?? "",
+          types: a.associationType ?? a.description ?? "",
+        })));
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
     loadBags();
+    loadOrgs();
   }, [user]);
 
-  const filteredOrgs = MOCK_ORGS.filter(org =>
+  const filteredOrgs = orgs.filter(org =>
     org.name.toLowerCase().includes(search.toLowerCase())
   );
 

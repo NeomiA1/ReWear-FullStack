@@ -95,6 +95,30 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
 
         // ── Existing methods — unchanged ─────────────────────────────────
 
+        public List<Association> GetAllAssociations()
+        {
+            var results = new List<Association>();
+
+            using (SqlConnection con = Connect(CON_STR_NAME))
+            {
+                using (SqlCommand cmd = new SqlCommand(
+                    "SELECT association_id, association_name, association_type, " +
+                    "address, city, area, email, phone, description, " +
+                    "donation_destination, receiving_hours, work_mode, delivery_mode, " +
+                    "is_available, created_at " +
+                    "FROM Associations WHERE is_available = 1 ORDER BY association_name", con))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            results.Add(MapAssociation(reader));
+                    }
+                }
+            }
+
+            return results;
+        }
+
         public Association? CheckAssociationExists(string name, string email)
         {
             try
@@ -166,19 +190,16 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
                     var paramDic = new Dictionary<string, object>
                     {
                         { "@association_id",       association.AssociationId                                 },
-                        { "@association_name",     association.AssociationName                               },
                         { "@association_type",     (object?)association.AssociationType  ?? DBNull.Value     },
                         { "@address",              association.Address                                        },
                         { "@city",                 (object?)association.City             ?? DBNull.Value     },
                         { "@area",                 (object?)association.Area             ?? DBNull.Value     },
-                        { "@email",                association.Email                                          },
                         { "@phone",                (object?)association.Phone            ?? DBNull.Value     },
                         { "@description",          (object?)association.Description      ?? DBNull.Value     },
                         { "@donation_destination", (object?)association.DonationDestination ?? DBNull.Value  },
                         { "@receiving_hours",      (object?)association.ReceivingHours   ?? DBNull.Value     },
                         { "@work_mode",            association.WorkMode                                       },
                         { "@delivery_mode",        association.DeliveryMode                                   },
-                        { "@is_available",         association.IsAvailable                                    }
                     };
 
                     SqlCommand cmd = CreateCommand(SP_UPDATE_ASSOCIATION_SETTINGS, con, paramDic);

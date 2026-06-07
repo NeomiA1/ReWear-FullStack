@@ -1,0 +1,29 @@
+using System;
+
+namespace RewearApi.BL
+{
+    public class DonationRequestDto
+    {
+        public int RequestId { get; set; }
+        public int UserId { get; set; }
+        public int AssociationId { get; set; }
+
+        public DateTime RequestDate { get; set; }
+        public string DeliveryType { get; set; } = "";
+        public string RequestStatus { get; set; } = "";
+        public string? AssociationResponse { get; set; }
+        public DateTime? ResponseDate { get; set; }
+
+        public int BagId { get; set; }
+        public string? ShortDescription { get; set; }
+        public string? Sizes { get; set; }
+        public string? TargetAges { get; set; }
+        public string? TargetGender { get; set; }
+        public string? ClothesCondition { get; set; }
+        public DateTime BagCreatedAt { get; set; }
+
+        public string DonorName { get; set; } = "";
+        public string DonorEmail { get; set; } = "";
+        public string? DonorPhone { get; set; }
+    }
+}

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RewearApi.BL;
 using RewearApi.DAL;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RewearApi.Controllers
@@ -10,6 +11,16 @@ namespace RewearApi.Controllers
     public class DonationRequestsController : ControllerBase
     {
         private readonly DonationRequestDAL _donationRequestDal = new DonationRequestDAL();
+
+        [HttpGet("association/user/{userId}")]
+        public ActionResult<List<DonationRequestDto>> GetByAssociationUser(int userId)
+        {
+            if (userId <= 0)
+                return BadRequest("userId must be greater than 0");
+
+            List<DonationRequestDto> requests = _donationRequestDal.GetByAssociationUserId(userId);
+            return Ok(requests);
+        }
 
         [HttpPost]
         public ActionResult CreateDonationRequest([FromBody] DonationRequest request)

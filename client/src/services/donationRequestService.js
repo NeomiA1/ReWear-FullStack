@@ -17,6 +17,19 @@ export async function createDonationRequest(request) {
   return await response.json();
 }
 
+export async function getDonationRequestsByAssociation(userId) {
+  const response = await fetch(
+    `${API_BASE_URL}/DonationRequests/association/user/${userId}`
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return await response.json();
+}
+
 export async function linkBagToDonationRequest(requestId, bagId) {
   const response = await fetch(
     `${API_BASE_URL}/DonationRequests/${requestId}/bags/${bagId}`,

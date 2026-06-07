@@ -24,6 +24,15 @@ import API_BASE_URL from "./api";
  * @throws {string} User-facing error message (Hebrew). Always a string,
  *   never a raw SQL exception or JSON blob.
  */
+export async function getAssociations() {
+  const response = await fetch(`${API_BASE_URL}/Associations`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+  return response.json();
+}
+
 export async function registerOrganization(data) {
   const response = await fetch(`${API_BASE_URL}/Associations/register`, {
     method:  "POST",

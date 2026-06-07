@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../../context/UserContext";
+import { registerStore } from "../../services/storeService";
 
 // המסך זהה לעמותה, רק עם שינויים קטנים:
 // - כותרת שונה
@@ -16,8 +18,11 @@ export default function RegisterShopPage() {
   const [password, setPassword]       = useState(""); // סיסמה
   const [address, setAddress]         = useState(""); // כתובת
   const [logoPreview, setLogoPreview] = useState(null); // תצוגה מקדימה של לוגו
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState(null);
 
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
+  const { setUser } = useUser();
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
@@ -25,18 +30,40 @@ export default function RegisterShopPage() {
     setLogoPreview(URL.createObjectURL(file));
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!shopName || !bizNumber || !contact || !phone || !email || !password || !address) {
-      alert("אנא מלאי את כל השדות");
+      setError("נא למלא את כל השדות");
       return;
     }
     if (password.length < 6) {
-      alert("הסיסמה חייבת להכיל לפחות 6 תווים");
+      setError("הסיסמה חייבת להכיל לפחות 6 תווים");
       return;
     }
-    console.log("חנות נרשמה:", { shopName, bizNumber, contact, phone, email, address });
 
-    navigate("/shop/home");
+    setLoading(true);
+    setError(null);
+
+    try {
+      await registerStore({
+        storeName: shopName,
+        address,
+        email,
+        phone,
+      });
+
+      setUser({
+        shopName,
+        email,
+        phone,
+        type: "shop",
+      });
+
+      navigate("/shop/home");
+    } catch (err) {
+      setError(typeof err === "string" ? err : "שגיאה בהרשמה. נא לנסות שוב.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,6 +94,13 @@ export default function RegisterShopPage() {
 
       {/* טופס */}
       <div className="bg-rw-card rounded-2xl shadow-sm p-6 flex flex-col gap-5">
+
+        {/* הודעת שגיאה */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <p className="text-red-600 text-sm text-right whitespace-pre-line">{error}</p>
+          </div>
+        )}
 
         {/* שם החנות */}
         <div className="flex flex-col gap-1">
@@ -132,10 +166,11 @@ export default function RegisterShopPage() {
         </div>
 
         {/* כפתור */}
-        <button onClick={handleRegister}
+        <button onClick={handleRegister} disabled={loading}
           className="w-full bg-rw-btn text-white rounded-xl py-3
-                     text-sm font-semibold mt-2 active:bg-rw-btn-hover">
-          סיום הרשמה
+                     text-sm font-semibold mt-2 active:bg-rw-btn-hover
+                     disabled:opacity-50">
+          {loading ? "שולח..." : "סיום הרשמה"}
         </button>
 
       </div>

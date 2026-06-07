@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
+import { getDonationRequestsByAssociation } from "../../services/donationRequestService";
 
 const DAY_OPTIONS  = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"];
 const TIME_OPTIONS = ["08:00–10:00", "10:00–12:00", "12:00–14:00",
@@ -118,21 +119,47 @@ function RequestCard({ req, onApprove, onReject }) {
 
 export default function OrgRequestsPage() {
   const navigate = useNavigate();
-  const { sentDonations, updateSentDonation } = useUser();
+  const { user } = useUser();
 
-  const pendingRequests = sentDonations.filter(d => d.status === "pending");
-  const approvedCount   = sentDonations.filter(d => d.status === "approved").length;
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+
+  useEffect(() => {
+    if (!user?.userId) return;
+    getDonationRequestsByAssociation(user.userId)
+      .then(data => {
+        // normalize SP rows to the shape RequestCard expects
+        const normalized = data.map(r => ({
+          id:     r.requestId,
+          donor:  r.donorName,
+          date:   new Date(r.requestDate).toLocaleDateString("he-IL"),
+          status: r.requestStatus.toLowerCase(),
+          bag: {
+            size:      r.sizes        ?? "",
+            gender:    r.targetGender ?? "",
+            condition: r.clothesCondition ?? "",
+          },
+        }));
+        setRequests(normalized);
+      })
+      .catch(() => setError("שגיאה בטעינת הבקשות"))
+      .finally(() => setLoading(false));
+  }, [user?.userId]);
+
+  const pendingRequests = requests.filter(d => d.status === "pending");
+  const approvedCount   = requests.filter(d => d.status === "approved").length;
 
   const handleApprove = (id, days, times) => {
-    updateSentDonation(id, {
-      status:         "approved",
-      availableDays:  days,
-      availableTimes: times,
-    });
+    setRequests(prev => prev.map(d =>
+      d.id === id ? { ...d, status: "approved", availableDays: days, availableTimes: times } : d
+    ));
   };
 
   const handleReject = (id) => {
-    updateSentDonation(id, { status: "rejected" });
+    setRequests(prev => prev.map(d =>
+      d.id === id ? { ...d, status: "rejected" } : d
+    ));
   };
 
   return (
@@ -155,7 +182,17 @@ export default function OrgRequestsPage() {
 
       <div className="px-5 pt-5 flex flex-col gap-4">
 
-        {approvedCount > 0 && (
+        {loading && (
+          <p className="text-rw-sub text-sm text-center pt-10">טוען בקשות...</p>
+        )}
+
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <p className="text-red-600 text-sm text-right">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && approvedCount > 0 && (
           <div className="bg-green-50 border border-green-200 rounded-2xl
                           px-4 py-3 flex items-center justify-between">
             <span className="text-green-600 text-xs font-semibold cursor-pointer"
@@ -168,13 +205,13 @@ export default function OrgRequestsPage() {
           </div>
         )}
 
-        {pendingRequests.length > 0 ? (
+        {!loading && !error && pendingRequests.length > 0 ? (
           pendingRequests.map(req => (
             <RequestCard key={req.id} req={req}
               onApprove={handleApprove}
               onReject={handleReject} />
           ))
-        ) : (
+        ) : !loading && !error ? (
           <div className="flex flex-col items-center gap-3 pt-16">
             <span className="text-5xl">🎉</span>
             <p className="font-bold text-rw-title text-base">אין בקשות ממתינות</p>
@@ -187,7 +224,7 @@ export default function OrgRequestsPage() {
               למסך האיסופים
             </button>
           </div>
-        )}
+        ) : null}
 
       </div>
 
