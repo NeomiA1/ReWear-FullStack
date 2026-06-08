@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { id: "home",          icon: "🏠", label: "בית",      path: "/org/home"     },
   { id: "requests",      icon: "📋", label: "בקשות",    path: "/org/requests" },
   { id: "pickups",       icon: "🚗", label: "איסופים",  path: "/org/pickups"  },
-  { id: "collaborations",icon: "🤝", label: "שיתופים",  path: "/org/home"     },
+  { id: "collaborations",icon: "🤝", label: "שיתופים",  path: "/org/collaborations" },
   { id: "profile",       icon: "👤", label: "פרופיל",   path: "/org/profile"  },
 ];
 

@@ -23,6 +23,7 @@ import OrgProfilePage       from "./pages/org/OrgProfilePage";
 import OrgNotificationsPage from "./pages/org/OrgNotificationsPage";
 import OrgRequestsPage      from "./pages/org/OrgRequestsPage";
 import OrgPickupsPage       from "./pages/org/OrgPickupsPage";
+import OrgCollaborationsPage from "./pages/org/OrgCollaborationsPage";
 
 // Shop
 import ShopHomePage         from "./pages/shop/ShopHomePage";
@@ -55,11 +56,12 @@ function App() {
         <Route path="/impact"            element={<ImpactPage />} />
 
         {/* Org */}
-        <Route path="/org/home"          element={<OrgHomePage />} />
-        <Route path="/org/profile"       element={<OrgProfilePage />} />
-        <Route path="/org/notifications" element={<OrgNotificationsPage />} />
-        <Route path="/org/requests"      element={<OrgRequestsPage />} />
-        <Route path="/org/pickups"       element={<OrgPickupsPage />} />
+        <Route path="/org/home"              element={<OrgHomePage />} />
+        <Route path="/org/profile"           element={<OrgProfilePage />} />
+        <Route path="/org/notifications"     element={<OrgNotificationsPage />} />
+        <Route path="/org/requests"          element={<OrgRequestsPage />} />
+        <Route path="/org/pickups"           element={<OrgPickupsPage />} />
+        <Route path="/org/collaborations"    element={<OrgCollaborationsPage />} />
 
         {/* Shop */}
         <Route path="/shop/home"         element={<ShopHomePage />} />
