@@ -6,11 +6,12 @@ import { createDonationBag } from "../../services/donationBagService";
 
 export default function UploadDonationPage() {
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, addDonation } = useUser();
   const [bags, setBags] = useState([
     { id: 1, size: "", age: "", gender: "", condition: "", description: "", imagePreview: null }
   ]);
-  const [uploaded, setUploaded] = useState(false);
+  const [uploaded, setUploaded]   = useState(false);
+  const [loading,  setLoading]    = useState(false);
 
   const updateBag = (bagId, field, value) => {
     setBags(bags.map(bag =>
@@ -18,7 +19,6 @@ export default function UploadDonationPage() {
     ));
   };
 
-  // ✅ תמונה: שומרים URL מקומי להצגה
   const handleImageChange = (bagId, file) => {
     if (!file) return;
     const previewUrl = URL.createObjectURL(file);
@@ -40,28 +40,35 @@ export default function UploadDonationPage() {
   };
 
   const handleUpload = async () => {
-    
     if (!user || !user.userId) {
-      alert("לא נמצא משתמש מחובר"); 
+      // ── דמו: משתמש בלי userId (כניסת דמו) ──────────────────────
+      // שומרים ב-Context בלבד ומציגים אישור
+      addDonation(bags);
+      setUploaded(true);
       return;
     }
-  
+
+    setLoading(true);
     try {
+      // ── משתמש אמיתי: שולחים לשרת ───────────────────────────────
       for (const bag of bags) {
         const donationBag = {
-          userId: user.userId,
+          userId:           user.userId,
           shortDescription: bag.description,
-          sizes: bag.size,
-          targetAges: bag.age,
-          targetGender: bag.gender,
+          sizes:            bag.size,
+          targetAges:       bag.age,
+          targetGender:     bag.gender,
           clothesCondition: bag.condition,
         };
+        await createDonationBag(donationBag);
       }
-  
+      // ✅ A1 תיקון: setUploaded(true) נקרא אחרי הצלחה
       setUploaded(true);
     } catch (error) {
       console.error(error);
-      alert(error);
+      alert("שגיאה בהעלאת השק: " + error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,18 +130,15 @@ export default function UploadDonationPage() {
               </div>
             </div>
 
-            {/* ✅ אזור תמונה – מציג preview אחרי בחירה */}
             <div className="relative border-2 border-dashed border-rw-border
                             rounded-xl bg-rw-input overflow-hidden
                             flex flex-col items-center justify-center
                             mb-4 cursor-pointer"
                  style={{ minHeight: "120px" }}>
               {bag.imagePreview ? (
-                // תמונה שנבחרה – מוצגת במלואה
                 <img src={bag.imagePreview} alt="תצוגה מקדימה"
                   className="w-full h-48 object-cover rounded-xl" />
               ) : (
-                // מצב ריק
                 <div className="flex flex-col items-center py-10">
                   <span className="text-4xl text-rw-btn mb-2">📷</span>
                   <p className="text-rw-sub text-sm">הוספת תמונה או וידאו</p>
@@ -180,11 +184,12 @@ export default function UploadDonationPage() {
           <span>⊕</span><span>הוספת שק נוסף</span>
         </button>
 
-        <button onClick={handleUpload}
+        <button onClick={handleUpload} disabled={loading}
           className="w-full bg-rw-btn text-white rounded-2xl py-4
                      text-sm font-semibold flex items-center justify-center gap-2
-                     active:bg-rw-btn-hover mb-4">
-          <span>⬆️</span><span>העלה שק</span>
+                     active:bg-rw-btn-hover mb-4 disabled:opacity-60">
+          <span>{loading ? "⏳" : "⬆️"}</span>
+          <span>{loading ? "מעלה..." : "העלה שק"}</span>
         </button>
 
       </div>

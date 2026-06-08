@@ -14,6 +14,8 @@ import ProfilePage          from "./pages/user/ProfilePage";
 import MapPage              from "./pages/user/MapPage";
 import NotificationsPage    from "./pages/user/NotificationsPage";
 import PickupSchedulingPage from "./pages/user/PickupSchedulingPage";
+import DonationStatusPage   from "./pages/user/DonationStatusPage";
+import ImpactPage           from "./pages/user/ImpactPage";
 
 // Org
 import OrgHomePage          from "./pages/org/OrgHomePage";
@@ -25,6 +27,8 @@ import OrgPickupsPage       from "./pages/org/OrgPickupsPage";
 // Shop
 import ShopHomePage         from "./pages/shop/ShopHomePage";
 import ShopPartnersPage     from "./pages/shop/ShopPartnersPage";
+import ShopProfilePage      from "./pages/shop/ShopProfilePage";
+import ShopInventoryPage    from "./pages/shop/ShopInventoryPage";
 
 // Chat
 import CollaborationChatPage from "./pages/CollaborationChatPage";
@@ -47,6 +51,8 @@ function App() {
         <Route path="/map"               element={<MapPage />} />
         <Route path="/notifications"     element={<NotificationsPage />} />
         <Route path="/pickup/:id"        element={<PickupSchedulingPage />} />
+        <Route path="/status"            element={<DonationStatusPage />} />
+        <Route path="/impact"            element={<ImpactPage />} />
 
         {/* Org */}
         <Route path="/org/home"          element={<OrgHomePage />} />
@@ -58,8 +64,10 @@ function App() {
         {/* Shop */}
         <Route path="/shop/home"         element={<ShopHomePage />} />
         <Route path="/shop/partners"     element={<ShopPartnersPage />} />
+        <Route path="/shop/profile"      element={<ShopProfilePage />} />
+        <Route path="/shop/inventory"    element={<ShopInventoryPage />} />
 
-        {/* Chat שיתוף פעולה */}
+        {/* Chat */}
         <Route path="/org/chat/:id"      element={<CollaborationChatPage />} />
         <Route path="/shop/chat/:id"     element={<CollaborationChatPage />} />
       </Routes>
@@ -68,4 +76,3 @@ function App() {
 }
 
 export default App;
-

@@ -85,6 +85,7 @@ export function UserProvider({ children }) {
     const newSent = {
       id:              Date.now(),
       bag, org,
+      donor:           bag.donor || "תורם",  // ← שם התורם לתצוגה בעמותה
       status:          "pending",
       date:            new Date().toLocaleDateString("he-IL"),
       pickupScheduled: false,

@@ -7,21 +7,14 @@ import ShopBottomNav from "../../components/ShopBottomNav";
 
 const KPI_DATA = [
   { id: 1, label: "פריטים במלאי",   value: "128", icon: "👗" },
-  { id: 2, label: "עמותות שותפות",  value: "4",   icon: "🤝" },
   { id: 3, label: "פריטים שנמכרו",  value: "37",  icon: "✅" },
 ];
 
-const PARTNER_ORGS = [
-  { id: 1, name: "עמותת לב חם",  city: "תל אביב", items: "בגדי נשים וילדים",   status: "active"  },
-  { id: 2, name: "ידיים לעתיד",  city: "חיפה",    items: "בגדי גברים, נעליים", status: "active"  },
-  { id: 3, name: "נשים בקהילה",  city: "ירושלים", items: "בגדי חורף, שמיכות",  status: "pending" },
-];
-
 const INITIAL_NEW_ITEMS = [
-  { id: 1, title: "3 שקיות – בגדי נשים",       org: "עמותת לב חם", condition: "מצב טוב",   itemStatus: "new" },
-  { id: 2, title: "שק – נעלי ילדים",            org: "ידיים לעתיד", condition: "כמו חדש",   itemStatus: "new" },
-  { id: 3, title: "2 שקיות – מעילים לגברים",   org: "עמותת לב חם", condition: "מצב סביר",  itemStatus: "new" },
-  { id: 4, title: "שק – בגדי ילדים מעורב",      org: "נשים בקהילה", condition: "מצב טוב",   itemStatus: "new" },
+  { id: 1, title: "3 שקיות – בגדי נשים",     org: "עמותת לב חם", condition: "מצב טוב",  itemStatus: "new" },
+  { id: 2, title: "שק – נעלי ילדים",          org: "ידיים לעתיד", condition: "כמו חדש",  itemStatus: "new" },
+  { id: 3, title: "2 שקיות – מעילים לגברים", org: "עמותת לב חם", condition: "מצב סביר", itemStatus: "new" },
+  { id: 4, title: "שק – בגדי ילדים מעורב",    org: "נשים בקהילה", condition: "מצב טוב",  itemStatus: "new" },
 ];
 
 function KpiCard({ kpi }) {
@@ -35,24 +28,34 @@ function KpiCard({ kpi }) {
   );
 }
 
-function PartnerCard({ org }) {
-  const isActive = org.status === "active";
+// ── עמותה שותפת – מ-collaborations ────────────────────────────────────────────
+function PartnerCard({ collab, onChat }) {
+  const isActive = collab.status === "approved";
   return (
     <div className="bg-rw-card rounded-2xl shadow-sm p-4 flex items-center justify-between">
-      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0
+      {/* כפתור צ'אט אם פעיל */}
+      {isActive && (
+        <button onClick={() => onChat(collab.id)}
+          className="bg-rw-btn/10 text-rw-btn border border-rw-btn/30
+                     rounded-xl px-3 py-1.5 text-xs font-semibold shrink-0
+                     flex items-center gap-1 active:bg-rw-btn/20">
+          <span>💬</span><span>צ׳אט</span>
+        </button>
+      )}
+      <div className="flex items-center gap-3 flex-1 justify-end">
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="font-bold text-rw-title text-sm">{collab.orgName}</span>
+          <span className="text-rw-sub text-xs">{collab.orgCity}</span>
+          <span className="text-rw-green text-xs font-medium">{collab.orgTypes}</span>
+        </div>
+        <div className="w-10 h-10 rounded-full bg-rw-logo flex items-center justify-center shrink-0">
+          <span className="text-white font-bold text-sm">{collab.orgName?.charAt(0)}</span>
+        </div>
+      </div>
+      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 mr-2
         ${isActive ? "bg-green-50 text-green-600" : "bg-amber-50 text-amber-500"}`}>
         {isActive ? "פעיל" : "ממתין"}
       </span>
-      <div className="flex items-center gap-3">
-        <div className="flex flex-col items-end gap-0.5">
-          <span className="font-bold text-rw-title text-sm">{org.name}</span>
-          <span className="text-rw-sub text-xs">{org.city}</span>
-          <span className="text-rw-green text-xs font-medium">{org.items}</span>
-        </div>
-        <div className="w-10 h-10 rounded-full bg-rw-logo flex items-center justify-center shrink-0">
-          <span className="text-white font-bold text-sm">{org.name.charAt(0)}</span>
-        </div>
-      </div>
     </div>
   );
 }
@@ -86,7 +89,7 @@ function NewItemCard({ item, onAdd }) {
 
 export default function ShopHomePage() {
   const navigate = useNavigate();
-  const { user, logout } = useUser(); // ✅ הוספנו logout
+  const { user, logout, collaborations } = useUser();
 
   const [newItems, setNewItems] = useState(INITIAL_NEW_ITEMS);
 
@@ -97,8 +100,19 @@ export default function ShopHomePage() {
   };
 
   const addedCount = newItems.filter(i => i.itemStatus === "added").length;
+  const shopName   = user?.shopName || user?.fullName || "בגדי הלב – יד שנייה";
 
-  const shopName = user?.shopName || user?.fullName || "בגדי הלב – יד שנייה";
+  // ── עמותות שותפות מה-Context ─────────────────────────────────────────────
+  // מציג רק שיתופים שאושרו או ממתינים (לא נדחו)
+  const partnerCollabs = (collaborations || [])
+    .filter(c => c.status !== "rejected")
+    .slice(0, 3);
+
+  // KPI דינמי – מספר עמותות שותפות אמיתי
+  const kpiWithPartners = [
+    ...KPI_DATA,
+    { id: 2, label: "עמותות שותפות", value: String(partnerCollabs.filter(c => c.status === "approved").length), icon: "🤝" },
+  ].sort((a, b) => a.id - b.id);
 
   return (
     <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
@@ -106,15 +120,11 @@ export default function ShopHomePage() {
       {/* Header */}
       <div className="bg-rw-card px-5 pt-6 pb-4 shadow-sm
                       flex items-center justify-between">
-        {/* ✅ כפתור התנתקות */}
-        <button
-          onClick={() => { logout(); navigate("/"); }}
+        <button onClick={() => { logout(); navigate("/"); }}
           className="text-xs text-rw-sub border border-rw-border
                      rounded-xl px-3 py-1.5 active:bg-rw-input shrink-0">
           התנתקות
         </button>
-
-        {/* שם חנות */}
         <div className="flex flex-col items-end flex-1 mx-3">
           <div className="flex items-center gap-2">
             <h1 className="font-bold text-rw-title text-base">{shopName}</h1>
@@ -122,8 +132,6 @@ export default function ShopHomePage() {
           </div>
           <p className="text-rw-sub text-xs mt-0.5">חנות יד שנייה בשיתוף עמותות</p>
         </div>
-
-        {/* פעמון */}
         <div onClick={() => navigate("/shop/notifications")}
           className="w-10 h-10 bg-rw-input rounded-xl
                      flex items-center justify-center cursor-pointer shrink-0">
@@ -137,11 +145,11 @@ export default function ShopHomePage() {
         <div>
           <h2 className="font-bold text-rw-title text-base mb-3">סיכום</h2>
           <div className="flex gap-3">
-            {KPI_DATA.map(kpi => <KpiCard key={kpi.id} kpi={kpi} />)}
+            {kpiWithPartners.map(kpi => <KpiCard key={kpi.id} kpi={kpi} />)}
           </div>
         </div>
 
-        {/* עמותות שותפות */}
+        {/* עמותות שותפות – מ-Context */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <span onClick={() => navigate("/shop/partners")}
@@ -150,9 +158,23 @@ export default function ShopHomePage() {
             </span>
             <h2 className="font-bold text-rw-title text-base">עמותות שותפות</h2>
           </div>
-          <div className="flex flex-col gap-3">
-            {PARTNER_ORGS.map(org => <PartnerCard key={org.id} org={org} />)}
-          </div>
+
+          {partnerCollabs.length === 0 ? (
+            <div className="bg-rw-card rounded-2xl p-4 text-center shadow-sm">
+              <p className="text-rw-sub text-sm">אין עמותות שותפות עדיין</p>
+              <button onClick={() => navigate("/shop/partners")}
+                className="mt-2 text-rw-green text-xs font-semibold">
+                צפי בבקשות שיתוף פעולה
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {partnerCollabs.map(collab => (
+                <PartnerCard key={collab.id} collab={collab}
+                  onChat={(id) => navigate(`/shop/chat/${id}`)} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* פריטים חדשים */}
