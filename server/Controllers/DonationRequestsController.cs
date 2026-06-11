@@ -12,6 +12,16 @@ namespace RewearApi.Controllers
     {
         private readonly DonationRequestDAL _donationRequestDal = new DonationRequestDAL();
 
+        [HttpGet("user/{userId}")]
+        public ActionResult<List<UserDonationRequestDto>> GetByUser(int userId)
+        {
+            if (userId <= 0)
+                return BadRequest("userId must be greater than 0");
+
+            List<UserDonationRequestDto> requests = _donationRequestDal.GetByUserId(userId);
+            return Ok(requests);
+        }
+
         [HttpGet("association/user/{userId}")]
         public ActionResult<List<DonationRequestDto>> GetByAssociationUser(int userId)
         {

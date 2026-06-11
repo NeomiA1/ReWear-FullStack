@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
-import { getDonationRequestsByAssociation } from "../../services/donationRequestService";
+import {
+  getDonationRequestsByAssociation,
+  respondToDonationRequest,
+} from "../../services/donationRequestService";
 
 const DAY_OPTIONS  = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"];
 const TIME_OPTIONS = ["08:00–10:00", "10:00–12:00", "12:00–14:00",
@@ -150,16 +153,26 @@ export default function OrgRequestsPage() {
   const pendingRequests = requests.filter(d => d.status === "pending");
   const approvedCount   = requests.filter(d => d.status === "approved").length;
 
-  const handleApprove = (id, days, times) => {
-    setRequests(prev => prev.map(d =>
-      d.id === id ? { ...d, status: "approved", availableDays: days, availableTimes: times } : d
-    ));
+  const handleApprove = async (id, days, times) => {
+    try {
+      await respondToDonationRequest(id, "Approved");
+      setRequests(prev => prev.map(d =>
+        d.id === id ? { ...d, status: "approved", availableDays: days, availableTimes: times } : d
+      ));
+    } catch (err) {
+      alert(typeof err === "string" ? err : "שגיאה באישור הבקשה. נא לנסות שוב.");
+    }
   };
 
-  const handleReject = (id) => {
-    setRequests(prev => prev.map(d =>
-      d.id === id ? { ...d, status: "rejected" } : d
-    ));
+  const handleReject = async (id) => {
+    try {
+      await respondToDonationRequest(id, "Rejected");
+      setRequests(prev => prev.map(d =>
+        d.id === id ? { ...d, status: "rejected" } : d
+      ));
+    } catch (err) {
+      alert(typeof err === "string" ? err : "שגיאה בדחיית הבקשה. נא לנסות שוב.");
+    }
   };
 
   return (

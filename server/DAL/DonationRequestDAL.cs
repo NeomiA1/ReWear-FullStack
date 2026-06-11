@@ -14,7 +14,61 @@ namespace RewearApi.DAL
         private const string SP_RESPOND_DONATION_REQUEST = "sp_RespondDonationRequest";
         private const string SP_GET_BY_ASSOCIATION = "sp_GetDonationRequestsByAssociation";
 
-        
+        public List<UserDonationRequestDto> GetByUserId(int userId)
+        {
+            var results = new List<UserDonationRequestDto>();
+
+            using (SqlConnection con = Connect(CON_STR_NAME))
+            {
+                using (SqlCommand cmd = new SqlCommand(@"
+                    SELECT dr.request_id, dr.request_status, dr.request_date,
+                           dr.delivery_type, dr.association_response,
+                           a.association_name,
+                           db.bag_id, db.sizes, db.target_gender,
+                           db.clothes_condition, db.short_description
+                    FROM DonationRequests dr
+                    INNER JOIN Associations a
+                        ON dr.association_id = a.association_id
+                    INNER JOIN DonationRequestBags drb
+                        ON dr.request_id = drb.request_id
+                    INNER JOIN DonationBags db
+                        ON drb.bag_id = db.bag_id
+                    WHERE dr.user_id = @user_id
+                    ORDER BY dr.request_date DESC", con))
+                {
+                    cmd.Parameters.AddWithValue("@user_id", userId);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            results.Add(new UserDonationRequestDto
+                            {
+                                RequestId           = Convert.ToInt32(reader["request_id"]),
+                                RequestStatus       = reader["request_status"].ToString()!,
+                                RequestDate         = Convert.ToDateTime(reader["request_date"]),
+                                DeliveryType        = reader["delivery_type"].ToString()!,
+                                AssociationResponse = reader["association_response"] == DBNull.Value
+                                                          ? null : reader["association_response"].ToString(),
+                                AssociationName     = reader["association_name"].ToString()!,
+                                BagId               = Convert.ToInt32(reader["bag_id"]),
+                                Sizes               = reader["sizes"] == DBNull.Value
+                                                          ? null : reader["sizes"].ToString(),
+                                TargetGender        = reader["target_gender"] == DBNull.Value
+                                                          ? null : reader["target_gender"].ToString(),
+                                ClothesCondition    = reader["clothes_condition"] == DBNull.Value
+                                                          ? null : reader["clothes_condition"].ToString(),
+                                ShortDescription    = reader["short_description"] == DBNull.Value
+                                                          ? null : reader["short_description"].ToString(),
+                            });
+                        }
+                    }
+                }
+            }
+
+            return results;
+        }
+
         public int CreateDonationRequest(DonationRequest request)
         {
             try

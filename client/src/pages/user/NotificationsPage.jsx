@@ -1,17 +1,43 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import { getDonationRequestsByUser } from "../../services/donationRequestService";
 
 export default function NotificationsPage() {
 
   const navigate = useNavigate();
-  const { sentDonations } = useUser();
+  const { user, sentDonations } = useUser();
 
-  // מפצלים לשני סוגים:
-  // 1. תרומות שנשלחו ועדיין לא תואם איסוף
-  const pendingPickup = sentDonations.filter(d => !d.pickupScheduled);
-  // 2. תרומות שיש להן צ'אט
+  const [approvedRequests, setApprovedRequests] = useState([]);
+
+  useEffect(() => {
+    if (!user?.userId) return;
+    getDonationRequestsByUser(user.userId)
+      .then(data => {
+        // Show only Approved requests in "ממתינות לתיאום איסוף"
+        const approved = data
+          .filter(r => r.requestStatus === "Approved")
+          .map(r => ({
+            id:   r.requestId,
+            date: new Date(r.requestDate).toLocaleDateString("he-IL"),
+            org:  { name: r.associationName },
+            bag:  {
+              size:      r.sizes           ?? "",
+              gender:    r.targetGender    ?? "",
+              condition: r.clothesCondition ?? "",
+            },
+          }));
+        setApprovedRequests(approved);
+      })
+      .catch(err => console.error("שגיאה בטעינת בקשות:", err));
+  }, [user?.userId]);
+
+  // צ'אטים — unchanged, still from sentDonations context
   const withChat = sentDonations.filter(d => d.hasChat);
+
+  // alias used by the existing JSX below
+  const pendingPickup = approvedRequests;
 
   return (
     <div className="min-h-screen bg-rw-bg pb-28 overflow-y-auto">
