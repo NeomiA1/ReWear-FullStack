@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
+import API_BASE_URL from "../../services/api";
 
 const DEMO_USER = {
   userId:       1,
@@ -63,7 +64,7 @@ export default function LoginPage() {
 
     try {
       const response = await fetch(
-        "https://rewear-api-ruppin-bkfvbye2fpdtfegm.israelcentral-01.azurewebsites.net/api/Users/login",
+        '${API_BASE_URL}/Users/login',
         {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
