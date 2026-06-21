@@ -60,5 +60,30 @@ public ActionResult Register([FromBody] User user)
 
             return Ok(user);
         }
+
+        [HttpPatch("{userId}/default-pickup-address")]
+        public ActionResult UpdateDefaultPickupAddress(int userId, [FromBody] UpdateDefaultPickupAddressDto dto)
+        {
+            if (userId <= 0)
+                return BadRequest("userId must be greater than 0");
+
+            if (dto == null)
+                return BadRequest("Request body is required");
+
+            try
+            {
+                _userDal.UpdateDefaultPickupAddress(userId, dto.DefaultPickupAddress);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+    }
+
+    public class UpdateDefaultPickupAddressDto
+    {
+        public string? DefaultPickupAddress { get; set; }
     }
 }

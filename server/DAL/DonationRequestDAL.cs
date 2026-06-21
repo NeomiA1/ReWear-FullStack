@@ -80,7 +80,9 @@ namespace RewearApi.DAL
                     {
                          { "@user_id", request.UserId },
                          { "@association_id", request.AssociationId },
-                         { "@delivery_type", request.DeliveryMethod }
+                         { "@delivery_type", request.DeliveryMethod },
+                         { "@contact_phone", (object?)request.ContactPhone ?? DBNull.Value },
+                         { "@pickup_address", (object?)request.PickupAddress ?? DBNull.Value }
                     };
 
                 SqlCommand cmd = CreateCommand(SP_CREATE_DONATION_REQUEST, con, paramDic);

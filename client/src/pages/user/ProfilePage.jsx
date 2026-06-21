@@ -8,6 +8,7 @@ import {
   linkBagToDonationRequest
 } from "../../services/donationRequestService";
 import { getAssociations } from "../../services/associationService";
+import { updateDefaultPickupAddress } from "../../services/userService";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -21,6 +22,12 @@ export default function ProfilePage() {
   const [sent, setSent] = useState(false);
   const [serverBags, setServerBags] = useState([]);
   const [orgs, setOrgs] = useState([]);
+
+  const [contactPhone,   setContactPhone]   = useState(user?.phone ?? "");
+  const [deliveryMethod, setDeliveryMethod] = useState("SelfArrival");
+  const [pickupAddress,  setPickupAddress]  = useState("");
+  const [saveAsDefault,  setSaveAsDefault]  = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     const loadBags = async () => {
@@ -52,32 +59,64 @@ export default function ProfilePage() {
     loadOrgs();
   }, [user]);
 
+  // איפוס פרטי המסירה בכל בחירת עמותה חדשה
+  useEffect(() => {
+    if (!selectedOrg) return;
+    setDeliveryMethod("SelfArrival");
+    setPickupAddress(user?.defaultPickupAddress ?? "");
+    setSaveAsDefault(false);
+  }, [selectedOrg]);
+
   const filteredOrgs = orgs.filter(org =>
     org.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleSendToOrg = async () => {
     if (!selectedBag || !selectedOrg || !user) return;
-  
+
+    if (!contactPhone.trim()) {
+      alert("נדרש טלפון ליצירת קשר");
+      return;
+    }
+    if (deliveryMethod === "Pickup" && !pickupAddress.trim()) {
+      alert("נדרשת כתובת לאיסוף");
+      return;
+    }
+
     try {
       const request = {
-        userId: user.userId,
-        bagId: selectedBag.id,
+        userId:        user.userId,
+        bagId:         selectedBag.id,
         associationId: selectedOrg.id,
-        deliveryMethod: "SelfArrival",
-        status: "Pending"
+        deliveryMethod,
+        status:        "Pending",
+        contactPhone:  contactPhone.trim(),
+        pickupAddress: deliveryMethod === "Pickup" ? pickupAddress.trim() : null,
       };
-  
+
       const result = await createDonationRequest(request);
-  
+
       await linkBagToDonationRequest(result.requestId, selectedBag.id);
-  
+
+      if (saveAsDefault && deliveryMethod === "Pickup") {
+        try {
+          await updateDefaultPickupAddress(user.userId, pickupAddress.trim());
+        } catch {
+          // best-effort — לא מפילים את הזרימה הראשית
+        }
+      }
+
+      setShowConfirmModal(false);
       setSent(true);
-  
+
       setTimeout(() => {
         setSent(false);
         setSelectedBag(null);
         setSelectedOrg(null);
+        setContactPhone(user?.phone ?? "");
+        setDeliveryMethod("SelfArrival");
+        setPickupAddress("");
+        setSaveAsDefault(false);
       }, 3000);
     } catch (error) {
       console.error(error);
@@ -100,6 +139,11 @@ export default function ProfilePage() {
       : "",
     index: index + 1,
   }));
+
+  // זמינות איסוף נקבעת מהגדרות העמותה (getOrgSettings), לא מאובייקט העמותה עצמו
+  const selectedOrgAcceptsPickup = selectedOrg
+    ? getOrgSettings(selectedOrg.name).acceptsPickup
+    : false;
 
   return (
     <div className="min-h-screen bg-rw-bg pb-28 overflow-y-auto">
@@ -177,7 +221,15 @@ export default function ProfilePage() {
             <div className="flex flex-col gap-2">
               {allBags.map((bag) => (
                 <div key={bag.id}
-                  onClick={() => setSelectedBag(bag)}
+                  onClick={() => {
+                    if (selectedBag?.id === bag.id) {
+                      setSelectedBag(null);
+                      setSelectedOrg(null);
+                      setShowConfirmModal(false);
+                    } else {
+                      setSelectedBag(bag);
+                    }
+                  }}
                   className={`bg-rw-card rounded-2xl p-4 shadow-sm
                              flex items-center justify-between cursor-pointer
                              border-2 transition-all
@@ -235,7 +287,15 @@ export default function ProfilePage() {
             {filteredOrgs.map((org) => {
               const settings = getOrgSettings(org.name);
               return (
-                <div key={org.id} onClick={() => setSelectedOrg(org)}
+                <div key={org.id}
+                  onClick={() => {
+                    if (!selectedBag) { alert("יש לבחור שק לפני בחירת עמותה"); return; }
+                    if (selectedOrg?.id === org.id) {
+                      setSelectedOrg(null);
+                    } else {
+                      setSelectedOrg(org);
+                    }
+                  }}
                   className={`bg-rw-card rounded-2xl shadow-sm p-4
                              flex flex-col gap-2 cursor-pointer border-2 transition-all
                              ${selectedOrg?.id === org.id
@@ -277,11 +337,42 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* כפתור שליחה */}
-        {selectedBag && selectedOrg && !sent && (
-          <div className="bg-rw-card rounded-2xl shadow-sm p-4">
-            <div className="flex flex-col gap-1 mb-4 items-end">
-              <p className="text-sm text-rw-title font-semibold">סיכום:</p>
+      </div>
+
+      {/* CTA צף — המשך לשליחה */}
+      {selectedBag && selectedOrg && !sent && !showConfirmModal && (
+        <div dir="rtl"
+          className="fixed bottom-20 inset-x-0 z-40 flex justify-center pointer-events-none">
+          <button onClick={() => setShowConfirmModal(true)}
+            className="pointer-events-auto bg-rw-btn text-white rounded-full
+                       px-8 py-3 text-sm font-semibold shadow-lg
+                       active:bg-rw-btn-hover">
+            המשך
+          </button>
+        </div>
+      )}
+
+      {/* מודאל תיאום מסירה ושליחה */}
+      {showConfirmModal && selectedBag && selectedOrg && (
+        <div
+          onClick={() => { setShowConfirmModal(false); setSelectedOrg(null); }}
+          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
+          <div
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-rw-card rounded-2xl shadow-xl w-full max-w-sm p-5
+                       flex flex-col gap-4 max-h-[85vh] overflow-y-auto text-right">
+
+            {/* כותרת + סגירה */}
+            <div className="flex items-center justify-between">
+              <button type="button" onClick={() => { setShowConfirmModal(false); setSelectedOrg(null); }}
+                className="text-rw-sub text-xl leading-none">✕</button>
+              <h3 className="font-bold text-rw-title text-base">תיאום מסירה</h3>
+            </div>
+
+            {/* סיכום */}
+            <div className="flex flex-col gap-1 text-right">
+              <p className="text-sm text-rw-title font-semibold">סיכום</p>
               <p className="text-xs text-rw-sub">
                 שק: {[selectedBag.size, selectedBag.gender, selectedBag.condition]
                   .filter(Boolean).join(" · ")}
@@ -290,17 +381,88 @@ export default function ProfilePage() {
                 עמותה: {selectedOrg.name} – {selectedOrg.city}
               </p>
             </div>
+
+            {/* שיטת מסירה — רק אם העמותה תומכת באיסוף */}
+            {selectedOrgAcceptsPickup && (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-bold text-rw-title text-right">שיטת מסירה</p>
+                <div className="flex gap-2">
+                  <button type="button"
+                    onClick={() => {
+                      setDeliveryMethod("Pickup");
+                      setPickupAddress(user?.defaultPickupAddress ?? "");
+                    }}
+                    className={`flex-1 rounded-xl py-2.5 text-xs font-semibold border
+                      ${deliveryMethod === "Pickup"
+                        ? "bg-rw-btn text-white border-rw-btn"
+                        : "bg-rw-input text-rw-sub border-rw-border"}`}>
+                    🚗 איסוף מהבית
+                  </button>
+                  <button type="button"
+                    onClick={() => setDeliveryMethod("SelfArrival")}
+                    className={`flex-1 rounded-xl py-2.5 text-xs font-semibold border
+                      ${deliveryMethod === "SelfArrival"
+                        ? "bg-rw-btn text-white border-rw-btn"
+                        : "bg-rw-input text-rw-sub border-rw-border"}`}>
+                    🏢 הגעה לעמותה
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* טלפון ליצירת קשר — תמיד */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-rw-title text-right">
+                טלפון ליצירת קשר
+              </label>
+              <input type="tel" dir="ltr" placeholder="מספר טלפון"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                className="border border-rw-border rounded-xl px-4 py-2.5 text-sm
+                           text-left outline-none bg-rw-input focus:border-rw-btn" />
+            </div>
+
+            {/* פרטי איסוף — רק במצב Pickup */}
+            {deliveryMethod === "Pickup" && (
+              <>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-rw-title text-right">
+                    כתובת לאיסוף
+                  </label>
+                  <input type="text" placeholder="רחוב, מספר ועיר"
+                    value={pickupAddress}
+                    onChange={(e) => setPickupAddress(e.target.value)}
+                    className="border border-rw-border rounded-xl px-4 py-2.5 text-sm
+                               text-right outline-none bg-rw-input focus:border-rw-btn" />
+                </div>
+
+                <label className="flex items-center justify-end gap-2 cursor-pointer">
+                  <span className="text-xs text-rw-sub">שמירת כתובת לפעם הבאה</span>
+                  <input type="checkbox"
+                    checked={saveAsDefault}
+                    onChange={(e) => setSaveAsDefault(e.target.checked)}
+                    className="w-4 h-4 accent-rw-btn" />
+                </label>
+              </>
+            )}
+
+            {/* שליחה */}
             <button onClick={handleSendToOrg}
               className="w-full bg-rw-btn text-white rounded-xl py-3
                          text-sm font-semibold flex items-center justify-center gap-2
                          active:bg-rw-btn-hover">
               <span>📦</span>
-              <span>שלחי תרומה ל{selectedOrg.name}</span>
+              <span>{deliveryMethod === "Pickup" ? "שליחה ותיאום איסוף" : "אישור שליחה"}</span>
+            </button>
+
+            {/* ביטול */}
+            <button type="button" onClick={() => { setShowConfirmModal(false); setSelectedOrg(null); }}
+              className="w-full text-rw-sub text-sm font-semibold py-1">
+              ביטול
             </button>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
 
       <BottomNav active="profile" />
     </div>

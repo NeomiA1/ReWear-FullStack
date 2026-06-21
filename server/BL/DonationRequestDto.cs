@@ -25,5 +25,8 @@ namespace RewearApi.BL
         public string DonorName { get; set; } = "";
         public string DonorEmail { get; set; } = "";
         public string? DonorPhone { get; set; }
+
+        public string? ContactPhone { get; set; }
+        public string? PickupAddress { get; set; }
     }
 }

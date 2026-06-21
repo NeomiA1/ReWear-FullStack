@@ -35,3 +35,16 @@ export async function loginUser(loginData) {
   const data = await response.json();
   return data;
 }
+
+export async function updateDefaultPickupAddress(userId, defaultPickupAddress) {
+  const response = await fetch(`${API_BASE_URL}/Users/${userId}/default-pickup-address`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ defaultPickupAddress }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+}

@@ -68,12 +68,38 @@ namespace RewearApi.DAL
                             user.City = reader["location"] == DBNull.Value ? null : reader["location"].ToString();
                             user.RegistrationMethod = reader["signup_method"].ToString();
                             user.UserType = reader["user_type"].ToString();
+                            user.DefaultPickupAddress = reader["default_pickup_address"] == DBNull.Value
+                                                            ? null : reader["default_pickup_address"].ToString();
 
                             return user;
                         }
                     }
 
                     return null;
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        private const string SP_UPDATE_DEFAULT_PICKUP_ADDRESS = "sp_UpdateUserDefaultPickupAddress";
+
+        public void UpdateDefaultPickupAddress(int userId, string? defaultPickupAddress)
+        {
+            try
+            {
+                using (SqlConnection con = Connect(CON_STR_NAME))
+                {
+                    var paramDic = new Dictionary<string, object>
+                    {
+                        { "@user_id", userId },
+                        { "@default_pickup_address", (object?)defaultPickupAddress ?? DBNull.Value }
+                    };
+
+                    SqlCommand cmd = CreateCommand(SP_UPDATE_DEFAULT_PICKUP_ADDRESS, con, paramDic);
+                    cmd.ExecuteNonQuery();
                 }
             }
             catch (Exception)

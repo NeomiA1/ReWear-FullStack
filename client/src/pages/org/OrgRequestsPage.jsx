@@ -33,6 +33,7 @@ function RequestCard({ req, onApprove, onReject }) {
     ? [req.bag.size, req.bag.gender, req.bag.condition].filter(Boolean).join(" · ")
     : "שק תרומה";
   const donorName  = req.donor || req.bag?.donorName || "תורם";
+  const deliveryLabel = req.deliveryMethod === "Pickup" ? "איסוף מהבית" : "הגעה עצמאית";
 
   return (
     <div className="bg-rw-card rounded-2xl shadow-sm p-4 flex flex-col gap-3">
@@ -54,6 +55,28 @@ function RequestCard({ req, onApprove, onReject }) {
                          px-2 py-0.5 rounded-full shrink-0">
           בקשה חדשה
         </span>
+      </div>
+
+      {/* פרטי מסירה */}
+      <div className="flex flex-col gap-1.5 border-t border-rw-border pt-3 text-right">
+        <div className="flex items-center justify-end gap-1.5">
+          <span className="text-xs text-rw-sub">{deliveryLabel}</span>
+          <span className="text-xs font-semibold text-rw-title">שיטת מסירה:</span>
+        </div>
+
+        {req.contactPhone && (
+          <div className="flex items-center justify-end gap-1.5">
+            <span className="text-xs text-rw-sub" dir="ltr">{req.contactPhone}</span>
+            <span className="text-xs font-semibold text-rw-title">טלפון ליצירת קשר:</span>
+          </div>
+        )}
+
+        {req.deliveryMethod === "Pickup" && req.pickupAddress && (
+          <div className="flex items-center justify-end gap-1.5">
+            <span className="text-xs text-rw-sub">{req.pickupAddress}</span>
+            <span className="text-xs font-semibold text-rw-title">כתובת לאיסוף:</span>
+          </div>
+        )}
       </div>
 
       {!showSchedule ? (
@@ -143,6 +166,9 @@ export default function OrgRequestsPage() {
             gender:    r.targetGender ?? "",
             condition: r.clothesCondition ?? "",
           },
+          deliveryMethod: r.deliveryType ?? "SelfArrival",
+          contactPhone:   r.contactPhone ?? "",
+          pickupAddress:  r.pickupAddress ?? "",
         }));
         setRequests(normalized);
       })
