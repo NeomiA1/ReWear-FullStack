@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { registerOrganization } from "../../services/associationService";
+import CityCombobox from "../../components/CityCombobox";
 
 const WORK_MODE_OPTIONS = [
   { value: "SecondHandStores", label: "חנויות יד שנייה"  },
@@ -24,6 +25,7 @@ export default function RegisterOrgPage() {
   const [email,        setEmail]        = useState("");
   const [password,     setPassword]     = useState("");
   const [address,      setAddress]      = useState("");
+  const [city,         setCity]         = useState("");
   const [logoPreview,  setLogoPreview]  = useState(null);
   const [workMode,     setWorkMode]     = useState("");
   const [deliveryMode, setDeliveryMode] = useState("");
@@ -41,7 +43,7 @@ export default function RegisterOrgPage() {
 
   const handleRegister = async () => {
     if (!orgName || !orgNumber || !contact || !phone ||
-        !email || !password || !address || !workMode || !deliveryMode) {
+        !email || !password || !address || !city || !workMode || !deliveryMode) {
       setError("אנא מלאי את כל השדות");
       return;
     }
@@ -59,7 +61,7 @@ export default function RegisterOrgPage() {
         email:           email,
         password:        password,
         phone:           phone,
-        city:            null,
+        city,
         associationName: orgName,
         orgNumber:       orgNumber,
         address:         address,
@@ -175,6 +177,8 @@ export default function RegisterOrgPage() {
             className="border border-rw-border rounded-xl px-4 py-3
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
+
+        <CityCombobox value={city} onChange={setCity} />
 
         {/* Address */}
         <div className="flex flex-col gap-1">

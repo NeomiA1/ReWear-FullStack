@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { registerUser } from "../../services/userService";
+import CityCombobox from "../../components/CityCombobox";
 
 export default function RegisterPrivatePage() {
 
@@ -9,13 +10,13 @@ export default function RegisterPrivatePage() {
   const [email, setEmail]       = useState("");
   const [phone, setPhone]       = useState("");
   const [password, setPassword] = useState("");
-  const [location, setLocation] = useState("");
+  const [city, setCity]         = useState("");
 
   const { setUser } = useUser();
   const navigate    = useNavigate();
 
   const handleRegister = async () => {
-    if (!fullName || !email || !phone || !password) {
+    if (!fullName || !email || !phone || !password || !city) {
       alert("אנא מלאי את כל השדות");
       return;
     }
@@ -32,7 +33,7 @@ export default function RegisterPrivatePage() {
         email,
         password,
         phone,
-        city: location,
+        city,
         registrationMethod: "Email"
       };
     
@@ -42,7 +43,7 @@ export default function RegisterPrivatePage() {
         fullName,
         email,
         phone,
-        location,
+        city,
         type: "private"
       });
     
@@ -116,13 +117,7 @@ export default function RegisterPrivatePage() {
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-rw-sub text-right">מיקום (רשות)</label>
-          <input type="text" placeholder="עיר / כתובת" value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="border border-rw-border rounded-xl px-4 py-3
-                       text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
-        </div>
+        <CityCombobox value={city} onChange={setCity} placeholder="עיר מגורים" />
 
         <button onClick={handleRegister}
           className="w-full bg-rw-btn text-white rounded-xl py-3

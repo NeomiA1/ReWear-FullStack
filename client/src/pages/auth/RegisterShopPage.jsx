@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { registerStore } from "../../services/storeService";
+import CityCombobox from "../../components/CityCombobox";
 
 // המסך זהה לעמותה, רק עם שינויים קטנים:
 // - כותרת שונה
@@ -17,6 +18,7 @@ export default function RegisterShopPage() {
   const [email, setEmail]             = useState(""); // אימייל
   const [password, setPassword]       = useState(""); // סיסמה
   const [address, setAddress]         = useState(""); // כתובת
+  const [city, setCity]               = useState(""); // עיר
   const [logoPreview, setLogoPreview] = useState(null); // תצוגה מקדימה של לוגו
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState(null);
@@ -31,7 +33,7 @@ export default function RegisterShopPage() {
   };
 
   const handleRegister = async () => {
-    if (!shopName || !bizNumber || !contact || !phone || !email || !password || !address) {
+    if (!shopName || !bizNumber || !contact || !phone || !email || !password || !address || !city) {
       setError("נא למלא את כל השדות");
       return;
     }
@@ -47,6 +49,7 @@ export default function RegisterShopPage() {
       await registerStore({
         storeName: shopName,
         address,
+        city,
         email,
         phone,
       });
@@ -155,6 +158,8 @@ export default function RegisterShopPage() {
             className="border border-rw-border rounded-xl px-4 py-3
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
+
+        <CityCombobox value={city} onChange={setCity} />
 
         {/* כתובת */}
         <div className="flex flex-col gap-1">

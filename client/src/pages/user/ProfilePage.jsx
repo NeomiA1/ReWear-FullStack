@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
@@ -9,6 +9,13 @@ import {
 } from "../../services/donationRequestService";
 import { getAssociations } from "../../services/associationService";
 import { updateDefaultPickupAddress } from "../../services/userService";
+import { scoreAssociation } from "../../utils/matchScore";
+
+function scoreBadgeClass(score) {
+  if (score >= 80) return "bg-green-50 text-green-600";
+  if (score >= 50) return "bg-amber-50 text-amber-600";
+  return "bg-red-50 text-red-400";
+}
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -44,11 +51,12 @@ export default function ProfilePage() {
       try {
         const data = await getAssociations();
         setOrgs(data.map(a => ({
-          id:    a.associationId,
-          name:  a.associationName,
-          city:  a.city  ?? "",
-          area:  a.area  ?? "",
-          types: a.associationType ?? a.description ?? "",
+          id:           a.associationId,
+          name:         a.associationName,
+          city:         a.city  ?? "",
+          area:         a.area  ?? "",
+          types:        a.associationType ?? a.description ?? "",
+          deliveryMode: a.deliveryMode ?? "",
         })));
       } catch (error) {
         console.error(error);
@@ -67,9 +75,26 @@ export default function ProfilePage() {
     setSaveAsDefault(false);
   }, [selectedOrg]);
 
-  const filteredOrgs = orgs.filter(org =>
-    org.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const displayedOrgs = useMemo(() => {
+    const filtered = orgs.filter(org =>
+      org.name.toLowerCase().includes(search.toLowerCase())
+    );
+
+    // No bag selected → no scores; keep existing order of orgs.
+    if (!selectedBag) {
+      return filtered.map(org => ({ ...org, score: null, reasons: [] }));
+    }
+
+    // Bridge the city/location naming gap on the user object.
+    const userCity = user?.city ?? user?.location ?? "";
+
+    return filtered
+      .map(org => {
+        const { score, reasons } = scoreAssociation(selectedBag, org, { city: userCity });
+        return { ...org, score, reasons };
+      })
+      .sort((a, b) => b.score - a.score);
+  }, [orgs, search, selectedBag, user]);
 
   const handleSendToOrg = async () => {
     if (!selectedBag || !selectedOrg || !user) return;
@@ -284,7 +309,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {filteredOrgs.map((org) => {
+            {displayedOrgs.map((org) => {
               const settings = getOrgSettings(org.name);
               return (
                 <div key={org.id}
@@ -302,15 +327,42 @@ export default function ProfilePage() {
                                ? "border-rw-btn"
                                : "border-transparent"}`}>
                   <div className="flex items-center justify-between">
-                    {selectedOrg?.id === org.id && (
-                      <span className="text-rw-btn text-lg">✓</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {selectedOrg?.id === org.id && (
+                        <span className="text-rw-btn text-lg">✓</span>
+                      )}
+                      {org.score != null && (
+                        <span className="relative group" tabIndex={0}>
+                          <span className={`text-xs px-2 py-1 rounded-full font-semibold
+                                           cursor-default ${scoreBadgeClass(org.score)}`}>
+                            {org.score}% התאמה
+                          </span>
+                          <span className="absolute top-full mt-1 right-0 z-10
+                                           w-max max-w-[200px] text-right
+                                           bg-rw-title text-white text-xs rounded-xl px-3 py-2
+                                           opacity-0 group-hover:opacity-100 group-focus-within:opacity-100
+                                           transition-opacity duration-150 pointer-events-none
+                                           whitespace-normal leading-relaxed">
+                            {org.reasons?.length > 0
+                              ? org.reasons.join(" · ")
+                              : "התאמה בסיסית לפי נתונים זמינים"}
+                          </span>
+                        </span>
+                      )}
+                    </div>
                     <span className="font-semibold text-rw-title text-sm">{org.name}</span>
                   </div>
                   <span className="text-xs text-rw-sub text-right">
                     📍 {org.city} · {org.area}
                   </span>
                   <span className="text-xs text-rw-sub text-right">{org.types}</span>
+                  {org.reasons?.length > 0 && (
+                    <div className="flex flex-wrap gap-2 justify-end mt-1">
+                      {org.reasons.map((r) => (
+                        <span key={r} className="text-xs text-rw-sub">• {r}</span>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2 justify-end mt-1">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium
                       ${settings.isAvailable
