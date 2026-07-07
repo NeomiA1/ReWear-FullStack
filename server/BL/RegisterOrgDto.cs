@@ -19,6 +19,9 @@ namespace RewearApi.BL
         public string WorkMode        { get; set; } = "";
         public string DeliveryMode    { get; set; } = "";
 
+        // Optional donation causes — Phase C. No validation: causes are optional.
+        public List<string>? CauseIds { get; set; }
+
         // ── Column length limits (from real DB schema) ────────────────────
         // Named constants so a schema change is a one-line edit here only.
         private const int MaxEmailLength           = 100;

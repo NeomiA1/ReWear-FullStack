@@ -6,6 +6,7 @@ import RegisterTypePage    from "./pages/auth/RegisterTypePage";
 import RegisterPrivatePage from "./pages/auth/RegisterPrivatePage";
 import RegisterOrgPage     from "./pages/auth/RegisterOrgPage";
 import RegisterShopPage    from "./pages/auth/RegisterShopPage";
+import RegisterCausesPage  from "./pages/auth/RegisterCausesPage";
 
 // User
 import HomePage             from "./pages/user/HomePage";
@@ -44,6 +45,7 @@ function App() {
         <Route path="/register/private"  element={<RegisterPrivatePage />} />
         <Route path="/register/org"      element={<RegisterOrgPage />} />
         <Route path="/register/shop"     element={<RegisterShopPage />} />
+        <Route path="/register/causes"   element={<RegisterCausesPage />} />
 
         {/* User */}
         <Route path="/home"              element={<HomePage />} />

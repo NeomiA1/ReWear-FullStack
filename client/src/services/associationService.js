@@ -16,6 +16,7 @@ import API_BASE_URL from "./api";
  * @param {string} data.address         - street address
  * @param {string} data.workMode        - 'SecondHandStores' | 'OwnStore' | 'PhysicalOnly'
  * @param {string} data.deliveryMode    - 'Pickup' | 'SelfArrival' | 'Both'
+ * @param {string[]} [data.causeIds]   - optional cause_id keys (Phase C)
  *
  * @returns {Promise<object>} The created user object:
  *   { userId, fullName, username, email, phone, city,

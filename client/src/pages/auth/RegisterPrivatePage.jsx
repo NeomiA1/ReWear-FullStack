@@ -37,18 +37,16 @@ export default function RegisterPrivatePage() {
         registrationMethod: "Email"
       };
     
-      await registerUser(newUser);
-    
+      const createdUser = await registerUser(newUser);
+
+      const { userType, ...userWithoutServerType } = createdUser;
       setUser({
-        fullName,
-        email,
-        phone,
-        city,
-        type: "private"
+        ...userWithoutServerType,
+        type: "private",
       });
     
-      navigate("/home");
-    
+      navigate("/register/causes");
+
     } catch (error) {
     
       console.error(error);

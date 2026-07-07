@@ -26,6 +26,8 @@ namespace RewearApi.BL
 
         public bool IsAvailable { get; set; } = true;
 
+        public List<string> CauseIds { get; set; } = new();
+
         public DateTime CreatedAt { get; set; }
 
         public List<string> Validate()

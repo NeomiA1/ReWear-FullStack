@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { registerOrganization } from "../../services/associationService";
 import CityCombobox from "../../components/CityCombobox";
+import { getCauses } from "../../services/causesService";
 
 const WORK_MODE_OPTIONS = [
   { value: "SecondHandStores", label: "חנויות יד שנייה"  },
@@ -29,11 +30,23 @@ export default function RegisterOrgPage() {
   const [logoPreview,  setLogoPreview]  = useState(null);
   const [workMode,     setWorkMode]     = useState("");
   const [deliveryMode, setDeliveryMode] = useState("");
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState(null);
+  const [loading,        setLoading]        = useState(false);
+  const [error,          setError]          = useState(null);
+  const [causes,         setCauses]         = useState([]);
+  const [selectedCauses, setSelectedCauses] = useState(() => new Set());
 
   const { setUser } = useUser();
   const navigate    = useNavigate();
+
+  useEffect(() => {
+    getCauses().then(setCauses).catch(() => setCauses([]));
+  }, []);
+
+  const toggleCause = (id) => setSelectedCauses(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
@@ -67,6 +80,7 @@ export default function RegisterOrgPage() {
         address:         address,
         workMode:        workMode,
         deliveryMode:    deliveryMode,
+        causeIds:        [...selectedCauses],
       });
 
    
@@ -216,6 +230,26 @@ export default function RegisterOrgPage() {
             ))}
           </select>
         </div>
+
+        {/* Causes — optional */}
+        {causes.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-rw-sub text-right">תחומי פעילות (רשות)</label>
+            <div className="grid grid-cols-2 gap-3">
+              {causes.map((c) => {
+                const on = selectedCauses.has(c.causeId);
+                return (
+                  <button type="button" key={c.causeId} onClick={() => toggleCause(c.causeId)}
+                    className={`rounded-xl px-4 py-3 text-sm text-right border transition-colors
+                      ${on ? "bg-rw-btn text-white border-rw-btn"
+                           : "bg-rw-input text-rw-title border-rw-border"}`}>
+                    {c.labelHe}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Submit */}
         <button onClick={handleRegister} disabled={loading}

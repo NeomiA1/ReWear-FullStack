@@ -10,6 +10,7 @@ namespace RewearApi.Controllers
     public class UsersController : ControllerBase
     {
         private readonly UserDAL _userDal = new UserDAL();
+        private readonly CauseDAL _causeDal = new CauseDAL();
 
       [HttpPost("register")]
 public ActionResult Register([FromBody] User user)
@@ -27,9 +28,9 @@ public ActionResult Register([FromBody] User user)
             return BadRequest(errors);
         }
 
-        _userDal.RegisterUser(user);
+        User createdUser = _userDal.RegisterUser(user);
 
-        return Ok("User registered successfully");
+        return Ok(createdUser);
     }
     catch (Exception ex)
     {
@@ -80,10 +81,52 @@ public ActionResult Register([FromBody] User user)
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpPost("{userId}/causes")]
+        public ActionResult SaveUserCauses(int userId, [FromBody] SaveUserCausesDto dto)
+        {
+            if (userId <= 0)
+                return BadRequest("userId must be greater than 0");
+
+            if (dto == null)
+                return BadRequest("Request body is required");
+
+            try
+            {
+                _causeDal.SaveUserCauses(userId, dto.CauseIds ?? new List<string>());
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("{userId}/causes")]
+        public ActionResult GetUserCauses(int userId)
+        {
+            if (userId <= 0)
+                return BadRequest("userId must be greater than 0");
+
+            try
+            {
+                List<string> causeIds = _causeDal.GetUserCauses(userId);
+                return Ok(causeIds);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 
     public class UpdateDefaultPickupAddressDto
     {
         public string? DefaultPickupAddress { get; set; }
+    }
+
+    public class SaveUserCausesDto
+    {
+        public List<string>? CauseIds { get; set; }
     }
 }

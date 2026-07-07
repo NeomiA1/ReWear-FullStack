@@ -43,6 +43,10 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
             {
                 using (SqlConnection con = Connect(CON_STR_NAME))
                 {
+                    string? causeCsv = (dto.CauseIds != null && dto.CauseIds.Count > 0)
+                        ? string.Join(",", dto.CauseIds)
+                        : null;
+
                     var paramDic = new Dictionary<string, object>
                     {
                         { "@full_name",          dto.FullName              },
@@ -56,6 +60,7 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
                         { "@city",               (object?)dto.City      ?? DBNull.Value },
                         { "@work_mode",          dto.WorkMode              },
                         { "@delivery_mode",      dto.DeliveryMode          },
+                        { "@cause_ids_csv",      (object?)causeCsv      ?? DBNull.Value },
                     };
 
                     SqlCommand cmd = CreateCommand(SP_REGISTER_ORGANIZATION, con, paramDic);
@@ -95,6 +100,10 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
 
         // ── Existing methods — unchanged ─────────────────────────────────
 
+        // DEPLOYMENT NOTE: The second query below references AssociationCauses.
+        // database/phase_c_association_causes.sql MUST be executed on Azure
+        // before this backend is run or deployed. Without it, GET /api/Associations
+        // will throw "Invalid object name 'AssociationCauses'".
         public List<Association> GetAllAssociations()
         {
             var results = new List<Association>();
@@ -114,6 +123,28 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
                             results.Add(MapAssociation(reader));
                     }
                 }
+
+                // Second query: bucket all AssociationCauses rows into a dictionary
+                // so each association gets its causeIds without N+1 queries.
+                var causesByAssoc = new Dictionary<int, List<string>>();
+                using (SqlCommand cmd = new SqlCommand(
+                    "SELECT association_id, cause_id FROM AssociationCauses", con))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            int aid = Convert.ToInt32(reader["association_id"]);
+                            if (!causesByAssoc.TryGetValue(aid, out var list))
+                                causesByAssoc[aid] = list = new List<string>();
+                            list.Add(reader["cause_id"].ToString()!);
+                        }
+                    }
+                }
+
+                foreach (var a in results)
+                    if (causesByAssoc.TryGetValue(a.AssociationId, out var list))
+                        a.CauseIds = list;
             }
 
             return results;

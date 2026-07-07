@@ -11,7 +11,7 @@ namespace RewearApi.DAL
 
         private const string SP_REGISTER_USER = "sp_RegisterUser";
 
-        public void RegisterUser(User user)
+        public User RegisterUser(User user)
         {
             try
             {
@@ -27,11 +27,30 @@ namespace RewearApi.DAL
                         { "@location", (object?)user.City ?? DBNull.Value },
                         { "@signup_method", user.RegistrationMethod },
                         { "@user_type", user.UserType }
-
                     };
 
                     SqlCommand cmd = CreateCommand(SP_REGISTER_USER, con, paramDic);
-                    cmd.ExecuteNonQuery();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return new User
+                            {
+                                UserId               = Convert.ToInt32(reader["user_id"]),
+                                FullName             = reader["full_name"].ToString(),
+                                Username             = reader["username"].ToString(),
+                                Email                = reader["email"].ToString(),
+                                Phone                = reader["phone"] == DBNull.Value ? null : reader["phone"].ToString(),
+                                City                 = reader["location"] == DBNull.Value ? null : reader["location"].ToString(),
+                                RegistrationMethod   = reader["signup_method"].ToString(),
+                                UserType             = reader["user_type"].ToString(),
+                                DefaultPickupAddress = reader["default_pickup_address"] == DBNull.Value ? null : reader["default_pickup_address"].ToString(),
+                            };
+                        }
+                    }
+
+                    throw new Exception("Registration failed: no user row returned.");
                 }
             }
             catch (Exception)

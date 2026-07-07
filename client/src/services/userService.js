@@ -9,13 +9,17 @@ export async function registerUser(user) {
     body: JSON.stringify(user)
   });
 
-  const data = await response.text();
+  const text = await response.text();
 
   if (!response.ok) {
-    throw data;
+    throw text;
   }
 
-  return data;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw "שגיאה בהרשמה: תגובת שרת לא תקינה";
+  }
 }
 
 export async function loginUser(loginData) {
