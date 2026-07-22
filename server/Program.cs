@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using RewearApi.BackgroundServices;
 
 namespace RewearApi
 {
@@ -31,6 +32,15 @@ namespace RewearApi
 
             builder.Services
                 .AddSwaggerGen();
+
+
+            /*
+            Runs automatically and expires donation requests
+            that have not been handled for 14 days.
+            */
+            builder.Services.AddHostedService<
+                DonationRequestExpirationService
+            >();
 
 
             builder.Services.AddCors(options =>

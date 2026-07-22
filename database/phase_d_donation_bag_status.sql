@@ -487,3 +487,317 @@ BEGIN
     SELECT CAST(SCOPE_IDENTITY() AS INT);
 END
 GO
+/* =========================================================
+   12. Expire donation requests after 14 days
+   ========================================================= */
+
+
+/*
+Add an active/inactive marker to the connection between
+a donation request and a donation bag.
+
+This allows us to keep the request history while releasing
+the bag so it can be sent to another association.
+*/
+IF COL_LENGTH(
+    'dbo.DonationRequestBags',
+    'is_active'
+) IS NULL
+BEGIN
+    ALTER TABLE dbo.DonationRequestBags
+    ADD is_active BIT NOT NULL
+        CONSTRAINT DF_DonationRequestBags_IsActive
+        DEFAULT 1;
+END
+GO
+
+
+/*
+Remove the previous unique index, because it prevents a bag
+from ever being linked to another request—even after expiry.
+*/
+IF EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = 'UX_DonationRequestBags_BagId'
+      AND object_id =
+          OBJECT_ID('dbo.DonationRequestBags')
+)
+BEGIN
+    DROP INDEX UX_DonationRequestBags_BagId
+    ON dbo.DonationRequestBags;
+END
+GO
+
+
+/*
+A bag may have only one active donation request,
+but it may retain inactive historical requests.
+*/
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name =
+        'UX_DonationRequestBags_ActiveBagId'
+      AND object_id =
+          OBJECT_ID('dbo.DonationRequestBags')
+)
+BEGIN
+    CREATE UNIQUE INDEX
+        UX_DonationRequestBags_ActiveBagId
+    ON dbo.DonationRequestBags(bag_id)
+    WHERE is_active = 1;
+END
+GO
+
+
+/*
+Update the procedure that connects a bag to a request.
+Only an active connection prevents another submission.
+*/
+CREATE OR ALTER PROCEDURE dbo.sp_LinkBagToDonationRequest
+    @request_id INT,
+    @bag_id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+
+        DECLARE @association_id INT;
+        DECLARE @current_association_id INT;
+        DECLARE @current_status NVARCHAR(50);
+
+        SELECT
+            @association_id = association_id
+        FROM dbo.DonationRequests
+        WHERE request_id = @request_id;
+
+        IF @association_id IS NULL
+        BEGIN
+            THROW 50010,
+                  'Donation request does not exist.',
+                  1;
+        END;
+
+
+        SELECT
+            @current_association_id =
+                assigned_association_id,
+
+            @current_status =
+                donation_status
+
+        FROM dbo.DonationBags
+            WITH (UPDLOCK, HOLDLOCK)
+
+        WHERE bag_id = @bag_id;
+
+
+        IF @current_status IS NULL
+        BEGIN
+            THROW 50011,
+                  'Donation bag does not exist.',
+                  1;
+        END;
+
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.DonationRequestBags
+            WHERE bag_id = @bag_id
+              AND is_active = 1
+        )
+        BEGIN
+            THROW 50012,
+                  'Donation bag has already been sent to an association.',
+                  1;
+        END;
+
+
+        IF @current_association_id IS NOT NULL
+           OR @current_status IN
+           (
+               N'WaitingForAssociation',
+               N'Accepted',
+               N'PickupScheduled',
+               N'Completed'
+           )
+        BEGIN
+            THROW 50012,
+                  'Donation bag has already been sent to an association.',
+                  1;
+        END;
+
+
+        INSERT INTO dbo.DonationRequestBags
+        (
+            request_id,
+            bag_id,
+            is_active
+        )
+        VALUES
+        (
+            @request_id,
+            @bag_id,
+            1
+        );
+
+
+        UPDATE dbo.DonationBags
+        SET
+            assigned_association_id =
+                @association_id,
+
+            donation_status =
+                N'WaitingForAssociation'
+
+        WHERE bag_id = @bag_id;
+
+
+        COMMIT TRANSACTION;
+
+    END TRY
+
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+
+    END CATCH
+END
+GO
+
+
+/*
+Automatically expires requests that have remained pending
+for at least 14 days.
+
+The linked bags are released and can then be sent to
+another association.
+*/
+CREATE OR ALTER PROCEDURE dbo.sp_ExpireDonationRequests
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+
+        DECLARE @ExpiredRequests TABLE
+        (
+            request_id INT PRIMARY KEY
+        );
+
+
+        /*
+        Find requests that are still waiting after 14 days.
+        */
+        INSERT INTO @ExpiredRequests
+        (
+            request_id
+        )
+        SELECT
+            request_id
+        FROM dbo.DonationRequests
+            WITH (UPDLOCK, HOLDLOCK)
+        WHERE request_status IN
+        (
+            N'Pending',
+            N'PENDING',
+            N'WaitingForAssociation'
+        )
+        AND request_date <=
+            DATEADD(DAY, -14, GETDATE());
+
+
+        /*
+        Mark the donation requests as expired.
+        */
+        UPDATE dr
+        SET
+            dr.request_status = N'Expired',
+
+            dr.association_response =
+                COALESCE(
+                    dr.association_response,
+                    N'The request expired after 14 days without a response.'
+                ),
+
+            dr.response_date = GETDATE()
+
+        FROM dbo.DonationRequests dr
+
+        INNER JOIN @ExpiredRequests er
+            ON dr.request_id = er.request_id;
+
+
+        /*
+        Release the bags from the associations.
+        */
+        UPDATE db
+        SET
+            db.assigned_association_id = NULL,
+            db.donation_status = N'Draft'
+
+        FROM dbo.DonationBags db
+
+        INNER JOIN dbo.DonationRequestBags drb
+            ON db.bag_id = drb.bag_id
+
+        INNER JOIN @ExpiredRequests er
+            ON drb.request_id = er.request_id
+
+        WHERE drb.is_active = 1;
+
+
+        /*
+        Keep the history, but mark the old connection inactive.
+        */
+        UPDATE drb
+        SET
+            drb.is_active = 0
+
+        FROM dbo.DonationRequestBags drb
+
+        INNER JOIN @ExpiredRequests er
+            ON drb.request_id = er.request_id
+
+        WHERE drb.is_active = 1;
+
+
+        /*
+        Return the number of expired requests.
+        */
+        SELECT COUNT(*) AS expired_requests_count
+        FROM @ExpiredRequests;
+
+
+        COMMIT TRANSACTION;
+
+    END TRY
+
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+
+    END CATCH
+END
+GO
