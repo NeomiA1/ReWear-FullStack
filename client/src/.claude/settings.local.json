@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(pandoc -t markdown \"C:\\\\Users\\\\Tali\\\\OneDrive\\\\����� ������\\\\���� ������ - ����.docx\")",
+      "Bash(ls -la \"/c/Users/Tali/Downloads/\" 2>&1 | head -20)",
+      "Bash(where.exe py *)",
+      "Bash(py --version)",
+      "Bash(py -c \"print\\(1+1\\)\")",
+      "Bash(npm --version)",
+      "Bash(mkdir -p /c/Users/Tali/AppData/Local/Temp/claude/C--Users-Tali-Downloads-ReWear-FullStack-main--1--ReWear-FullStack-main-client-src/465779d5-0882-4563-bdd8-297da0976145/scratchpad)",
+      "Read(//c/Users/Tali/AppData/Local/Temp/claude/C--Users-Tali-Downloads-ReWear-FullStack-main--1--ReWear-FullStack-main-client-src/465779d5-0882-4563-bdd8-297da0976145/scratchpad/**)",
+      "Bash(npm install *)",
+      "Bash(node read_xlsx.js)",
+      "Bash(node read_docx.js)",
+      "Bash(npm run *)"
+    ]
+  }
+}

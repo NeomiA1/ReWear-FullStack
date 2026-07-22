@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-rw-bg: #f0ede8;
+  --color-rw-card: #ffffff;
+  --color-rw-logo: #7a9e6e;
+  --color-rw-btn: #6b8f5e;
+  --color-rw-btn-hover: #5a7a4e;
+  --color-rw-title: #1a2340;
+  --color-rw-sub: #6b7280;
+  --color-rw-input: #f5f3f0;
+  --color-rw-border: #e5e0d8;
+  --color-rw-green: #6b8f5e;
+}
+
+* {
+  direction: rtl;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #f0ede8;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+#root {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background-color: #f0ede8;
+}
