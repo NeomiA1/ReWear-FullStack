@@ -2,12 +2,25 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
-import { getDonationBagsByUserId } from "../../services/donationBagService";
+import {
+  getDonationBagsByUserId,
+  updateDonationBagStatus
+} from "../../services/donationBagService";
 import {
   createDonationRequest,
   linkBagToDonationRequest
 } from "../../services/donationRequestService";
 import { checkAssociationExists } from "../../services/associationService";
+
+const BAG_STATUS_LABELS = {
+  Draft:                  { label: "טיוטה",              color: "bg-gray-100 text-gray-500"  },
+  Published:              { label: "פורסם",              color: "bg-blue-50 text-blue-500"   },
+  WaitingForAssociation:  { label: "ממתין לתגובת עמותה",  color: "bg-amber-50 text-amber-500" },
+  Accepted:               { label: "אושר ✓",              color: "bg-green-50 text-green-600" },
+  Rejected:               { label: "נדחה",                color: "bg-red-50 text-red-400"     },
+  PickupScheduled:        { label: "תואם איסוף",          color: "bg-purple-50 text-purple-500" },
+  Completed:              { label: "הושלם ✓",             color: "bg-green-50 text-green-600" },
+};
 
 // TODO(server): these are placeholder organizations for browsing — there is
 // no GET /api/associations (list/search) endpoint yet, so the client can't
@@ -39,22 +52,26 @@ export default function ProfilePage() {
   const [serverBags, setServerBags] = useState([]);
   // שקים שכבר נשלחו לעמותה בסשן הנוכחי — מונע שליחה כפולה של אותו שק
   const [sentBagIds, setSentBagIds] = useState([]);
+  const [loadingBags, setLoadingBags] = useState(false);
+  const [bagsError, setBagsError] = useState(null);
 
   useEffect(() => {
     const loadBags = async () => {
       if (!user || !user.userId) return;
-  
+
+      setLoadingBags(true);
+      setBagsError(null);
       try {
         const bagsFromServer = await getDonationBagsByUserId(user.userId);
-
-        console.log("Bags from API:", bagsFromServer);
-        
         setServerBags(bagsFromServer);
       } catch (error) {
         console.error(error);
+        setBagsError("לא הצלחנו לטעון את השקים שלך. בדקי את החיבור ונסי שוב.");
+      } finally {
+        setLoadingBags(false);
       }
     };
-  
+
     loadBags();
   }, [user]);
 
@@ -100,6 +117,29 @@ export default function ProfilePage() {
 
         const result = await createDonationRequest(request);
         await linkBagToDonationRequest(result.requestId, selectedBag.id);
+
+        // מעדכנים את סטטוס השק בשרת ל"ממתין לתגובת עמותה" — קריאה אמיתית,
+        // עצמאית, מול Azure. אם זה נכשל, הבקשה עצמה כבר נשלחה בהצלחה, לא
+        // מבטלים את הפעולה בגללו.
+        //
+        // TODO(server): אין עדיין דרך לעמותה לגלות את הבקשה הזו ולהגיב לה
+        // מול השרת — חסר endpoint כמו
+        //   GET /api/DonationRequests/association/{associationId}
+        // שיחזיר לעמותה את רשימת הבקשות שהופנו אליה (requestId, bagId,
+        // פרטי תורם מותרים, סטטוס, הודעת תורם, תגובת עמותה, תאריך יצירה).
+        // בלי זה, אין דרך אמיתית ומשותפת (בין דפדפנים/מכשירים/משתמשים)
+        // לעמותה לדעת שהבקשה הזו קיימת בכלל — ולכן לא הוספנו שום מנגנון
+        // מקומי (localStorage וכד') שמדמה "גילוי" כזה; זה היה נראה כאילו
+        // התהליך שלם בעוד שהוא בפועל חסום בצד השרת.
+        try {
+          await updateDonationBagStatus(selectedBag.id, "WaitingForAssociation");
+          setServerBags(prev => prev.map(b =>
+            b.bagId === selectedBag.id ? { ...b, status: "WaitingForAssociation" } : b
+          ));
+        } catch (statusError) {
+          console.error("bag status update failed:", statusError);
+        }
+
         setSentAsDemo(false);
       } else {
         // עמותה זו אינה רשומה במסד הנתונים האמיתי (ראו TODO(server) למעלה) —
@@ -137,6 +177,7 @@ export default function ProfilePage() {
     gender: bag.targetGender || "",
     condition: bag.clothesCondition || "",
     description: bag.shortDescription || "",
+    status: bag.status || "Draft",
     imagePreview: null,
     donationDate: bag.createdAt
       ? new Date(bag.createdAt).toLocaleDateString("he-IL")
@@ -211,7 +252,20 @@ export default function ProfilePage() {
             שלב 1 – בחרי שק לשליחה
           </h2>
 
-          {allBags.length === 0 ? (
+          {loadingBags ? (
+            <div className="bg-rw-card rounded-2xl p-5 text-center shadow-sm">
+              <p className="text-3xl mb-2">⏳</p>
+              <p className="text-rw-sub text-sm">טוענת את השקים שלך...</p>
+              <p className="text-rw-sub text-[11px] mt-1">
+                אם זו הפעם הראשונה היום, זה עשוי לקחת עד 30 שניות
+              </p>
+            </div>
+          ) : bagsError ? (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center">
+              <p className="text-3xl mb-2">⚠️</p>
+              <p className="text-red-600 text-sm">{bagsError}</p>
+            </div>
+          ) : allBags.length === 0 ? (
             <div className="bg-rw-card rounded-2xl p-5 text-center shadow-sm">
               <p className="text-3xl mb-2">🛍️</p>
               <p className="text-rw-sub text-sm">עדיין לא העלית שקים</p>
@@ -245,9 +299,15 @@ export default function ProfilePage() {
                     )}
 
                     <div className="flex flex-col items-end gap-1 flex-1">
-                      <span className="font-semibold text-rw-title text-sm">
-                        שק {bag.index}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
+                          ${(BAG_STATUS_LABELS[bag.status] || BAG_STATUS_LABELS.Draft).color}`}>
+                          {(BAG_STATUS_LABELS[bag.status] || BAG_STATUS_LABELS.Draft).label}
+                        </span>
+                        <span className="font-semibold text-rw-title text-sm">
+                          שק {bag.index}
+                        </span>
+                      </div>
                       <span className="text-xs text-rw-sub">
                         {[bag.size, bag.gender, bag.condition].filter(Boolean).join(" · ")}
                       </span>
@@ -360,6 +420,11 @@ export default function ProfilePage() {
               <span>{sending ? "⏳" : "📦"}</span>
               <span>{sending ? "שולחת..." : `שלחי תרומה ל${selectedOrg.name}`}</span>
             </button>
+            {sending && (
+              <p className="text-rw-sub text-[11px] text-center mt-2">
+                אם זו הפעם הראשונה היום, החיבור לשרת עשוי לקחת עד 30 שניות
+              </p>
+            )}
           </div>
         )}
 

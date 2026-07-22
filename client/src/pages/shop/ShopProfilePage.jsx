@@ -20,25 +20,22 @@ function Toggle({ value, onChange }) {
 
 export default function ShopProfilePage() {
   const navigate = useNavigate();
-  const { user, logout } = useUser();
+  const { user, logout, getShopSettings, updateShopSettings } = useUser();
 
   const shopName = user?.shopName || user?.fullName || "החנות שלי";
   const shopCity = user?.city || "";
 
-  // הגדרות זמינות
-  const [isAvailable,   setIsAvailable]   = useState(true);
-  const [acceptsPickup, setAcceptsPickup] = useState(true);
-  const [itemTypes,     setItemTypes]     = useState({
-    women:    true,
-    men:      true,
-    children: true,
-    shoes:    false,
-    bags:     false,
-  });
+  // הגדרות זמינות — נטענות מ-Context/localStorage (ראו getShopSettings ב-
+  // UserContext.jsx, אותו דפוס בדיוק כמו getOrgSettings). אין endpoint
+  // בשרת לזה (SecondHandStores אין לו עמודות הגדרות/זמינות בכלל).
+  const initialSettings = getShopSettings(shopName);
+  const [isAvailable,   setIsAvailable]   = useState(initialSettings.isAvailable);
+  const [acceptsPickup, setAcceptsPickup] = useState(initialSettings.acceptsPickup);
+  const [itemTypes,     setItemTypes]     = useState(initialSettings.itemTypes);
 
   const handleSave = () => {
+    updateShopSettings(shopName, { isAvailable, acceptsPickup, itemTypes });
     alert("ההגדרות נשמרו בהצלחה ✅");
-    // בעתיד: await api.patch('/shop/settings', { isAvailable, acceptsPickup, itemTypes })
   };
 
   const toggleItemType = (key) => {

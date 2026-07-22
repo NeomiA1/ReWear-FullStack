@@ -1,19 +1,4 @@
-// src/pages/CollaborationChatPage.jsx
-//
-// ─── הסבר ───────────────────────────────────────────────────────────────────
-//
-// צ'אט בין עמותה לחנות אחרי אישור שיתוף פעולה.
-//
-// איך הצ'אט נפתח?
-//   עמותה: לוחצת "פתחי צ'אט" ב-OrgHomePage → navigate("/org/chat/:id")
-//   חנות:  לוחצת "פתחי צ'אט" ב-ShopPartnersPage → navigate("/shop/chat/:id")
-//
-// sender נקבע לפי ה-URL:
-//   /org/chat/:id  → sender = "org"
-//   /shop/chat/:id → sender = "shop"
-//
-// כפתור "שלחי פרטי איסוף לחנות":
-//   זמין רק לעמותה, שולח הודעה אוטומטית עם פרטי האיסוף האחרון
+
 
 import { useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -25,7 +10,7 @@ export default function CollaborationChatPage() {
   const location   = useLocation();
   const { collaborations, sendCollabMessage, sentDonations } = useUser();
 
-  // קובע מי שולח לפי ה-URL
+ 
   const isOrg   = location.pathname.startsWith("/org/chat");
   const sender  = isOrg ? "org" : "shop";
   const senderLabel = isOrg ? "העמותה" : "החנות";
@@ -39,7 +24,7 @@ export default function CollaborationChatPage() {
     setText("");
   };
 
-  // כפתור "שלחי פרטי איסוף" – שולח הודעה אוטומטית עם פרטי האיסוף האחרון
+  
   const handleSendPickupDetails = () => {
     const approved = sentDonations.filter(d =>
       d.status === "approved" || d.status === "scheduled"
@@ -71,12 +56,34 @@ export default function CollaborationChatPage() {
     );
   }
 
+  // הצ'אט נגיש רק אחרי אישור שיתוף הפעולה — גם אם ניגשים ישירות ל-URL
+  // (למשל בקשה ממתינה או שנדחתה), לא נפתח כאן שום צ'אט.
+  if (collab.status !== "approved") {
+    const isRejected = collab.status === "rejected";
+    return (
+      <div className="min-h-screen bg-rw-bg flex items-center justify-center px-6">
+        <div className="bg-rw-card rounded-2xl p-6 text-center shadow-sm">
+          <p className="text-3xl mb-2">{isRejected ? "🚫" : "⏳"}</p>
+          <p className="text-rw-title font-semibold mb-1">
+            {isRejected
+              ? "בקשת שיתוף הפעולה נדחתה"
+              : "הצ׳אט ייפתח לאחר אישור שיתוף הפעולה"}
+          </p>
+          <button onClick={() => navigate(-1)}
+            className="mt-4 bg-rw-btn text-white rounded-xl px-4 py-2 text-sm">
+            חזרה
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const messages = collab.messages || [];
 
   return (
     <div className="min-h-screen bg-rw-bg flex flex-col">
 
-      {/* Header */}
+    
       <div className="bg-rw-card px-5 pt-6 pb-4 shadow-sm
                       flex items-center gap-3 sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="text-rw-sub text-2xl shrink-0">
@@ -98,7 +105,6 @@ export default function CollaborationChatPage() {
         </div>
       </div>
 
-      {/* הודעות */}
       <div className="flex-1 px-4 py-4 flex flex-col gap-3 overflow-y-auto pb-32">
 
         {messages.length === 0 && (
@@ -127,11 +133,11 @@ export default function CollaborationChatPage() {
         })}
       </div>
 
-      {/* שליחת הודעה */}
+    
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto
                       bg-rw-card border-t border-rw-border px-4 py-3 flex flex-col gap-2">
 
-        {/* כפתור שליחת פרטי איסוף – רק לעמותה */}
+    
         {isOrg && (
           <button onClick={handleSendPickupDetails}
             className="w-full bg-rw-input text-rw-title rounded-xl py-2

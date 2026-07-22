@@ -90,8 +90,8 @@ export default function ShopPartnersPage() {
   const navigate = useNavigate();
   const { collaborations, updateCollaboration } = useUser();
 
-  // מסנן רק בקשות שהגיעו לחנות הזו
-  // כרגע מציג הכל (כי אין auth אמיתי)
+  // collaborations שמגיע מה-Context כבר מסונן לחנות המחוברת בלבד
+  // (ראו scopedToCurrentUser / myCollaborations ב-UserContext.jsx)
   const pending  = collaborations.filter(c => c.status === "pending");
   const approved = collaborations.filter(c => c.status === "approved");
   const rejected = collaborations.filter(c => c.status === "rejected");

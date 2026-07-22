@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav"; // ✅ מהקובץ המשותף
+import { checkAssociationExists, updateAssociationAvailability } from "../../services/associationService";
 
 function Toggle({ value, onChange }) {
   return (
@@ -26,10 +27,29 @@ export default function OrgProfilePage() {
   const [isAvailable,   setIsAvailable]   = useState(currentSettings.isAvailable);
   const [acceptsPickup, setAcceptsPickup] = useState(currentSettings.acceptsPickup);
   const [acceptsDropoff,setAcceptsDropoff]= useState(currentSettings.acceptsDropoff);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // תמיד שומרים מקומית — זו ההתנהגות הקיימת, וממשיכה לעבוד גם אם העמותה
+    // עדיין לא רשומה במסד הנתונים האמיתי.
     updateOrgSettings(orgName, { isAvailable, acceptsPickup, acceptsDropoff });
-    alert("ההגדרות נשמרו בהצלחה ✅");
+
+    setSaving(true);
+    try {
+      // TODO(server): הסשן לא כולל את ה-associationId האמיתי (register/login
+      // מחזירים רק שדות של Users) — מנסים לאתר אותו לפי שם+מייל, אותו דפוס
+      // שכבר משמש לשליחת תרומה אמיתית ב-ProfilePage.jsx.
+      const real = await checkAssociationExists(orgName, user?.email || "");
+      if (real) {
+        await updateAssociationAvailability(real.associationId, isAvailable);
+      }
+      alert("ההגדרות נשמרו בהצלחה ✅");
+    } catch (err) {
+      console.error(err);
+      alert("ההגדרות נשמרו מקומית, אך אירעה שגיאה בעדכון השרת.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -114,10 +134,11 @@ export default function OrgProfilePage() {
               </div>
             </div>
           </div>
-          <button onClick={handleSave}
+          <button onClick={handleSave} disabled={saving}
             className="w-full bg-rw-btn text-white rounded-xl py-3
-                       text-sm font-semibold mt-5 active:bg-rw-btn-hover">
-            שמירת הגדרות
+                       text-sm font-semibold mt-5 active:bg-rw-btn-hover
+                       disabled:opacity-50">
+            {saving ? "שומרת..." : "שמירת הגדרות"}
           </button>
         </div>
       </div>

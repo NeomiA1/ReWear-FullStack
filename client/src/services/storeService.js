@@ -49,3 +49,22 @@ export async function registerStore(data) {
 
   return text;
 }
+
+/**
+ * Real stores near a given association (real DB data, not the client's
+ * hardcoded demo list).
+ *
+ * @param {number} associationId - real Association PK (from checkAssociationExists)
+ * @returns {Promise<Array<{storeId, storeName, address, city, area, email, phone, description, createdAt}>>}
+ * @throws {string} user-facing error message
+ */
+export async function getNearbyStores(associationId) {
+  const response = await fetch(`${API_BASE_URL}/Stores/nearby/${associationId}`);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return response.json();
+}

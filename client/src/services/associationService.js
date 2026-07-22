@@ -82,3 +82,28 @@ export async function checkAssociationExists(name, email) {
 
   return response.json();
 }
+
+/**
+ * Updates an Association's availability-to-receive-donations flag.
+ *
+ * @param {number} associationId - real Association PK (from checkAssociationExists)
+ * @param {boolean} isAvailable
+ * @throws {string} user-facing error message
+ */
+export async function updateAssociationAvailability(associationId, isAvailable) {
+  const response = await fetch(
+    `${API_BASE_URL}/Associations/${associationId}/availability`,
+    {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(isAvailable),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return response.text();
+}

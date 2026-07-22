@@ -2,8 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
+import { checkAssociationExists } from "../../services/associationService";
+import { getNearbyStores } from "../../services/storeService";
 
-const AVAILABLE_STORES = [
+// רשימת גיבוי — משמשת רק אם העמותה טרם רשומה במסד הנתונים האמיתי, או שאין
+// חנויות אמיתיות בקרבתה, או שהקריאה לשרת נכשלה. ברגע שיש תשובה אמיתית
+// מ-Azure, היא מציגה את הרשימה האמיתית במקום זו (ראו loadingStores/storesSource).
+const DEMO_STORES = [
   { id: 1, name: "חנות חמד",      city: "חיפה",    items: "בגדים ונעליים"         },
   { id: 2, name: "יד שנייה בטוב", city: "תל אביב", items: "ציוד תינוקות"          },
   { id: 3, name: "מסע בזמן",      city: "ירושלים", items: "בגדים, ספרים, כלי בית" },
@@ -50,6 +55,58 @@ export default function OrgHomePage() {
 
   const savedUser = JSON.parse(localStorage.getItem("rewear_user") || "{}");
   const orgName   = user?.orgName || savedUser?.orgName || 'עמותת "לב חם"';
+
+  // ── חנויות אמיתיות בקרבת העמותה (Azure) — עם נפילה לרשימת הדגמה ─────────
+  const [storeList, setStoreList] = useState(DEMO_STORES);
+  const [storesSource, setStoresSource] = useState("demo"); // "demo" | "real"
+  const [loadingStores, setLoadingStores] = useState(true);
+  const [storesError, setStoresError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadRealStores = async () => {
+      setLoadingStores(true);
+      setStoresError(null);
+
+      try {
+        // TODO(server): הסשן לא כולל את ה-associationId האמיתי — מנסים
+        // לאתר אותו לפי שם+מייל, אותו דפוס כמו ב-OrgProfilePage/ProfilePage.
+        const realAssociation = await checkAssociationExists(orgName, user?.email || "");
+
+        if (!realAssociation) {
+          if (!cancelled) setStoresSource("demo");
+          return;
+        }
+
+        const realStores = await getNearbyStores(realAssociation.associationId);
+        if (cancelled) return;
+
+        if (!realStores || realStores.length === 0) {
+          setStoresSource("demo");
+        } else {
+          setStoreList(realStores.map(s => ({
+            id:    s.storeId,
+            name:  s.storeName,
+            city:  s.city || "",
+            items: s.description || s.area || "",
+          })));
+          setStoresSource("real");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error(err);
+          setStoresError("לא הצלחנו לטעון חנויות מהשרת כרגע. מוצגת רשימת הדגמה.");
+          setStoresSource("demo");
+        }
+      } finally {
+        if (!cancelled) setLoadingStores(false);
+      }
+    };
+
+    loadRealStores();
+    return () => { cancelled = true; };
+  }, [orgName, user?.email]);
 
   // ── KPI מחושב מ-Context ───────────────────────────────────────────────────
   const donations     = sentDonations || [];
@@ -218,6 +275,32 @@ export default function OrgHomePage() {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
+
+              {loadingStores && (
+                <div className="bg-rw-card rounded-2xl p-4 text-center shadow-sm">
+                  <p className="text-2xl mb-1">⏳</p>
+                  <p className="text-rw-sub text-xs">מחפשת חנויות אמיתיות בקרבתך...</p>
+                  <p className="text-rw-sub text-[10px] mt-1">
+                    אם זו הפעם הראשונה היום, זה עשוי לקחת עד 30 שניות
+                  </p>
+                </div>
+              )}
+
+              {!loadingStores && storesError && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+                  <p className="text-red-600 text-xs text-right">{storesError}</p>
+                </div>
+              )}
+
+              {!loadingStores && storesSource === "demo" && !storesError && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2">
+                  <p className="text-amber-600 text-[11px] text-right">
+                    מוצגת רשימת הדגמה — עמותה זו טרם רשומה במערכת האמיתית, או שאין
+                    חנויות אמיתיות רשומות בקרבתה כרגע
+                  </p>
+                </div>
+              )}
+
               <div className="bg-rw-card rounded-2xl shadow-sm px-4 py-2
                               flex items-center gap-2 border border-rw-border">
                 <span className="text-rw-sub text-base">🔍</span>
@@ -233,7 +316,7 @@ export default function OrgHomePage() {
                 )}
               </div>
 
-              {AVAILABLE_STORES.filter((store) => {
+              {storeList.filter((store) => {
                 const q = searchQuery.trim().toLowerCase();
                 if (!q) return true;
                 return store.name.toLowerCase().includes(q) ||
@@ -286,7 +369,7 @@ export default function OrgHomePage() {
                 );
               })}
 
-              {AVAILABLE_STORES.filter((store) => {
+              {storeList.filter((store) => {
                 const q = searchQuery.trim().toLowerCase();
                 if (!q) return true;
                 return store.name.toLowerCase().includes(q) ||

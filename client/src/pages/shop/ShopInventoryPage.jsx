@@ -1,7 +1,7 @@
 // src/pages/shop/ShopInventoryPage.jsx
 // ניהול מלאי החנות – סימון פריטים שנשארו בחנות או עברו לעמותה
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import ShopBottomNav from "../../components/ShopBottomNav";
@@ -14,6 +14,30 @@ const INITIAL_ITEMS = [
   { id: 4, title: "שק – בגדי ילדים מעורב",      org: "נשים בקהילה", condition: "מצב טוב",  status: "inShop"    },
   { id: 5, title: "שק – בגדי נשים מעורב",       org: "עמותת לב חם", condition: "תקין",     status: "pending"   },
 ];
+
+const STORAGE_KEY = "rewear_shop_inventory";
+
+// שומר מפה { [זהות חנות]: items[] } — אותו דפוס בדיוק כמו orgSettings ב-
+// UserContext.jsx — כדי שסימון פריטים ישרוד רענון, ולא "יידלף" בין חנויות
+// שונות שמתחברות באותו דפדפן.
+function loadInventoryFor(shopKey) {
+  try {
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    return all[shopKey] || INITIAL_ITEMS;
+  } catch {
+    return INITIAL_ITEMS;
+  }
+}
+
+function saveInventoryFor(shopKey, items) {
+  try {
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    all[shopKey] = items;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  } catch {
+    // localStorage לא זמין — נכשל בשקט, המצב נשאר בזיכרון בלבד לסשן הזה
+  }
+}
 
 const STATUS_CONFIG = {
   pending:  { label: "טרם סומן",        color: "bg-amber-50 text-amber-500"  },
@@ -84,8 +108,13 @@ function InventoryCard({ item, onMark }) {
 export default function ShopInventoryPage() {
   const navigate    = useNavigate();
   const { user }    = useUser();
-  const [items,     setItems]       = useState(INITIAL_ITEMS);
+  const shopKey     = user?.shopName || user?.fullName || "default";
+  const [items,     setItems]       = useState(() => loadInventoryFor(shopKey));
   const [filter,    setFilter]      = useState("all");
+
+  useEffect(() => {
+    saveInventoryFor(shopKey, items);
+  }, [shopKey, items]);
 
   const handleMark = (id, status) => {
     setItems(prev => prev.map(item =>

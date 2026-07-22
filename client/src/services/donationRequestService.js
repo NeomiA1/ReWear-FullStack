@@ -32,3 +32,30 @@ export async function linkBagToDonationRequest(requestId, bagId) {
 
   return await response.text();
 }
+
+/**
+ * Org responds (approve/reject) to a real donation request.
+ *
+ * @param {number} requestId
+ * @param {string} newStatus - e.g. "Accepted" | "Rejected"
+ * @param {string|null} [associationResponse] - optional free-text note
+ * @returns {Promise<string>} success message text
+ * @throws {string} user-facing error message
+ */
+export async function respondToDonationRequest(requestId, newStatus, associationResponse = null) {
+  const response = await fetch(
+    `${API_BASE_URL}/DonationRequests/${requestId}/response`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newStatus, associationResponse }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return await response.text();
+}

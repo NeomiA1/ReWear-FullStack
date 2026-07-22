@@ -3,6 +3,24 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
 
+// TODO(server): this whole screen is demo-only local data (sentDonations in
+// UserContext, not the real DonationRequests). A real org→approve/reject
+// flow needs a server endpoint the org can use to discover its own pending
+// requests — nothing like this exists today, e.g.:
+//
+//   GET /api/DonationRequests/association/{associationId}
+//   → [{ requestId, associationId, bagId, donor: { name, city, ... },
+//        status, userNote, associationResponse, createdAt }]
+//
+// The response endpoint itself (PUT /api/DonationRequests/{id}/response,
+// wired in donationRequestService.js as respondToDonationRequest) already
+// exists and works, but without the GET above there is no real, shared
+// (cross-browser/device/user) way for an org to ever learn a requestId
+// exists to call it with. Do NOT bridge this via localStorage — that would
+// only work within one browser and would misrepresent this as a finished,
+// multi-user flow. Once the GET endpoint exists, this page should fetch
+// real pending requests and call respondToDonationRequest on approve/reject.
+
 const DAY_OPTIONS  = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"];
 const TIME_OPTIONS = ["08:00–10:00", "10:00–12:00", "12:00–14:00",
                       "14:00–16:00", "16:00–18:00", "18:00–20:00"];
@@ -168,6 +186,12 @@ export default function OrgRequestsPage() {
           </div>
         )}
 
+        {/* מסך זה כרגע מציג רק בקשות הדגמה מקומיות — ראו TODO(server) למעלה */}
+        {pendingRequests.length > 0 && (
+          <h2 className="font-bold text-rw-title text-sm text-right">
+            בקשות הדגמה ({pendingRequests.length})
+          </h2>
+        )}
         {pendingRequests.length > 0 ? (
           pendingRequests.map(req => (
             <RequestCard key={req.id} req={req}
