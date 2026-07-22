@@ -1,6 +1,0 @@
-@RewearApi_HostAddress = http://localhost:5030
-
-GET {{RewearApi_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
