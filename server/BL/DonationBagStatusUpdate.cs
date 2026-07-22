@@ -2,6 +2,6 @@ namespace RewearApi.BL
 {
     public class DonationBagStatusUpdate
     {
-        public string? Status { get; set; }
+        public string? DonationStatus { get; set; }
     }
 }

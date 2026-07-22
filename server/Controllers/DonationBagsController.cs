@@ -67,56 +67,60 @@ namespace RewearApi.Controllers
         }
 
 
-        [HttpPatch("{bagId}/status")]
-        public ActionResult UpdateDonationBagStatus(
-            int bagId,
-            [FromBody] DonationBagStatusUpdate request
+       [HttpPatch("{bagId}/status")]
+public ActionResult UpdateDonationBagStatus(
+    int bagId,
+    [FromBody] DonationBagStatusUpdate request
+)
+{
+    if (bagId <= 0)
+    {
+        return BadRequest(
+            "BagId must be greater than zero"
+        );
+    }
+
+    if (
+        request == null
+        || !DonationBag.IsValidDonationStatus(
+            request.DonationStatus
         )
+    )
+    {
+        return BadRequest(new
         {
-            if (bagId <= 0)
-            {
-                return BadRequest(
-                    "BagId must be greater than zero"
-                );
-            }
+            message = "Invalid donation bag status",
 
-            if (
-                request == null
-                || !DonationBag.IsValidStatus(request.Status)
-            )
-            {
-                return BadRequest(new
-                {
-                    message = "Invalid donation bag status",
+            allowedStatuses =
+                DonationBag.AllowedDonationStatuses
+        });
+    }
 
-                    allowedStatuses =
-                        DonationBag.AllowedStatuses
-                });
-            }
+    try
+    {
+        _donationBagDal.UpdateDonationBagStatus(
+            bagId,
+            request.DonationStatus!
+        );
 
-            try
-            {
-                _donationBagDal.UpdateDonationBagStatus(
-                    bagId,
-                    request.Status!
-                );
+        return Ok(new
+        {
+            bagId = bagId,
 
-                return Ok(new
-                {
-                    bagId = bagId,
+            donationStatus = request.DonationStatus,
 
-                    status = request.Status,
-
-                    message =
-                        "Donation bag status updated successfully"
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
+            message =
+                "Donation bag status updated successfully"
+        });
+    }
+    catch (Exception ex)
+    {
+        return BadRequest(new
+        {
+            message = ex.Message
+        });
+    }
+}
 
         [HttpPost("media")]
         public ActionResult AddBagMedia(

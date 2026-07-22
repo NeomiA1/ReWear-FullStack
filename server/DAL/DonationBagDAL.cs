@@ -21,45 +21,50 @@ namespace RewearApi.DAL
 
         public void CreateDonationBag(DonationBag bag)
         {
-            using (SqlConnection con = Connect(CON_STR_NAME))
+            try
             {
-                var paramDic = new Dictionary<string, object>
+                using (SqlConnection con = Connect(CON_STR_NAME))
                 {
-                    { "@user_id", bag.UserId },
-
+                    var paramDic = new Dictionary<string, object>
                     {
-                        "@short_description",
-                        (object?)bag.ShortDescription ?? DBNull.Value
-                    },
+                        {
+                            "@user_id",
+                            bag.UserId
+                        },
+                        {
+                            "@short_description",
+                            (object?)bag.ShortDescription ?? DBNull.Value
+                        },
+                        {
+                            "@sizes",
+                            (object?)bag.Sizes ?? DBNull.Value
+                        },
+                        {
+                            "@target_ages",
+                            (object?)bag.TargetAges ?? DBNull.Value
+                        },
+                        {
+                            "@target_gender",
+                            (object?)bag.TargetGender ?? DBNull.Value
+                        },
+                        {
+                            "@clothes_condition",
+                            (object?)bag.ClothesCondition ?? DBNull.Value
+                        }
+                    };
 
-                    {
-                        "@sizes",
-                        (object?)bag.Sizes ?? DBNull.Value
-                    },
+                    SqlCommand cmd = CreateCommand(
+                        SP_CREATE_DONATION_BAG,
+                        con,
+                        paramDic
+                    );
 
-                    {
-                        "@target_ages",
-                        (object?)bag.TargetAges ?? DBNull.Value
-                    },
-
-                    {
-                        "@target_gender",
-                        (object?)bag.TargetGender ?? DBNull.Value
-                    },
-
-                    {
-                        "@clothes_condition",
-                        (object?)bag.ClothesCondition ?? DBNull.Value
-                    }
-                };
-
-                SqlCommand cmd = CreateCommand(
-                    SP_CREATE_DONATION_BAG,
-                    con,
-                    paramDic
-                );
-
-                cmd.ExecuteNonQuery();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
 
@@ -72,7 +77,10 @@ namespace RewearApi.DAL
             {
                 var paramDic = new Dictionary<string, object>
                 {
-                    { "@user_id", userId }
+                    {
+                        "@user_id",
+                        userId
+                    }
                 };
 
                 SqlCommand cmd = CreateCommand(
@@ -118,8 +126,17 @@ namespace RewearApi.DAL
                                 ? null
                                 : reader["clothes_condition"].ToString();
 
-                        bag.Status =
-                            reader["status"].ToString()!;
+                        bag.AssignedAssociationId =
+                            reader["assigned_association_id"] == DBNull.Value
+                                ? null
+                                : Convert.ToInt32(
+                                    reader["assigned_association_id"]
+                                );
+
+                        bag.DonationStatus =
+                            reader["donation_status"] == DBNull.Value
+                                ? "Draft"
+                                : reader["donation_status"].ToString()!;
 
                         bag.CreatedAt =
                             Convert.ToDateTime(reader["created_at"]);
@@ -135,24 +152,37 @@ namespace RewearApi.DAL
 
         public void UpdateDonationBagStatus(
             int bagId,
-            string status
+            string donationStatus
         )
         {
-            using (SqlConnection con = Connect(CON_STR_NAME))
+            try
             {
-                var paramDic = new Dictionary<string, object>
+                using (SqlConnection con = Connect(CON_STR_NAME))
                 {
-                    { "@bag_id", bagId },
-                    { "@status", status }
-                };
+                    var paramDic = new Dictionary<string, object>
+                    {
+                        {
+                            "@bag_id",
+                            bagId
+                        },
+                        {
+                            "@donation_status",
+                            donationStatus
+                        }
+                    };
 
-                SqlCommand cmd = CreateCommand(
-                    SP_UPDATE_DONATION_BAG_STATUS,
-                    con,
-                    paramDic
-                );
+                    SqlCommand cmd = CreateCommand(
+                        SP_UPDATE_DONATION_BAG_STATUS,
+                        con,
+                        paramDic
+                    );
 
-                cmd.ExecuteNonQuery();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
     }
