@@ -7,7 +7,8 @@ namespace RewearApi.DAL
 {
     public class DonationBagDAL : DBServices
     {
-        private const string CON_STR_NAME = "RewearDB";
+        private const string CON_STR_NAME =
+            "RewearDB";
 
         private const string SP_CREATE_DONATION_BAG =
             "sp_CreateDonationBag";
@@ -18,14 +19,17 @@ namespace RewearApi.DAL
         private const string SP_UPDATE_DONATION_BAG_STATUS =
             "sp_UpdateDonationBagStatus";
 
+        private const string SP_DELETE_DONATION_BAG =
+            "sp_DeleteDonationBag";
+
 
         public void CreateDonationBag(DonationBag bag)
         {
-            try
+            using (SqlConnection con =
+                   Connect(CON_STR_NAME))
             {
-                using (SqlConnection con = Connect(CON_STR_NAME))
-                {
-                    var paramDic = new Dictionary<string, object>
+                var paramDic =
+                    new Dictionary<string, object>
                     {
                         {
                             "@user_id",
@@ -33,55 +37,60 @@ namespace RewearApi.DAL
                         },
                         {
                             "@short_description",
-                            (object?)bag.ShortDescription ?? DBNull.Value
+                            (object?)bag.ShortDescription
+                            ?? DBNull.Value
                         },
                         {
                             "@sizes",
-                            (object?)bag.Sizes ?? DBNull.Value
+                            (object?)bag.Sizes
+                            ?? DBNull.Value
                         },
                         {
                             "@target_ages",
-                            (object?)bag.TargetAges ?? DBNull.Value
+                            (object?)bag.TargetAges
+                            ?? DBNull.Value
                         },
                         {
                             "@target_gender",
-                            (object?)bag.TargetGender ?? DBNull.Value
+                            (object?)bag.TargetGender
+                            ?? DBNull.Value
                         },
                         {
                             "@clothes_condition",
-                            (object?)bag.ClothesCondition ?? DBNull.Value
+                            (object?)bag.ClothesCondition
+                            ?? DBNull.Value
                         }
                     };
 
-                    SqlCommand cmd = CreateCommand(
-                        SP_CREATE_DONATION_BAG,
-                        con,
-                        paramDic
-                    );
+                SqlCommand cmd = CreateCommand(
+                    SP_CREATE_DONATION_BAG,
+                    con,
+                    paramDic
+                );
 
-                    cmd.ExecuteNonQuery();
-                }
-            }
-            catch (Exception)
-            {
-                throw;
+                cmd.ExecuteNonQuery();
             }
         }
 
 
-        public List<DonationBag> GetDonationBagsByUserId(int userId)
+        public List<DonationBag> GetDonationBagsByUserId(
+            int userId
+        )
         {
-            List<DonationBag> bags = new List<DonationBag>();
+            List<DonationBag> bags =
+                new List<DonationBag>();
 
-            using (SqlConnection con = Connect(CON_STR_NAME))
+            using (SqlConnection con =
+                   Connect(CON_STR_NAME))
             {
-                var paramDic = new Dictionary<string, object>
-                {
+                var paramDic =
+                    new Dictionary<string, object>
                     {
-                        "@user_id",
-                        userId
-                    }
-                };
+                        {
+                            "@user_id",
+                            userId
+                        }
+                    };
 
                 SqlCommand cmd = CreateCommand(
                     SP_GET_DONATION_BAGS_BY_USER_ID,
@@ -89,57 +98,90 @@ namespace RewearApi.DAL
                     paramDic
                 );
 
-                using (SqlDataReader reader = cmd.ExecuteReader())
+                using (SqlDataReader reader =
+                       cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        DonationBag bag = new DonationBag();
+                        DonationBag bag =
+                            new DonationBag
+                            {
+                                BagId =
+                                    Convert.ToInt32(
+                                        reader["bag_id"]
+                                    ),
 
-                        bag.BagId =
-                            Convert.ToInt32(reader["bag_id"]);
+                                UserId =
+                                    Convert.ToInt32(
+                                        reader["user_id"]
+                                    ),
 
-                        bag.UserId =
-                            Convert.ToInt32(reader["user_id"]);
+                                ShortDescription =
+                                    reader[
+                                        "short_description"
+                                    ] == DBNull.Value
+                                        ? null
+                                        : reader[
+                                            "short_description"
+                                          ].ToString(),
 
-                        bag.ShortDescription =
-                            reader["short_description"] == DBNull.Value
-                                ? null
-                                : reader["short_description"].ToString();
+                                Sizes =
+                                    reader["sizes"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["sizes"]
+                                            .ToString(),
 
-                        bag.Sizes =
-                            reader["sizes"] == DBNull.Value
-                                ? null
-                                : reader["sizes"].ToString();
+                                TargetAges =
+                                    reader["target_ages"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader[
+                                            "target_ages"
+                                          ].ToString(),
 
-                        bag.TargetAges =
-                            reader["target_ages"] == DBNull.Value
-                                ? null
-                                : reader["target_ages"].ToString();
+                                TargetGender =
+                                    reader["target_gender"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader[
+                                            "target_gender"
+                                          ].ToString(),
 
-                        bag.TargetGender =
-                            reader["target_gender"] == DBNull.Value
-                                ? null
-                                : reader["target_gender"].ToString();
+                                ClothesCondition =
+                                    reader[
+                                        "clothes_condition"
+                                    ] == DBNull.Value
+                                        ? null
+                                        : reader[
+                                            "clothes_condition"
+                                          ].ToString(),
 
-                        bag.ClothesCondition =
-                            reader["clothes_condition"] == DBNull.Value
-                                ? null
-                                : reader["clothes_condition"].ToString();
+                                AssignedAssociationId =
+                                    reader[
+                                        "assigned_association_id"
+                                    ] == DBNull.Value
+                                        ? null
+                                        : Convert.ToInt32(
+                                            reader[
+                                                "assigned_association_id"
+                                            ]
+                                        ),
 
-                        bag.AssignedAssociationId =
-                            reader["assigned_association_id"] == DBNull.Value
-                                ? null
-                                : Convert.ToInt32(
-                                    reader["assigned_association_id"]
-                                );
+                                DonationStatus =
+                                    reader[
+                                        "donation_status"
+                                    ] == DBNull.Value
+                                        ? "Draft"
+                                        : reader[
+                                            "donation_status"
+                                          ].ToString()!,
 
-                        bag.DonationStatus =
-                            reader["donation_status"] == DBNull.Value
-                                ? "Draft"
-                                : reader["donation_status"].ToString()!;
-
-                        bag.CreatedAt =
-                            Convert.ToDateTime(reader["created_at"]);
+                                CreatedAt =
+                                    Convert.ToDateTime(
+                                        reader["created_at"]
+                                    )
+                            };
 
                         bags.Add(bag);
                     }
@@ -155,11 +197,11 @@ namespace RewearApi.DAL
             string donationStatus
         )
         {
-            try
+            using (SqlConnection con =
+                   Connect(CON_STR_NAME))
             {
-                using (SqlConnection con = Connect(CON_STR_NAME))
-                {
-                    var paramDic = new Dictionary<string, object>
+                var paramDic =
+                    new Dictionary<string, object>
                     {
                         {
                             "@bag_id",
@@ -171,18 +213,45 @@ namespace RewearApi.DAL
                         }
                     };
 
-                    SqlCommand cmd = CreateCommand(
-                        SP_UPDATE_DONATION_BAG_STATUS,
-                        con,
-                        paramDic
-                    );
+                SqlCommand cmd = CreateCommand(
+                    SP_UPDATE_DONATION_BAG_STATUS,
+                    con,
+                    paramDic
+                );
 
-                    cmd.ExecuteNonQuery();
-                }
+                cmd.ExecuteNonQuery();
             }
-            catch (Exception)
+        }
+
+
+        public void DeleteDonationBag(
+            int bagId,
+            int userId
+        )
+        {
+            using (SqlConnection con =
+                   Connect(CON_STR_NAME))
             {
-                throw;
+                var paramDic =
+                    new Dictionary<string, object>
+                    {
+                        {
+                            "@bag_id",
+                            bagId
+                        },
+                        {
+                            "@user_id",
+                            userId
+                        }
+                    };
+
+                SqlCommand cmd = CreateCommand(
+                    SP_DELETE_DONATION_BAG,
+                    con,
+                    paramDic
+                );
+
+                cmd.ExecuteNonQuery();
             }
         }
     }

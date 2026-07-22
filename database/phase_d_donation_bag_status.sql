@@ -801,3 +801,81 @@ BEGIN
     END CATCH
 END
 GO
+/* =========================================================
+   13. Delete donation bag and related database records
+   Physical files are deleted by the server controller
+   ========================================================= */
+
+CREATE OR ALTER PROCEDURE dbo.sp_DeleteDonationBag
+    @bag_id INT,
+    @user_id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+
+        /* Check that the bag exists and belongs to the user */
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.DonationBags
+            WHERE bag_id = @bag_id
+              AND user_id = @user_id
+        )
+        BEGIN
+            THROW 50040,
+                  'Donation bag does not exist or does not belong to this user.',
+                  1;
+        END;
+
+
+        /* Do not allow deleting a bag that is currently active */
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.DonationRequestBags
+            WHERE bag_id = @bag_id
+              AND is_active = 1
+        )
+        BEGIN
+            THROW 50041,
+                  'An active donation bag cannot be deleted.',
+                  1;
+        END;
+
+
+        /* Delete old inactive request links */
+        DELETE FROM dbo.DonationRequestBags
+        WHERE bag_id = @bag_id;
+
+
+        /* Delete database media records */
+        DELETE FROM dbo.BagMedia
+        WHERE bag_id = @bag_id;
+
+
+        /* Delete the bag itself */
+        DELETE FROM dbo.DonationBags
+        WHERE bag_id = @bag_id
+          AND user_id = @user_id;
+
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+
+    END CATCH
+END
+GO

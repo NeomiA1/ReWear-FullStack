@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using RewearApi.BL;
 using RewearApi.DAL;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,6 +20,16 @@ namespace RewearApi.Controllers
 
         private readonly BagMediaDAL _bagMediaDal =
             new BagMediaDAL();
+
+        private readonly IWebHostEnvironment _environment;
+
+
+        public DonationBagsController(
+            IWebHostEnvironment environment
+        )
+        {
+            _environment = environment;
+        }
 
 
         [HttpPost]
@@ -178,10 +190,16 @@ namespace RewearApi.Controllers
 
             try
             {
+                string webRootPath =
+                    _environment.WebRootPath
+                    ?? Path.Combine(
+                        Directory.GetCurrentDirectory(),
+                        "wwwroot"
+                    );
+
                 string uploadsFolder =
                     Path.Combine(
-                        Directory.GetCurrentDirectory(),
-                        "wwwroot",
+                        webRootPath,
                         "uploads",
                         "bags"
                     );
@@ -234,7 +252,23 @@ namespace RewearApi.Controllers
                             mediaDescription
                     };
 
-                _bagMediaDal.AddBagMedia(media);
+                try
+                {
+                    _bagMediaDal.AddBagMedia(media);
+                }
+                catch
+                {
+                    /*
+                    If saving the database record fails,
+                    remove the physical file that was created.
+                    */
+                    if (System.IO.File.Exists(fullFilePath))
+                    {
+                        System.IO.File.Delete(fullFilePath);
+                    }
+
+                    throw;
+                }
 
                 string absoluteMediaUrl =
                     $"{Request.Scheme}://" +
@@ -261,6 +295,182 @@ namespace RewearApi.Controllers
             }
             catch (Exception ex)
             {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        [HttpDelete("{bagId}/user/{userId}")]
+        public ActionResult DeleteDonationBag(
+            int bagId,
+            int userId
+        )
+        {
+            if (bagId <= 0 || userId <= 0)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "BagId and UserId must be greater than zero"
+                });
+            }
+
+            try
+            {
+                /*
+                Read the file paths before deleting their
+                database records.
+                */
+                List<string> mediaUrls =
+                    _bagMediaDal
+                        .GetMediaUrlsByBagId(bagId);
+
+                /*
+                Delete the database records and the bag.
+                The stored procedure also checks ownership
+                and blocks deletion of an active bag.
+                */
+                _donationBagDal.DeleteDonationBag(
+                    bagId,
+                    userId
+                );
+
+                List<string> filesThatCouldNotBeDeleted =
+                    new List<string>();
+
+                string webRootPath =
+                    _environment.WebRootPath
+                    ?? Path.Combine(
+                        Directory.GetCurrentDirectory(),
+                        "wwwroot"
+                    );
+
+                string allowedUploadsFolder =
+                    Path.GetFullPath(
+                        Path.Combine(
+                            webRootPath,
+                            "uploads",
+                            "bags"
+                        )
+                    );
+
+                foreach (string mediaUrl in mediaUrls)
+                {
+                    try
+                    {
+                        string relativePath =
+                            mediaUrl
+                                .TrimStart('/')
+                                .Replace(
+                                    '/',
+                                    Path.DirectorySeparatorChar
+                                );
+
+                        string physicalPath =
+                            Path.GetFullPath(
+                                Path.Combine(
+                                    webRootPath,
+                                    relativePath
+                                )
+                            );
+
+                        /*
+                        Security check:
+                        only files inside wwwroot/uploads/bags
+                        may be deleted.
+                        */
+                        bool isInsideUploadsFolder =
+                            physicalPath.StartsWith(
+                                allowedUploadsFolder
+                                + Path.DirectorySeparatorChar,
+                                StringComparison
+                                    .OrdinalIgnoreCase
+                            );
+
+                        if (!isInsideUploadsFolder)
+                        {
+                            filesThatCouldNotBeDeleted.Add(
+                                mediaUrl
+                            );
+
+                            continue;
+                        }
+
+                        if (System.IO.File.Exists(
+                            physicalPath
+                        ))
+                        {
+                            System.IO.File.Delete(
+                                physicalPath
+                            );
+                        }
+                    }
+                    catch
+                    {
+                        /*
+                        One failed file deletion does not
+                        prevent cleanup of the other files.
+                        */
+                        filesThatCouldNotBeDeleted.Add(
+                            mediaUrl
+                        );
+                    }
+                }
+
+                if (filesThatCouldNotBeDeleted.Any())
+                {
+                    return Ok(new
+                    {
+                        message =
+                            "Donation bag was deleted, but some physical files could not be removed.",
+
+                        deletedBagId = bagId,
+
+                        filesThatCouldNotBeDeleted
+                    });
+                }
+
+                return Ok(new
+                {
+                    message =
+                        "Donation bag and its files were deleted successfully",
+
+                    deletedBagId = bagId
+                });
+            }
+            catch (Exception ex)
+            {
+                if (
+                    ex.Message.Contains(
+                        "does not exist or does not belong",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return NotFound(new
+                    {
+                        message =
+                            "The donation bag was not found or does not belong to this user."
+                    });
+                }
+
+                if (
+                    ex.Message.Contains(
+                        "active donation bag cannot be deleted",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return Conflict(new
+                    {
+                        message =
+                            "A donation bag connected to an active request cannot be deleted."
+                    });
+                }
+
                 return BadRequest(new
                 {
                     message = ex.Message
