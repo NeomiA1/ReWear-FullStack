@@ -1149,3 +1149,351 @@ BEGIN
     END CATCH
 END
 GO
+/* =========================================================
+   17. Lock a donation bag after association approval
+   ========================================================= */
+
+CREATE OR ALTER PROCEDURE dbo.sp_UpdateDonationBagStatus
+    @bag_id INT,
+    @donation_status NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @current_status NVARCHAR(50);
+
+
+    SELECT
+        @current_status = donation_status
+    FROM dbo.DonationBags
+        WITH (UPDLOCK, HOLDLOCK)
+    WHERE bag_id = @bag_id;
+
+
+    IF @current_status IS NULL
+    BEGIN
+        THROW 50003,
+              'Donation bag does not exist.',
+              1;
+    END;
+
+
+    /*
+    Once the association approves the donation,
+    the user cannot change its status.
+    */
+    IF @current_status IN
+    (
+        N'Accepted',
+        N'PickupScheduled',
+        N'Completed'
+    )
+    BEGIN
+        THROW 50060,
+              'Donation bag is locked after approval.',
+              1;
+    END;
+
+
+    IF @donation_status NOT IN
+    (
+        N'Draft',
+        N'Published',
+        N'WaitingForAssociation',
+        N'Accepted',
+        N'Rejected',
+        N'PickupScheduled',
+        N'Completed'
+    )
+    BEGIN
+        THROW 50002,
+              'Invalid donation bag status.',
+              1;
+    END;
+
+
+    UPDATE dbo.DonationBags
+    SET donation_status = @donation_status
+    WHERE bag_id = @bag_id;
+END
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_DeleteDonationBag
+    @bag_id INT,
+    @user_id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+
+        DECLARE @current_status NVARCHAR(50);
+
+
+        SELECT
+            @current_status = donation_status
+        FROM dbo.DonationBags
+            WITH (UPDLOCK, HOLDLOCK)
+        WHERE bag_id = @bag_id
+          AND user_id = @user_id;
+
+
+        IF @current_status IS NULL
+        BEGIN
+            THROW 50040,
+                  'Donation bag does not exist or does not belong to this user.',
+                  1;
+        END;
+
+
+        /*
+        An approved donation is locked permanently
+        against user deletion.
+        */
+        IF @current_status IN
+        (
+            N'Accepted',
+            N'PickupScheduled',
+            N'Completed'
+        )
+        BEGIN
+            THROW 50060,
+                  'Donation bag is locked after approval.',
+                  1;
+        END;
+
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.DonationRequestBags
+            WHERE bag_id = @bag_id
+              AND is_active = 1
+        )
+        BEGIN
+            THROW 50041,
+                  'An active donation bag cannot be deleted.',
+                  1;
+        END;
+
+
+        DELETE FROM dbo.DonationRequestBags
+        WHERE bag_id = @bag_id;
+
+
+        DELETE FROM dbo.BagMedia
+        WHERE bag_id = @bag_id;
+
+
+        DELETE FROM dbo.DonationBags
+        WHERE bag_id = @bag_id
+          AND user_id = @user_id;
+
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+
+    END CATCH
+END
+GO
+/* =========================================================
+   18. Prevent media changes after donation approval
+   ========================================================= */
+
+CREATE OR ALTER PROCEDURE dbo.sp_AddBagMedia
+    @bag_id INT,
+    @media_type NVARCHAR(50),
+    @media_url NVARCHAR(1000),
+    @media_description NVARCHAR(500) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @current_status NVARCHAR(50);
+
+
+    SELECT
+        @current_status = donation_status
+    FROM dbo.DonationBags
+        WITH (UPDLOCK, HOLDLOCK)
+    WHERE bag_id = @bag_id;
+
+
+    IF @current_status IS NULL
+    BEGIN
+        THROW 50070,
+              'Donation bag does not exist.',
+              1;
+    END;
+
+
+    /*
+    After approval, the donation is locked and the user
+    cannot add more files.
+    */
+    IF @current_status IN
+    (
+        N'Accepted',
+        N'PickupScheduled',
+        N'Completed'
+    )
+    BEGIN
+        THROW 50071,
+              'Donation bag media is locked after approval.',
+              1;
+    END;
+
+
+    IF @media_type IS NULL
+       OR LTRIM(RTRIM(@media_type)) = N''
+    BEGIN
+        THROW 50072,
+              'Media type is required.',
+              1;
+    END;
+
+
+    IF @media_url IS NULL
+       OR LTRIM(RTRIM(@media_url)) = N''
+    BEGIN
+        THROW 50073,
+              'Media URL is required.',
+              1;
+    END;
+
+
+    INSERT INTO dbo.BagMedia
+    (
+        bag_id,
+        media_type,
+        media_url,
+        media_description
+    )
+    VALUES
+    (
+        @bag_id,
+        @media_type,
+        @media_url,
+        @media_description
+    );
+END
+GO
+/* =========================================================
+   19. Restrict user-controlled donation status changes
+   ========================================================= */
+
+CREATE OR ALTER PROCEDURE dbo.sp_UpdateDonationBagStatus
+    @bag_id INT,
+    @donation_status NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @current_status NVARCHAR(50);
+    DECLARE @normalized_status NVARCHAR(50);
+
+
+    SET @normalized_status =
+        LTRIM(RTRIM(@donation_status));
+
+
+    SELECT
+        @current_status = donation_status
+    FROM dbo.DonationBags
+        WITH (UPDLOCK, HOLDLOCK)
+    WHERE bag_id = @bag_id;
+
+
+    IF @current_status IS NULL
+    BEGIN
+        THROW 50003,
+              'Donation bag does not exist.',
+              1;
+    END;
+
+
+    /*
+    Approved donations cannot be changed by the user.
+    */
+    IF @current_status IN
+    (
+        N'Accepted',
+        N'PickupScheduled',
+        N'Completed'
+    )
+    BEGIN
+        THROW 50060,
+              'Donation bag is locked after approval.',
+              1;
+    END;
+
+
+    /*
+    A bag that is currently waiting for an association
+    cannot be changed manually.
+    */
+    IF @current_status = N'WaitingForAssociation'
+    BEGIN
+        THROW 50061,
+              'Donation bag cannot be changed while waiting for an association response.',
+              1;
+    END;
+
+
+    /*
+    The user may only control Draft and Published statuses.
+    A rejected bag may be returned to Draft or Published.
+    */
+    IF NOT
+    (
+        (
+            @current_status = N'Draft'
+            AND @normalized_status = N'Published'
+        )
+        OR
+        (
+            @current_status = N'Published'
+            AND @normalized_status = N'Draft'
+        )
+        OR
+        (
+            @current_status = N'Rejected'
+            AND @normalized_status IN
+            (
+                N'Draft',
+                N'Published'
+            )
+        )
+        OR
+        (
+            @current_status = @normalized_status
+        )
+    )
+    BEGIN
+        THROW 50062,
+              'This donation status change is not allowed for the user.',
+              1;
+    END;
+
+
+    UPDATE dbo.DonationBags
+    SET donation_status = @normalized_status
+    WHERE bag_id = @bag_id;
+END
+GO
