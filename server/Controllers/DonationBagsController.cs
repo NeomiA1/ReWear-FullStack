@@ -1,50 +1,91 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.AspNetCore.Mvc;
 using RewearApi.BL;
 using RewearApi.DAL;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace RewearApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DonationBagsController : ControllerBase
+    public class DonationRequestsController : ControllerBase
     {
-        private readonly DonationBagDAL _donationBagDal =
-            new DonationBagDAL();
-
-        private readonly BagMediaDAL _bagMediaDal =
-            new BagMediaDAL();
-
-        private readonly IWebHostEnvironment _environment;
+        private readonly DonationRequestDAL _donationRequestDal =
+            new DonationRequestDAL();
 
 
-        public DonationBagsController(
-            IWebHostEnvironment environment
+        [HttpGet("user/{userId}")]
+        public ActionResult<List<UserDonationRequestDto>> GetByUser(
+            int userId
         )
         {
-            _environment = environment;
+            if (userId <= 0)
+            {
+                return BadRequest(
+                    "userId must be greater than 0"
+                );
+            }
+
+            try
+            {
+                List<UserDonationRequestDto> requests =
+                    _donationRequestDal.GetByUserId(userId);
+
+                return Ok(requests);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        [HttpGet("association/user/{userId}")]
+        public ActionResult<List<DonationRequestDto>>
+            GetByAssociationUser(int userId)
+        {
+            if (userId <= 0)
+            {
+                return BadRequest(
+                    "userId must be greater than 0"
+                );
+            }
+
+            try
+            {
+                List<DonationRequestDto> requests =
+                    _donationRequestDal
+                        .GetByAssociationUserId(userId);
+
+                return Ok(requests);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
 
 
         [HttpPost]
-        public ActionResult CreateDonationBag(
-            [FromBody] DonationBag bag
+        public ActionResult CreateDonationRequest(
+            [FromBody] DonationRequest request
         )
         {
-            if (bag == null)
+            if (request == null)
             {
                 return BadRequest(
-                    "DonationBag object is null"
+                    "DonationRequest object is null"
                 );
             }
 
-            var errors = bag.Validate();
+            var errors = request.Validate();
 
             if (errors.Any())
             {
@@ -53,413 +94,22 @@ namespace RewearApi.Controllers
 
             try
             {
-                _donationBagDal.CreateDonationBag(bag);
-
-                return Ok(
-                    "Donation bag created successfully"
-                );
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
-        }
-
-
-        [HttpGet("user/{userId}")]
-        public ActionResult GetDonationBagsByUserId(
-            int userId
-        )
-        {
-            if (userId <= 0)
-            {
-                return BadRequest(
-                    "UserId must be greater than zero"
-                );
-            }
-
-            try
-            {
-                var bags =
-                    _donationBagDal
-                        .GetDonationBagsByUserId(userId);
-
-                return Ok(bags);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
-        }
-
-
-        [HttpPatch("{bagId}/status")]
-        public ActionResult UpdateDonationBagStatus(
-            int bagId,
-            [FromBody] DonationBagStatusUpdate request
-        )
-        {
-            if (bagId <= 0)
-            {
-                return BadRequest(
-                    "BagId must be greater than zero"
-                );
-            }
-
-            if (
-                request == null
-                || !DonationBag.IsValidDonationStatus(
-                    request.DonationStatus
-                )
-            )
-            {
-                return BadRequest(new
-                {
-                    message =
-                        "Invalid donation bag status",
-
-                    allowedStatuses =
-                        DonationBag
-                            .AllowedDonationStatuses
-                });
-            }
-
-            try
-            {
-                _donationBagDal.UpdateDonationBagStatus(
-                    bagId,
-                    request.DonationStatus!
-                );
+                int requestId =
+                    _donationRequestDal
+                        .CreateDonationRequest(request);
 
                 return Ok(new
                 {
-                    bagId,
-                    donationStatus =
-                        request.DonationStatus,
-
+                    requestId,
                     message =
-                        "Donation bag status updated successfully"
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
-        }
-
-
-        [HttpPost("{bagId}/media")]
-        [RequestSizeLimit(300L * 1024L * 1024L)]
-        public async Task<ActionResult> UploadBagMedia(
-            int bagId,
-            [FromForm] IFormFile file,
-            [FromForm] string? mediaDescription
-        )
-        {
-            if (bagId <= 0)
-            {
-                return BadRequest(new
-                {
-                    message =
-                        "BagId must be greater than zero"
-                });
-            }
-
-            var fileErrors =
-                BagMedia.ValidateUploadedFile(file);
-
-            if (fileErrors.Any())
-            {
-                return BadRequest(new
-                {
-                    message =
-                        "The uploaded file is invalid",
-
-                    errors = fileErrors
-                });
-            }
-
-            try
-            {
-                string webRootPath =
-                    _environment.WebRootPath
-                    ?? Path.Combine(
-                        Directory.GetCurrentDirectory(),
-                        "wwwroot"
-                    );
-
-                string uploadsFolder =
-                    Path.Combine(
-                        webRootPath,
-                        "uploads",
-                        "bags"
-                    );
-
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(
-                        uploadsFolder
-                    );
-                }
-
-                string extension =
-                    Path.GetExtension(file.FileName)
-                        .ToLowerInvariant();
-
-                string storedFileName =
-                    $"{Guid.NewGuid()}{extension}";
-
-                string fullFilePath =
-                    Path.Combine(
-                        uploadsFolder,
-                        storedFileName
-                    );
-
-                await using (
-                    FileStream stream =
-                        new FileStream(
-                            fullFilePath,
-                            FileMode.Create
-                        )
-                )
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                string mediaUrl =
-                    $"/uploads/bags/{storedFileName}";
-
-                BagMedia media =
-                    new BagMedia
-                    {
-                        BagId = bagId,
-
-                        MediaType =
-                            BagMedia.GetMediaType(file),
-
-                        MediaUrl = mediaUrl,
-
-                        MediaDescription =
-                            mediaDescription
-                    };
-
-                try
-                {
-                    _bagMediaDal.AddBagMedia(media);
-                }
-                catch
-                {
-                    /*
-                    If saving the database record fails,
-                    remove the physical file that was created.
-                    */
-                    if (System.IO.File.Exists(fullFilePath))
-                    {
-                        System.IO.File.Delete(fullFilePath);
-                    }
-
-                    throw;
-                }
-
-                string absoluteMediaUrl =
-                    $"{Request.Scheme}://" +
-                    $"{Request.Host}" +
-                    mediaUrl;
-
-                return Ok(new
-                {
-                    message =
-                        "Bag media uploaded successfully",
-
-                    mediaUrl =
-                        absoluteMediaUrl,
-
-                    mediaType =
-                        media.MediaType,
-
-                    originalFileName =
-                        file.FileName,
-
-                    fileSize =
-                        file.Length
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
-        }
-
-
-        [HttpDelete("{bagId}/user/{userId}")]
-        public ActionResult DeleteDonationBag(
-            int bagId,
-            int userId
-        )
-        {
-            if (bagId <= 0 || userId <= 0)
-            {
-                return BadRequest(new
-                {
-                    message =
-                        "BagId and UserId must be greater than zero"
-                });
-            }
-
-            try
-            {
-                /*
-                Read the file paths before deleting their
-                database records.
-                */
-                List<string> mediaUrls =
-                    _bagMediaDal
-                        .GetMediaUrlsByBagId(bagId);
-
-                /*
-                Delete the database records and the bag.
-                The stored procedure also checks ownership
-                and blocks deletion of an active bag.
-                */
-                _donationBagDal.DeleteDonationBag(
-                    bagId,
-                    userId
-                );
-
-                List<string> filesThatCouldNotBeDeleted =
-                    new List<string>();
-
-                string webRootPath =
-                    _environment.WebRootPath
-                    ?? Path.Combine(
-                        Directory.GetCurrentDirectory(),
-                        "wwwroot"
-                    );
-
-                string allowedUploadsFolder =
-                    Path.GetFullPath(
-                        Path.Combine(
-                            webRootPath,
-                            "uploads",
-                            "bags"
-                        )
-                    );
-
-                foreach (string mediaUrl in mediaUrls)
-                {
-                    try
-                    {
-                        string relativePath =
-                            mediaUrl
-                                .TrimStart('/')
-                                .Replace(
-                                    '/',
-                                    Path.DirectorySeparatorChar
-                                );
-
-                        string physicalPath =
-                            Path.GetFullPath(
-                                Path.Combine(
-                                    webRootPath,
-                                    relativePath
-                                )
-                            );
-
-                        /*
-                        Security check:
-                        only files inside wwwroot/uploads/bags
-                        may be deleted.
-                        */
-                        bool isInsideUploadsFolder =
-                            physicalPath.StartsWith(
-                                allowedUploadsFolder
-                                + Path.DirectorySeparatorChar,
-                                StringComparison
-                                    .OrdinalIgnoreCase
-                            );
-
-                        if (!isInsideUploadsFolder)
-                        {
-                            filesThatCouldNotBeDeleted.Add(
-                                mediaUrl
-                            );
-
-                            continue;
-                        }
-
-                        if (System.IO.File.Exists(
-                            physicalPath
-                        ))
-                        {
-                            System.IO.File.Delete(
-                                physicalPath
-                            );
-                        }
-                    }
-                    catch
-                    {
-                        /*
-                        One failed file deletion does not
-                        prevent cleanup of the other files.
-                        */
-                        filesThatCouldNotBeDeleted.Add(
-                            mediaUrl
-                        );
-                    }
-                }
-
-                if (filesThatCouldNotBeDeleted.Any())
-                {
-                    return Ok(new
-                    {
-                        message =
-                            "Donation bag was deleted, but some physical files could not be removed.",
-
-                        deletedBagId = bagId,
-
-                        filesThatCouldNotBeDeleted
-                    });
-                }
-
-                return Ok(new
-                {
-                    message =
-                        "Donation bag and its files were deleted successfully",
-
-                    deletedBagId = bagId
+                        "Donation request created successfully"
                 });
             }
             catch (Exception ex)
             {
                 if (
                     ex.Message.Contains(
-                        "does not exist or does not belong",
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                )
-                {
-                    return NotFound(new
-                    {
-                        message =
-                            "The donation bag was not found or does not belong to this user."
-                    });
-                }
-
-                if (
-                    ex.Message.Contains(
-                        "active donation bag cannot be deleted",
+                        "currently unavailable for donations",
                         StringComparison.OrdinalIgnoreCase
                     )
                 )
@@ -467,7 +117,172 @@ namespace RewearApi.Controllers
                     return Conflict(new
                     {
                         message =
-                            "A donation bag connected to an active request cannot be deleted."
+                            "The association is no longer available to receive donations."
+                    });
+                }
+
+                if (
+                    ex.Message.Contains(
+                        "Association does not exist",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return NotFound(new
+                    {
+                        message =
+                            "The selected association does not exist."
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        [HttpPost("{requestId}/bags/{bagId}")]
+        public ActionResult LinkBagToRequest(
+            int requestId,
+            int bagId
+        )
+        {
+            if (requestId <= 0 || bagId <= 0)
+            {
+                return BadRequest(
+                    "requestId and bagId must be greater than 0"
+                );
+            }
+
+            try
+            {
+                _donationRequestDal
+                    .LinkBagToDonationRequest(
+                        requestId,
+                        bagId
+                    );
+
+                return Ok(
+                    "Bag linked to donation request successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                if (
+                    ex.Message.Contains(
+                        "Donation bag has already been sent",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return Conflict(new
+                    {
+                        message =
+                            "Donation bag has already been sent to an association."
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        [HttpPut("{requestId}/response")]
+        public ActionResult RespondToDonationRequest(
+            int requestId,
+            [FromBody] DonationRequestResponseDto dto
+        )
+        {
+            if (requestId <= 0)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "RequestId must be greater than zero"
+                });
+            }
+
+            if (dto == null)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "Response object is null"
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.NewStatus))
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "Response status is required"
+                });
+            }
+
+            try
+            {
+                _donationRequestDal
+                    .RespondToDonationRequest(
+                        requestId,
+                        dto.NewStatus,
+                        dto.AssociationResponse
+                    );
+
+                return Ok(new
+                {
+                    requestId,
+                    status = dto.NewStatus,
+                    message =
+                        "Donation request response updated successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                if (
+                    ex.Message.Contains(
+                        "has already been answered",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return Conflict(new
+                    {
+                        message =
+                            "This donation request has already been answered and cannot be changed."
+                    });
+                }
+
+                if (
+                    ex.Message.Contains(
+                        "does not exist",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return NotFound(new
+                    {
+                        message =
+                            "The donation request does not exist."
+                    });
+                }
+
+                if (
+                    ex.Message.Contains(
+                        "Status must be Accepted or Rejected",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "The response must be Accepted or Rejected."
                     });
                 }
 

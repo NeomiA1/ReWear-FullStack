@@ -1024,3 +1024,128 @@ BEGIN
     WHERE user_id = @user_id;
 END
 GO
+/* =========================================================
+   16. Prevent multiple responses to the same donation request
+   ========================================================= */
+
+CREATE OR ALTER PROCEDURE dbo.sp_RespondDonationRequest
+    @request_id INT,
+    @new_status NVARCHAR(50),
+    @association_response NVARCHAR(500) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+
+        DECLARE @current_status NVARCHAR(50);
+        DECLARE @normalized_status NVARCHAR(50);
+        DECLARE @bag_status NVARCHAR(50);
+
+
+        /* Lock the request while checking and updating it */
+        SELECT
+            @current_status = request_status
+        FROM dbo.DonationRequests
+            WITH (UPDLOCK, HOLDLOCK)
+        WHERE request_id = @request_id;
+
+
+        /* Check that the request exists */
+        IF @current_status IS NULL
+        BEGIN
+            THROW 50020,
+                  'Donation request does not exist.',
+                  1;
+        END;
+
+
+        /*
+        A request that already received a final response
+        cannot be answered again.
+        */
+        IF UPPER(LTRIM(RTRIM(@current_status))) IN
+        (
+            N'ACCEPTED',
+            N'APPROVED',
+            N'REJECTED',
+            N'EXPIRED',
+            N'CANCELLED',
+            N'COMPLETED'
+        )
+        BEGIN
+            THROW 50022,
+                  'This donation request has already been answered.',
+                  1;
+        END;
+
+
+        SET @normalized_status =
+            LTRIM(RTRIM(@new_status));
+
+
+        /* The association may only accept or reject */
+        IF UPPER(@normalized_status) IN
+        (
+            N'ACCEPTED',
+            N'APPROVED'
+        )
+        BEGIN
+            SET @normalized_status = N'Accepted';
+            SET @bag_status = N'Accepted';
+        END
+        ELSE IF UPPER(@normalized_status) = N'REJECTED'
+        BEGIN
+            SET @normalized_status = N'Rejected';
+            SET @bag_status = N'Rejected';
+        END
+        ELSE
+        BEGIN
+            THROW 50021,
+                  'Status must be Accepted or Rejected.',
+                  1;
+        END;
+
+
+        /* Update the donation request once */
+        UPDATE dbo.DonationRequests
+        SET
+            request_status = @normalized_status,
+            association_response = @association_response,
+            response_date = GETDATE()
+        WHERE request_id = @request_id;
+
+
+        /* Update all bags linked to the request */
+        UPDATE db
+        SET
+            db.donation_status = @bag_status
+        FROM dbo.DonationBags db
+        INNER JOIN dbo.DonationRequestBags drb
+            ON db.bag_id = drb.bag_id
+        WHERE drb.request_id = @request_id
+          AND
+          (
+              drb.is_active = 1
+              OR drb.is_active IS NULL
+          );
+
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+
+    END CATCH
+END
+GO
