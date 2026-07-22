@@ -9,39 +9,23 @@ namespace RewearApi.DAL
     {
         private const string CON_STR_NAME = "RewearDB";
 
-        private const string SP_CREATE_DONATION_REQUEST =
-            "sp_CreateDonationRequest";
-
-        private const string SP_LINK_BAG_TO_DONATION_REQUEST =
-            "sp_LinkBagToDonationRequest";
-
-        private const string SP_RESPOND_DONATION_REQUEST =
-            "sp_RespondDonationRequest";
-
-        private const string SP_GET_BY_ASSOCIATION =
-            "sp_GetDonationRequestsByAssociation";
-
+        private const string SP_CREATE_DONATION_REQUEST = "sp_CreateDonationRequest";
+        private const string SP_LINK_BAG_TO_DONATION_REQUEST = "sp_LinkBagToDonationRequest";
+        private const string SP_RESPOND_DONATION_REQUEST = "sp_RespondDonationRequest";
+        private const string SP_GET_BY_ASSOCIATION = "sp_GetDonationRequestsByAssociation";
 
         public List<UserDonationRequestDto> GetByUserId(int userId)
         {
-            List<UserDonationRequestDto> results =
-                new List<UserDonationRequestDto>();
+            var results = new List<UserDonationRequestDto>();
 
             using (SqlConnection con = Connect(CON_STR_NAME))
             {
-                const string query = @"
-                    SELECT
-                        dr.request_id,
-                        dr.request_status,
-                        dr.request_date,
-                        dr.delivery_type,
-                        dr.association_response,
-                        a.association_name,
-                        db.bag_id,
-                        db.sizes,
-                        db.target_gender,
-                        db.clothes_condition,
-                        db.short_description
+                using (SqlCommand cmd = new SqlCommand(@"
+                    SELECT dr.request_id, dr.request_status, dr.request_date,
+                           dr.delivery_type, dr.association_response,
+                           a.association_name,
+                           db.bag_id, db.sizes, db.target_gender,
+                           db.clothes_condition, db.short_description
                     FROM DonationRequests dr
                     INNER JOIN Associations a
                         ON dr.association_id = a.association_id
@@ -50,91 +34,33 @@ namespace RewearApi.DAL
                     INNER JOIN DonationBags db
                         ON drb.bag_id = db.bag_id
                     WHERE dr.user_id = @user_id
-                    ORDER BY dr.request_date DESC";
-
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                    ORDER BY dr.request_date DESC", con))
                 {
-                    cmd.Parameters.AddWithValue(
-                        "@user_id",
-                        userId
-                    );
+                    cmd.Parameters.AddWithValue("@user_id", userId);
 
-                    using (SqlDataReader reader =
-                           cmd.ExecuteReader())
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            UserDonationRequestDto request =
-                                new UserDonationRequestDto
-                                {
-                                    RequestId =
-                                        Convert.ToInt32(
-                                            reader["request_id"]
-                                        ),
-
-                                    RequestStatus =
-                                        reader["request_status"]
-                                            .ToString()!,
-
-                                    RequestDate =
-                                        Convert.ToDateTime(
-                                            reader["request_date"]
-                                        ),
-
-                                    DeliveryType =
-                                        reader["delivery_type"]
-                                            .ToString()!,
-
-                                    AssociationResponse =
-                                        reader["association_response"]
-                                            == DBNull.Value
-                                            ? null
-                                            : reader[
-                                                "association_response"
-                                              ].ToString(),
-
-                                    AssociationName =
-                                        reader["association_name"]
-                                            .ToString()!,
-
-                                    BagId =
-                                        Convert.ToInt32(
-                                            reader["bag_id"]
-                                        ),
-
-                                    Sizes =
-                                        reader["sizes"]
-                                            == DBNull.Value
-                                            ? null
-                                            : reader["sizes"]
-                                                .ToString(),
-
-                                    TargetGender =
-                                        reader["target_gender"]
-                                            == DBNull.Value
-                                            ? null
-                                            : reader[
-                                                "target_gender"
-                                              ].ToString(),
-
-                                    ClothesCondition =
-                                        reader["clothes_condition"]
-                                            == DBNull.Value
-                                            ? null
-                                            : reader[
-                                                "clothes_condition"
-                                              ].ToString(),
-
-                                    ShortDescription =
-                                        reader["short_description"]
-                                            == DBNull.Value
-                                            ? null
-                                            : reader[
-                                                "short_description"
-                                              ].ToString()
-                                };
-
-                            results.Add(request);
+                            results.Add(new UserDonationRequestDto
+                            {
+                                RequestId           = Convert.ToInt32(reader["request_id"]),
+                                RequestStatus       = reader["request_status"].ToString()!,
+                                RequestDate         = Convert.ToDateTime(reader["request_date"]),
+                                DeliveryType        = reader["delivery_type"].ToString()!,
+                                AssociationResponse = reader["association_response"] == DBNull.Value
+                                                          ? null : reader["association_response"].ToString(),
+                                AssociationName     = reader["association_name"].ToString()!,
+                                BagId               = Convert.ToInt32(reader["bag_id"]),
+                                Sizes               = reader["sizes"] == DBNull.Value
+                                                          ? null : reader["sizes"].ToString(),
+                                TargetGender        = reader["target_gender"] == DBNull.Value
+                                                          ? null : reader["target_gender"].ToString(),
+                                ClothesCondition    = reader["clothes_condition"] == DBNull.Value
+                                                          ? null : reader["clothes_condition"].ToString(),
+                                ShortDescription    = reader["short_description"] == DBNull.Value
+                                                          ? null : reader["short_description"].ToString(),
+                            });
                         }
                     }
                 }
@@ -143,38 +69,20 @@ namespace RewearApi.DAL
             return results;
         }
 
-
-        public int CreateDonationRequest(
-            DonationRequest request
-        )
+        public int CreateDonationRequest(DonationRequest request)
         {
-            using (SqlConnection con = Connect(CON_STR_NAME))
+            try
             {
-                Dictionary<string, object> paramDic =
-                    new Dictionary<string, object>
+            
+              using (SqlConnection con = Connect(CON_STR_NAME))
+              {
+                  var paramDic = new Dictionary<string, object>
                     {
-                        {
-                            "@user_id",
-                            request.UserId
-                        },
-                        {
-                            "@association_id",
-                            request.AssociationId
-                        },
-                        {
-                            "@delivery_type",
-                            request.DeliveryMethod
-                        },
-                        {
-                            "@contact_phone",
-                            (object?)request.ContactPhone
-                            ?? DBNull.Value
-                        },
-                        {
-                            "@pickup_address",
-                            (object?)request.PickupAddress
-                            ?? DBNull.Value
-                        }
+                         { "@user_id", request.UserId },
+                         { "@association_id", request.AssociationId },
+                         { "@delivery_type", request.DeliveryMethod },
+                         { "@contact_phone", (object?)request.ContactPhone ?? DBNull.Value },
+                         { "@pickup_address", (object?)request.PickupAddress ?? DBNull.Value }
                     };
 
                 SqlCommand cmd = CreateCommand(
@@ -227,184 +135,64 @@ namespace RewearApi.DAL
             }
         }
 
-
-        public List<DonationRequestDto>
-            GetByAssociationUserId(int userId)
+        public List<DonationRequestDto> GetByAssociationUserId(int userId)
         {
-            List<DonationRequestDto> results =
-                new List<DonationRequestDto>();
+            var results = new List<DonationRequestDto>();
 
             using (SqlConnection con = Connect(CON_STR_NAME))
             {
+                // resolve user_id → association_id
                 int associationId;
-
-                const string associationLookupQuery = @"
-                    SELECT association_id
-                    FROM Associations
-                    WHERE user_id = @user_id";
-
-                using (SqlCommand lookup =
-                       new SqlCommand(
-                           associationLookupQuery,
-                           con
-                       ))
+                using (SqlCommand lookup = new SqlCommand(
+                    "SELECT association_id FROM Associations WHERE user_id = @uid", con))
                 {
-                    lookup.Parameters.AddWithValue(
-                        "@user_id",
-                        userId
-                    );
-
+                    lookup.Parameters.AddWithValue("@uid", userId);
                     object? raw = lookup.ExecuteScalar();
-
                     if (raw == null || raw == DBNull.Value)
-                    {
                         return results;
-                    }
-
                     associationId = Convert.ToInt32(raw);
                 }
 
-                Dictionary<string, object> paramDic =
-                    new Dictionary<string, object>
-                    {
-                        {
-                            "@association_id",
-                            associationId
-                        }
-                    };
+                var paramDic = new Dictionary<string, object>
+                {
+                    { "@association_id", associationId }
+                };
 
-                SqlCommand cmd = CreateCommand(
-                    SP_GET_BY_ASSOCIATION,
-                    con,
-                    paramDic
-                );
+                SqlCommand cmd = CreateCommand(SP_GET_BY_ASSOCIATION, con, paramDic);
 
-                using (SqlDataReader reader =
-                       cmd.ExecuteReader())
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        DonationRequestDto request =
-                            new DonationRequestDto
-                            {
-                                RequestId =
-                                    Convert.ToInt32(
-                                        reader["request_id"]
-                                    ),
-
-                                UserId =
-                                    Convert.ToInt32(
-                                        reader["user_id"]
-                                    ),
-
-                                AssociationId =
-                                    Convert.ToInt32(
-                                        reader["association_id"]
-                                    ),
-
-                                RequestDate =
-                                    Convert.ToDateTime(
-                                        reader["request_date"]
-                                    ),
-
-                                DeliveryType =
-                                    reader["delivery_type"]
-                                        .ToString()!,
-
-                                RequestStatus =
-                                    reader["request_status"]
-                                        .ToString()!,
-
-                                AssociationResponse =
-                                    reader[
-                                        "association_response"
-                                    ] == DBNull.Value
-                                        ? null
-                                        : reader[
-                                            "association_response"
-                                          ].ToString(),
-
-                                ResponseDate =
-                                    reader["response_date"]
-                                        == DBNull.Value
-                                        ? null
-                                        : Convert.ToDateTime(
-                                            reader[
-                                                "response_date"
-                                            ]
-                                        ),
-
-                                BagId =
-                                    Convert.ToInt32(
-                                        reader["bag_id"]
-                                    ),
-
-                                ShortDescription =
-                                    reader[
-                                        "short_description"
-                                    ] == DBNull.Value
-                                        ? null
-                                        : reader[
-                                            "short_description"
-                                          ].ToString(),
-
-                                Sizes =
-                                    reader["sizes"]
-                                        == DBNull.Value
-                                        ? null
-                                        : reader["sizes"]
-                                            .ToString(),
-
-                                TargetAges =
-                                    reader["target_ages"]
-                                        == DBNull.Value
-                                        ? null
-                                        : reader[
-                                            "target_ages"
-                                          ].ToString(),
-
-                                TargetGender =
-                                    reader["target_gender"]
-                                        == DBNull.Value
-                                        ? null
-                                        : reader[
-                                            "target_gender"
-                                          ].ToString(),
-
-                                ClothesCondition =
-                                    reader[
-                                        "clothes_condition"
-                                    ] == DBNull.Value
-                                        ? null
-                                        : reader[
-                                            "clothes_condition"
-                                          ].ToString(),
-
-                                BagCreatedAt =
-                                    Convert.ToDateTime(
-                                        reader[
-                                            "bag_created_at"
-                                        ]
-                                    ),
-
-                                DonorName =
-                                    reader["donor_name"]
-                                        .ToString()!,
-
-                                DonorEmail =
-                                    reader["donor_email"]
-                                        .ToString()!,
-
-                                DonorPhone =
-                                    reader["donor_phone"]
-                                        == DBNull.Value
-                                        ? null
-                                        : reader[
-                                            "donor_phone"
-                                          ].ToString()
-                            };
-
-                        results.Add(request);
+                        results.Add(new DonationRequestDto
+                        {
+                            RequestId           = Convert.ToInt32(reader["request_id"]),
+                            UserId              = Convert.ToInt32(reader["user_id"]),
+                            AssociationId       = Convert.ToInt32(reader["association_id"]),
+                            RequestDate         = Convert.ToDateTime(reader["request_date"]),
+                            DeliveryType        = reader["delivery_type"].ToString()!,
+                            RequestStatus       = reader["request_status"].ToString()!,
+                            AssociationResponse = reader["association_response"] == DBNull.Value
+                                                      ? null : reader["association_response"].ToString(),
+                            ResponseDate        = reader["response_date"] == DBNull.Value
+                                                      ? null : Convert.ToDateTime(reader["response_date"]),
+                            BagId               = Convert.ToInt32(reader["bag_id"]),
+                            ShortDescription    = reader["short_description"] == DBNull.Value
+                                                      ? null : reader["short_description"].ToString(),
+                            Sizes               = reader["sizes"] == DBNull.Value
+                                                      ? null : reader["sizes"].ToString(),
+                            TargetAges          = reader["target_ages"] == DBNull.Value
+                                                      ? null : reader["target_ages"].ToString(),
+                            TargetGender        = reader["target_gender"] == DBNull.Value
+                                                      ? null : reader["target_gender"].ToString(),
+                            ClothesCondition    = reader["clothes_condition"] == DBNull.Value
+                                                      ? null : reader["clothes_condition"].ToString(),
+                            BagCreatedAt        = Convert.ToDateTime(reader["bag_created_at"]),
+                            DonorName           = reader["donor_name"].ToString()!,
+                            DonorEmail          = reader["donor_email"].ToString()!,
+                            DonorPhone          = reader["donor_phone"] == DBNull.Value
+                                                      ? null : reader["donor_phone"].ToString(),
+                        });
                     }
                 }
             }

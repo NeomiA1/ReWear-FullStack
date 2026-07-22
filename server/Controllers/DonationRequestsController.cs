@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RewearApi.BL;
 using RewearApi.DAL;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,63 +10,26 @@ namespace RewearApi.Controllers
     [ApiController]
     public class DonationRequestsController : ControllerBase
     {
-        private readonly DonationRequestDAL _donationRequestDal =
-            new DonationRequestDAL();
+        private readonly DonationRequestDAL _donationRequestDal = new DonationRequestDAL();
 
         [HttpGet("user/{userId}")]
-        public ActionResult<List<UserDonationRequestDto>> GetByUser(
-            int userId
-        )
+        public ActionResult<List<UserDonationRequestDto>> GetByUser(int userId)
         {
             if (userId <= 0)
-            {
-                return BadRequest(
-                    "userId must be greater than 0"
-                );
-            }
+                return BadRequest("userId must be greater than 0");
 
-            try
-            {
-                List<UserDonationRequestDto> requests =
-                    _donationRequestDal.GetByUserId(userId);
-
-                return Ok(requests);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
+            List<UserDonationRequestDto> requests = _donationRequestDal.GetByUserId(userId);
+            return Ok(requests);
         }
 
         [HttpGet("association/user/{userId}")]
-        public ActionResult<List<DonationRequestDto>>
-            GetByAssociationUser(int userId)
+        public ActionResult<List<DonationRequestDto>> GetByAssociationUser(int userId)
         {
             if (userId <= 0)
-            {
-                return BadRequest(
-                    "userId must be greater than 0"
-                );
-            }
+                return BadRequest("userId must be greater than 0");
 
-            try
-            {
-                List<DonationRequestDto> requests =
-                    _donationRequestDal
-                        .GetByAssociationUserId(userId);
-
-                return Ok(requests);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
+            List<DonationRequestDto> requests = _donationRequestDal.GetByAssociationUserId(userId);
+            return Ok(requests);
         }
 
         [HttpPost]
