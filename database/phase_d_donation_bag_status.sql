@@ -958,3 +958,69 @@ BEGIN
     ORDER BY db.created_at DESC;
 END
 GO
+/* =========================================================
+   15. Real donation statistics for the user profile
+   ========================================================= */
+
+CREATE OR ALTER PROCEDURE dbo.sp_GetUserDonationStats
+    @user_id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+
+    /* Check that the user exists */
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.Users
+        WHERE user_id = @user_id
+    )
+    BEGIN
+        THROW 50050,
+              'User does not exist.',
+              1;
+    END;
+
+
+    SELECT
+        COUNT(*) AS total_donations,
+
+        SUM
+        (
+            CASE
+                WHEN donation_status = N'Completed'
+                THEN 1
+                ELSE 0
+            END
+        ) AS completed_donations,
+
+        SUM
+        (
+            CASE
+                WHEN donation_status IN
+                (
+                    N'Published',
+                    N'WaitingForAssociation',
+                    N'Accepted',
+                    N'PickupScheduled'
+                )
+                THEN 1
+                ELSE 0
+            END
+        ) AS in_progress_donations,
+
+        SUM
+        (
+            CASE
+                WHEN donation_status = N'Rejected'
+                THEN 1
+                ELSE 0
+            END
+        ) AS rejected_donations
+
+    FROM dbo.DonationBags
+
+    WHERE user_id = @user_id;
+END
+GO
