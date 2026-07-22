@@ -9,6 +9,8 @@ namespace RewearApi.BL
 
         public int UserId { get; set; }
 
+        public string? CreatorName { get; set; }
+
         public string? ShortDescription { get; set; }
 
         public string? Sizes { get; set; }
@@ -19,12 +21,16 @@ namespace RewearApi.BL
 
         public string? ClothesCondition { get; set; }
 
-        public string Status { get; set; } = "Draft";
+        public int? AssignedAssociationId { get; set; }
+
+        public string DonationStatus { get; set; } = "Draft";
 
         public DateTime CreatedAt { get; set; }
 
+        public DateTime UpdatedAt { get; set; }
 
-        public static readonly HashSet<string> AllowedStatuses =
+
+        public static readonly HashSet<string> AllowedDonationStatuses =
             new HashSet<string>
             {
                 "Draft",
@@ -37,10 +43,10 @@ namespace RewearApi.BL
             };
 
 
-        public static bool IsValidStatus(string? status)
+        public static bool IsValidDonationStatus(string? status)
         {
             return !string.IsNullOrWhiteSpace(status)
-                   && AllowedStatuses.Contains(status);
+                   && AllowedDonationStatuses.Contains(status);
         }
 
 

@@ -2,135 +2,90 @@
 using RewearApi.BL;
 using RewearApi.DAL;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RewearApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DonationBagsController : ControllerBase
+    public class DonationRequestsController : ControllerBase
     {
-        private readonly DonationBagDAL _donationBagDal =
-            new DonationBagDAL();
-
-        private readonly BagMediaDAL _bagMediaDal =
-            new BagMediaDAL();
-
-
-        [HttpPost]
-        public ActionResult CreateDonationBag(
-            [FromBody] DonationBag bag
-        )
-        {
-            if (bag == null)
-            {
-                return BadRequest("DonationBag object is null");
-            }
-
-            var errors = bag.Validate();
-
-            if (errors.Any())
-            {
-                return BadRequest(errors);
-            }
-
-            try
-            {
-                _donationBagDal.CreateDonationBag(bag);
-
-                return Ok(
-                    "Donation bag created successfully"
-                );
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
+        private readonly DonationRequestDAL _donationRequestDal =
+            new DonationRequestDAL();
 
 
         [HttpGet("user/{userId}")]
-        public ActionResult GetDonationBagsByUserId(int userId)
-        {
-            try
-            {
-                var bags =
-                    _donationBagDal
-                        .GetDonationBagsByUserId(userId);
-
-                return Ok(bags);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-
-        [HttpPatch("{bagId}/status")]
-        public ActionResult UpdateDonationBagStatus(
-            int bagId,
-            [FromBody] DonationBagStatusUpdate request
+        public ActionResult<List<UserDonationRequestDto>> GetByUser(
+            int userId
         )
         {
-            if (bagId <= 0)
+            if (userId <= 0)
             {
                 return BadRequest(
-                    "BagId must be greater than zero"
+                    "userId must be greater than 0"
                 );
             }
 
-            if (
-                request == null
-                || !DonationBag.IsValidStatus(request.Status)
-            )
+            try
+            {
+                List<UserDonationRequestDto> requests =
+                    _donationRequestDal.GetByUserId(userId);
+
+                return Ok(requests);
+            }
+            catch (Exception ex)
             {
                 return BadRequest(new
                 {
-                    message = "Invalid donation bag status",
-
-                    allowedStatuses =
-                        DonationBag.AllowedStatuses
+                    message = ex.Message
                 });
-            }
-
-            try
-            {
-                _donationBagDal.UpdateDonationBagStatus(
-                    bagId,
-                    request.Status!
-                );
-
-                return Ok(new
-                {
-                    bagId = bagId,
-
-                    status = request.Status,
-
-                    message =
-                        "Donation bag status updated successfully"
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
             }
         }
 
 
-        [HttpPost("media")]
-        public ActionResult AddBagMedia(
-            [FromBody] BagMedia media
-        )
+        [HttpGet("association/user/{userId}")]
+        public ActionResult<List<DonationRequestDto>>
+            GetByAssociationUser(int userId)
         {
-            if (media == null)
+            if (userId <= 0)
             {
                 return BadRequest(
-                    "BagMedia object is null"
+                    "userId must be greater than 0"
                 );
             }
 
-            var errors = media.Validate();
+            try
+            {
+                List<DonationRequestDto> requests =
+                    _donationRequestDal
+                        .GetByAssociationUserId(userId);
+
+                return Ok(requests);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        [HttpPost]
+        public ActionResult CreateDonationRequest(
+            [FromBody] DonationRequest request
+        )
+        {
+            if (request == null)
+            {
+                return BadRequest(
+                    "DonationRequest object is null"
+                );
+            }
+
+            var errors = request.Validate();
 
             if (errors.Any())
             {
@@ -139,15 +94,202 @@ namespace RewearApi.Controllers
 
             try
             {
-                _bagMediaDal.AddBagMedia(media);
+                int requestId =
+                    _donationRequestDal
+                        .CreateDonationRequest(request);
+
+                return Ok(new
+                {
+                    requestId,
+                    message =
+                        "Donation request created successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                if (
+                    ex.Message.Contains(
+                        "currently unavailable for donations",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return Conflict(new
+                    {
+                        message =
+                            "The association is no longer available to receive donations."
+                    });
+                }
+
+                if (
+                    ex.Message.Contains(
+                        "Association does not exist",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return NotFound(new
+                    {
+                        message =
+                            "The selected association does not exist."
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        [HttpPost("{requestId}/bags/{bagId}")]
+        public ActionResult LinkBagToRequest(
+            int requestId,
+            int bagId
+        )
+        {
+            if (requestId <= 0 || bagId <= 0)
+            {
+                return BadRequest(
+                    "requestId and bagId must be greater than 0"
+                );
+            }
+
+            try
+            {
+                _donationRequestDal
+                    .LinkBagToDonationRequest(
+                        requestId,
+                        bagId
+                    );
 
                 return Ok(
-                    "Bag media added successfully"
+                    "Bag linked to donation request successfully"
                 );
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                if (
+                    ex.Message.Contains(
+                        "Donation bag has already been sent",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return Conflict(new
+                    {
+                        message =
+                            "Donation bag has already been sent to an association."
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        [HttpPut("{requestId}/response")]
+        public ActionResult RespondToDonationRequest(
+            int requestId,
+            [FromBody] DonationRequestResponseDto dto
+        )
+        {
+            if (requestId <= 0)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "RequestId must be greater than zero"
+                });
+            }
+
+            if (dto == null)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "Response object is null"
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.NewStatus))
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "Response status is required"
+                });
+            }
+
+            try
+            {
+                _donationRequestDal
+                    .RespondToDonationRequest(
+                        requestId,
+                        dto.NewStatus,
+                        dto.AssociationResponse
+                    );
+
+                return Ok(new
+                {
+                    requestId,
+                    status = dto.NewStatus,
+                    message =
+                        "Donation request response updated successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                if (
+                    ex.Message.Contains(
+                        "has already been answered",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return Conflict(new
+                    {
+                        message =
+                            "This donation request has already been answered and cannot be changed."
+                    });
+                }
+
+                if (
+                    ex.Message.Contains(
+                        "does not exist",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return NotFound(new
+                    {
+                        message =
+                            "The donation request does not exist."
+                    });
+                }
+
+                if (
+                    ex.Message.Contains(
+                        "Status must be Accepted or Rejected",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "The response must be Accepted or Rejected."
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
             }
         }
     }

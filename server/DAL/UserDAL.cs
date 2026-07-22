@@ -7,78 +7,221 @@ namespace RewearApi.DAL
 {
     public class UserDAL : DBServices
     {
-        private const string CON_STR_NAME = "RewearDB";
+        private const string CON_STR_NAME =
+            "RewearDB";
 
-        private const string SP_REGISTER_USER = "sp_RegisterUser";
+        private const string SP_REGISTER_USER =
+            "sp_RegisterUser";
+
+        private const string SP_LOGIN_USER =
+            "sp_LoginUser";
+
+        private const string SP_GET_USER_DONATION_STATS =
+            "sp_GetUserDonationStats";
+
 
         public void RegisterUser(User user)
         {
-            try
+            using (SqlConnection con =
+                   Connect(CON_STR_NAME))
             {
-                using (SqlConnection con = Connect(CON_STR_NAME))
-                {
-                    var paramDic = new Dictionary<string, object>
+                Dictionary<string, object> paramDic =
+                    new Dictionary<string, object>
                     {
-                        { "@full_name", user.FullName },
-                        { "@username", user.Username },
-                        { "@user_password", user.Password },
-                        { "@email", user.Email },
-                        { "@phone", (object?)user.Phone ?? DBNull.Value },
-                        { "@location", (object?)user.City ?? DBNull.Value },
-                        { "@signup_method", user.RegistrationMethod },
-                        { "@user_type", user.UserType }
-
+                        {
+                            "@full_name",
+                            user.FullName
+                        },
+                        {
+                            "@username",
+                            user.Username
+                        },
+                        {
+                            "@user_password",
+                            user.Password
+                        },
+                        {
+                            "@email",
+                            user.Email
+                        },
+                        {
+                            "@phone",
+                            (object?)user.Phone
+                            ?? DBNull.Value
+                        },
+                        {
+                            "@location",
+                            (object?)user.City
+                            ?? DBNull.Value
+                        },
+                        {
+                            "@signup_method",
+                            user.RegistrationMethod
+                        },
+                        {
+                            "@user_type",
+                            user.UserType
+                        }
                     };
 
-                    SqlCommand cmd = CreateCommand(SP_REGISTER_USER, con, paramDic);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-            catch (Exception)
-            {
-                throw;
+                SqlCommand cmd = CreateCommand(
+                    SP_REGISTER_USER,
+                    con,
+                    paramDic
+                );
+
+                cmd.ExecuteNonQuery();
             }
         }
 
-        public User? LoginUser(string email, string password)
+
+        public User? LoginUser(
+            string email,
+            string password
+        )
         {
-            try
+            using (SqlConnection con =
+                   Connect(CON_STR_NAME))
             {
-                using (SqlConnection con = Connect(CON_STR_NAME))
-                {
-                    var paramDic = new Dictionary<string, object>
-            {
-                { "@email", email },
-                { "@user_password", password }
-            };
-
-                    SqlCommand cmd = CreateCommand("sp_LoginUser", con, paramDic);
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                Dictionary<string, object> paramDic =
+                    new Dictionary<string, object>
                     {
-                        if (reader.Read())
                         {
-                            User user = new User();
-
-                            user.UserId = Convert.ToInt32(reader["user_id"]);
-                            user.FullName = reader["full_name"].ToString();
-                            user.Username = reader["username"].ToString();
-                            user.Email = reader["email"].ToString();
-                            user.Phone = reader["phone"] == DBNull.Value ? null : reader["phone"].ToString();
-                            user.City = reader["location"] == DBNull.Value ? null : reader["location"].ToString();
-                            user.RegistrationMethod = reader["signup_method"].ToString();
-                            user.UserType = reader["user_type"].ToString();
-
-                            return user;
+                            "@email",
+                            email
+                        },
+                        {
+                            "@user_password",
+                            password
                         }
+                    };
+
+                SqlCommand cmd = CreateCommand(
+                    SP_LOGIN_USER,
+                    con,
+                    paramDic
+                );
+
+                using (SqlDataReader reader =
+                       cmd.ExecuteReader())
+                {
+                    if (!reader.Read())
+                    {
+                        return null;
                     }
 
-                    return null;
+                    User user = new User
+                    {
+                        UserId =
+                            Convert.ToInt32(
+                                reader["user_id"]
+                            ),
+
+                        FullName =
+                            reader["full_name"]
+                                .ToString(),
+
+                        Username =
+                            reader["username"]
+                                .ToString(),
+
+                        Email =
+                            reader["email"]
+                                .ToString(),
+
+                        Phone =
+                            reader["phone"]
+                                == DBNull.Value
+                                ? null
+                                : reader["phone"]
+                                    .ToString(),
+
+                        City =
+                            reader["location"]
+                                == DBNull.Value
+                                ? null
+                                : reader["location"]
+                                    .ToString(),
+
+                        RegistrationMethod =
+                            reader["signup_method"]
+                                .ToString(),
+
+                        UserType =
+                            reader["user_type"]
+                                .ToString()
+                    };
+
+                    return user;
                 }
             }
-            catch (Exception)
+        }
+
+
+        public UserDonationStatsDto GetUserDonationStats(
+            int userId
+        )
+        {
+            using (SqlConnection con =
+                   Connect(CON_STR_NAME))
             {
-                throw;
+                Dictionary<string, object> paramDic =
+                    new Dictionary<string, object>
+                    {
+                        {
+                            "@user_id",
+                            userId
+                        }
+                    };
+
+                SqlCommand cmd = CreateCommand(
+                    SP_GET_USER_DONATION_STATS,
+                    con,
+                    paramDic
+                );
+
+                using (SqlDataReader reader =
+                       cmd.ExecuteReader())
+                {
+                    if (!reader.Read())
+                    {
+                        return new UserDonationStatsDto();
+                    }
+
+                    UserDonationStatsDto stats =
+                        new UserDonationStatsDto
+                        {
+                            TotalDonations =
+                                Convert.ToInt32(
+                                    reader[
+                                        "total_donations"
+                                    ]
+                                ),
+
+                            CompletedDonations =
+                                Convert.ToInt32(
+                                    reader[
+                                        "completed_donations"
+                                    ]
+                                ),
+
+                            InProgressDonations =
+                                Convert.ToInt32(
+                                    reader[
+                                        "in_progress_donations"
+                                    ]
+                                ),
+
+                            RejectedDonations =
+                                Convert.ToInt32(
+                                    reader[
+                                        "rejected_donations"
+                                    ]
+                                )
+                        };
+
+                    return stats;
+                }
             }
         }
     }
