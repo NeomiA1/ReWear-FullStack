@@ -116,6 +116,13 @@ namespace RewearApi.DAL
                                         reader["user_id"]
                                     ),
 
+                                CreatorName =
+                                    reader["creator_name"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["creator_name"]
+                                            .ToString(),
+
                                 ShortDescription =
                                     reader[
                                         "short_description"
@@ -180,6 +187,11 @@ namespace RewearApi.DAL
                                 CreatedAt =
                                     Convert.ToDateTime(
                                         reader["created_at"]
+                                    ),
+
+                                UpdatedAt =
+                                    Convert.ToDateTime(
+                                        reader["updated_at"]
                                     )
                             };
 

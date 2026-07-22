@@ -879,3 +879,82 @@ BEGIN
     END CATCH
 END
 GO
+/* =========================================================
+   14. Donation bag creator and last update date
+   ========================================================= */
+
+
+/* Add last update date to DonationBags */
+IF COL_LENGTH(
+    'dbo.DonationBags',
+    'updated_at'
+) IS NULL
+BEGIN
+    ALTER TABLE dbo.DonationBags
+    ADD updated_at DATETIME2 NOT NULL
+        CONSTRAINT DF_DonationBags_UpdatedAt
+        DEFAULT SYSDATETIME();
+END
+GO
+
+
+/* Set existing records to their creation date */
+UPDATE dbo.DonationBags
+SET updated_at = created_at
+WHERE updated_at IS NULL;
+GO
+
+
+/*
+Automatically update updated_at whenever a donation bag changes.
+*/
+CREATE OR ALTER TRIGGER dbo.trg_DonationBags_SetUpdatedAt
+ON dbo.DonationBags
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF TRIGGER_NESTLEVEL() > 1
+    BEGIN
+        RETURN;
+    END;
+
+    UPDATE db
+    SET updated_at = SYSDATETIME()
+    FROM dbo.DonationBags db
+    INNER JOIN inserted i
+        ON db.bag_id = i.bag_id;
+END
+GO
+
+
+/*
+Return the creator name, creation date and last update date.
+*/
+CREATE OR ALTER PROCEDURE dbo.sp_GetDonationBagsByUserId
+    @user_id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        db.bag_id,
+        db.user_id,
+        u.full_name AS creator_name,
+        db.short_description,
+        db.sizes,
+        db.target_ages,
+        db.target_gender,
+        db.clothes_condition,
+        db.assigned_association_id,
+        db.donation_status,
+        db.created_at,
+        db.updated_at
+    FROM dbo.DonationBags db
+    INNER JOIN dbo.Users u
+        ON db.user_id = u.user_id
+    WHERE db.user_id = @user_id
+    ORDER BY db.created_at DESC;
+END
+GO
