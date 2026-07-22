@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RewearApi.BL;
 using RewearApi.DAL;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,27 +11,67 @@ namespace RewearApi.Controllers
     [ApiController]
     public class DonationRequestsController : ControllerBase
     {
-        private readonly DonationRequestDAL _donationRequestDal = new DonationRequestDAL();
+        private readonly DonationRequestDAL _donationRequestDal =
+            new DonationRequestDAL();
+
 
         [HttpGet("user/{userId}")]
-        public ActionResult<List<UserDonationRequestDto>> GetByUser(int userId)
+        public ActionResult<List<UserDonationRequestDto>> GetByUser(
+            int userId
+        )
         {
             if (userId <= 0)
-                return BadRequest("userId must be greater than 0");
+            {
+                return BadRequest(
+                    "userId must be greater than 0"
+                );
+            }
 
-            List<UserDonationRequestDto> requests = _donationRequestDal.GetByUserId(userId);
-            return Ok(requests);
+            try
+            {
+                List<UserDonationRequestDto> requests =
+                    _donationRequestDal.GetByUserId(userId);
+
+                return Ok(requests);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
+
 
         [HttpGet("association/user/{userId}")]
-        public ActionResult<List<DonationRequestDto>> GetByAssociationUser(int userId)
+        public ActionResult<List<DonationRequestDto>>
+            GetByAssociationUser(int userId)
         {
             if (userId <= 0)
-                return BadRequest("userId must be greater than 0");
+            {
+                return BadRequest(
+                    "userId must be greater than 0"
+                );
+            }
 
-            List<DonationRequestDto> requests = _donationRequestDal.GetByAssociationUserId(userId);
-            return Ok(requests);
+            try
+            {
+                List<DonationRequestDto> requests =
+                    _donationRequestDal
+                        .GetByAssociationUserId(userId);
+
+                return Ok(requests);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
+
 
         [HttpPost]
         public ActionResult CreateDonationRequest(
@@ -59,17 +100,48 @@ namespace RewearApi.Controllers
 
                 return Ok(new
                 {
-                    requestId
+                    requestId,
+                    message =
+                        "Donation request created successfully"
                 });
             }
             catch (Exception ex)
             {
+                if (
+                    ex.Message.Contains(
+                        "currently unavailable for donations",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return Conflict(new
+                    {
+                        message =
+                            "The association is no longer available to receive donations."
+                    });
+                }
+
+                if (
+                    ex.Message.Contains(
+                        "Association does not exist",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return NotFound(new
+                    {
+                        message =
+                            "The selected association does not exist."
+                    });
+                }
+
                 return BadRequest(new
                 {
                     message = ex.Message
                 });
             }
         }
+
 
         [HttpPost("{requestId}/bags/{bagId}")]
         public ActionResult LinkBagToRequest(
@@ -100,7 +172,8 @@ namespace RewearApi.Controllers
             {
                 if (
                     ex.Message.Contains(
-                        "Donation bag has already been sent"
+                        "Donation bag has already been sent",
+                        StringComparison.OrdinalIgnoreCase
                     )
                 )
                 {
@@ -117,6 +190,7 @@ namespace RewearApi.Controllers
                 });
             }
         }
+
 
         [HttpPut("{requestId}/response")]
         public ActionResult RespondToDonationRequest(

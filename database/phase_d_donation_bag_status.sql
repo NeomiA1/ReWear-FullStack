@@ -394,3 +394,96 @@ BEGIN
     END CATCH
 END
 GO
+/* =========================================================
+   11. Create donation request only for an available association
+   ========================================================= */
+
+CREATE OR ALTER PROCEDURE dbo.sp_CreateDonationRequest
+    @user_id INT,
+    @association_id INT,
+    @delivery_type NVARCHAR(50),
+    @contact_phone NVARCHAR(30) = NULL,
+    @pickup_address NVARCHAR(500) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    /* Check that the user exists */
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.Users
+        WHERE user_id = @user_id
+    )
+    BEGIN
+        THROW 50030,
+              'User does not exist.',
+              1;
+    END;
+
+
+    /* Check that the association exists */
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.Associations
+        WHERE association_id = @association_id
+    )
+    BEGIN
+        THROW 50031,
+              'Association does not exist.',
+              1;
+    END;
+
+
+    /* Check availability immediately before creating the request */
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.Associations
+        WHERE association_id = @association_id
+          AND is_available = 1
+    )
+    BEGIN
+        THROW 50032,
+              'This association is currently unavailable for donations.',
+              1;
+    END;
+
+
+    /* Validate delivery type */
+    IF @delivery_type IS NULL
+       OR LTRIM(RTRIM(@delivery_type)) = N''
+    BEGIN
+        THROW 50033,
+              'Delivery type is required.',
+              1;
+    END;
+
+
+    INSERT INTO dbo.DonationRequests
+    (
+        user_id,
+        association_id,
+        request_date,
+        delivery_type,
+        contact_phone,
+        pickup_address,
+        request_status
+    )
+    VALUES
+    (
+        @user_id,
+        @association_id,
+        GETDATE(),
+        @delivery_type,
+        @contact_phone,
+        @pickup_address,
+        N'Pending'
+    );
+
+
+    /* Return the new request ID to the server */
+    SELECT CAST(SCOPE_IDENTITY() AS INT);
+END
+GO
