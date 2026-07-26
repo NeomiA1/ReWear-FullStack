@@ -4,11 +4,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import ShopBottomNav from "../../components/ShopBottomNav";
-
-const KPI_DATA = [
-  { id: 1, label: "פריטים במלאי",   value: "128", icon: "👗" },
-  { id: 3, label: "פריטים שנמכרו",  value: "37",  icon: "✅" },
-];
+import { loadInventoryFor } from "../../utils/shopInventoryStorage";
+import { getCollabStatusInfo } from "../../utils/statusLabels";
 
 const INITIAL_NEW_ITEMS = [
   { id: 1, title: "3 שקיות – בגדי נשים",     org: "עמותת לב חם", condition: "מצב טוב",  itemStatus: "new" },
@@ -30,7 +27,8 @@ function KpiCard({ kpi }) {
 
 // ── עמותה שותפת – מ-collaborations ────────────────────────────────────────────
 function PartnerCard({ collab, onChat }) {
-  const isActive = collab.status === "approved";
+  const isActive   = collab.status === "approved";
+  const statusInfo = getCollabStatusInfo(collab.status);
   return (
     <div className="bg-rw-card rounded-2xl shadow-sm p-4 flex items-center justify-between">
       {/* כפתור צ'אט אם פעיל */}
@@ -53,8 +51,8 @@ function PartnerCard({ collab, onChat }) {
         </div>
       </div>
       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 mr-2
-        ${isActive ? "bg-green-50 text-green-600" : "bg-amber-50 text-amber-500"}`}>
-        {isActive ? "פעיל" : "ממתין"}
+        ${statusInfo.color}`}>
+        {statusInfo.label}
       </span>
     </div>
   );
@@ -102,17 +100,25 @@ export default function ShopHomePage() {
   const addedCount = newItems.filter(i => i.itemStatus === "added").length;
   const shopName   = user?.shopName || user?.fullName || "בגדי הלב – יד שנייה";
 
+  // ── פריטים במלאי – מהמלאי האמיתי (אותו מקור נתונים כמו ShopInventoryPage) ──
+  const shopKey       = user?.shopName || user?.fullName || "default";
+  const inventoryItems = loadInventoryFor(shopKey);
+  const inStockCount   = inventoryItems.filter(i => i.status === "inShop").length;
+
   // ── עמותות שותפות מה-Context ─────────────────────────────────────────────
   // מציג רק שיתופים שאושרו או ממתינים (לא נדחו)
   const partnerCollabs = (collaborations || [])
     .filter(c => c.status !== "rejected")
     .slice(0, 3);
 
-  // KPI דינמי – מספר עמותות שותפות אמיתי
+  // KPI — "פריטים במלאי" מחושב מהמלאי האמיתי; "פריטים שנמכרו" אין לו שום
+  // מעקב במודל הנתונים הקיים (אין מושג "נמכר" בכלל), אז מוצג כ"—" במקום
+  // מספר בדוי במקום "37" הקבוע שהיה כאן.
   const kpiWithPartners = [
-    ...KPI_DATA,
-    { id: 2, label: "עמותות שותפות", value: String(partnerCollabs.filter(c => c.status === "approved").length), icon: "🤝" },
-  ].sort((a, b) => a.id - b.id);
+    { id: 1, label: "פריטים במלאי",   value: String(inStockCount), icon: "👗" },
+    { id: 2, label: "עמותות שותפות",  value: String(partnerCollabs.filter(c => c.status === "approved").length), icon: "🤝" },
+    { id: 3, label: "פריטים שנמכרו",  value: "—", icon: "✅" },
+  ];
 
   return (
     <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">

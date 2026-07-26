@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import RequireAuth from "./components/RequireAuth";
 
 // Auth
 import LoginPage           from "./pages/auth/LoginPage";
@@ -46,32 +47,32 @@ function App() {
         <Route path="/register/shop"     element={<RegisterShopPage />} />
 
         {/* User */}
-        <Route path="/home"              element={<HomePage />} />
-        <Route path="/upload"            element={<UploadDonationPage />} />
-        <Route path="/profile"           element={<ProfilePage />} />
-        <Route path="/map"               element={<MapPage />} />
-        <Route path="/notifications"     element={<NotificationsPage />} />
-        <Route path="/pickup/:id"        element={<PickupSchedulingPage />} />
-        <Route path="/status"            element={<DonationStatusPage />} />
-        <Route path="/impact"            element={<ImpactPage />} />
+        <Route path="/home"              element={<RequireAuth type="private"><HomePage /></RequireAuth>} />
+        <Route path="/upload"            element={<RequireAuth type="private"><UploadDonationPage /></RequireAuth>} />
+        <Route path="/profile"           element={<RequireAuth type="private"><ProfilePage /></RequireAuth>} />
+        <Route path="/map"               element={<RequireAuth type="private"><MapPage /></RequireAuth>} />
+        <Route path="/notifications"     element={<RequireAuth type="private"><NotificationsPage /></RequireAuth>} />
+        <Route path="/pickup/:id"        element={<RequireAuth type="private"><PickupSchedulingPage /></RequireAuth>} />
+        <Route path="/status"            element={<RequireAuth type="private"><DonationStatusPage /></RequireAuth>} />
+        <Route path="/impact"            element={<RequireAuth type="private"><ImpactPage /></RequireAuth>} />
 
         {/* Org */}
-        <Route path="/org/home"              element={<OrgHomePage />} />
-        <Route path="/org/profile"           element={<OrgProfilePage />} />
-        <Route path="/org/notifications"     element={<OrgNotificationsPage />} />
-        <Route path="/org/requests"          element={<OrgRequestsPage />} />
-        <Route path="/org/pickups"           element={<OrgPickupsPage />} />
-        <Route path="/org/collaborations"    element={<OrgCollaborationsPage />} />
+        <Route path="/org/home"              element={<RequireAuth type="org"><OrgHomePage /></RequireAuth>} />
+        <Route path="/org/profile"           element={<RequireAuth type="org"><OrgProfilePage /></RequireAuth>} />
+        <Route path="/org/notifications"     element={<RequireAuth type="org"><OrgNotificationsPage /></RequireAuth>} />
+        <Route path="/org/requests"          element={<RequireAuth type="org"><OrgRequestsPage /></RequireAuth>} />
+        <Route path="/org/pickups"           element={<RequireAuth type="org"><OrgPickupsPage /></RequireAuth>} />
+        <Route path="/org/collaborations"    element={<RequireAuth type="org"><OrgCollaborationsPage /></RequireAuth>} />
 
         {/* Shop */}
-        <Route path="/shop/home"         element={<ShopHomePage />} />
-        <Route path="/shop/partners"     element={<ShopPartnersPage />} />
-        <Route path="/shop/profile"      element={<ShopProfilePage />} />
-        <Route path="/shop/inventory"    element={<ShopInventoryPage />} />
+        <Route path="/shop/home"         element={<RequireAuth type="shop"><ShopHomePage /></RequireAuth>} />
+        <Route path="/shop/partners"     element={<RequireAuth type="shop"><ShopPartnersPage /></RequireAuth>} />
+        <Route path="/shop/profile"      element={<RequireAuth type="shop"><ShopProfilePage /></RequireAuth>} />
+        <Route path="/shop/inventory"    element={<RequireAuth type="shop"><ShopInventoryPage /></RequireAuth>} />
 
         {/* Chat */}
-        <Route path="/org/chat/:id"      element={<CollaborationChatPage />} />
-        <Route path="/shop/chat/:id"     element={<CollaborationChatPage />} />
+        <Route path="/org/chat/:id"      element={<RequireAuth type="org"><CollaborationChatPage /></RequireAuth>} />
+        <Route path="/shop/chat/:id"     element={<RequireAuth type="shop"><CollaborationChatPage /></RequireAuth>} />
       </Routes>
     </BrowserRouter>
   );

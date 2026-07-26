@@ -5,45 +5,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import ShopBottomNav from "../../components/ShopBottomNav";
-
-// נתוני דמה – בעתיד יגיעו מהשרת
-const INITIAL_ITEMS = [
-  { id: 1, title: "3 שקיות – בגדי נשים",       org: "עמותת לב חם", condition: "מצב טוב",  status: "inShop"    },
-  { id: 2, title: "שק – נעלי ילדים",            org: "ידיים לעתיד", condition: "כמו חדש",  status: "inShop"    },
-  { id: 3, title: "2 שקיות – מעילים לגברים",   org: "עמותת לב חם", condition: "מצב סביר", status: "toOrg"     },
-  { id: 4, title: "שק – בגדי ילדים מעורב",      org: "נשים בקהילה", condition: "מצב טוב",  status: "inShop"    },
-  { id: 5, title: "שק – בגדי נשים מעורב",       org: "עמותת לב חם", condition: "תקין",     status: "pending"   },
-];
-
-const STORAGE_KEY = "rewear_shop_inventory";
-
-// שומר מפה { [זהות חנות]: items[] } — אותו דפוס בדיוק כמו orgSettings ב-
-// UserContext.jsx — כדי שסימון פריטים ישרוד רענון, ולא "יידלף" בין חנויות
-// שונות שמתחברות באותו דפדפן.
-function loadInventoryFor(shopKey) {
-  try {
-    const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-    return all[shopKey] || INITIAL_ITEMS;
-  } catch {
-    return INITIAL_ITEMS;
-  }
-}
-
-function saveInventoryFor(shopKey, items) {
-  try {
-    const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-    all[shopKey] = items;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-  } catch {
-    // localStorage לא זמין — נכשל בשקט, המצב נשאר בזיכרון בלבד לסשן הזה
-  }
-}
-
-const STATUS_CONFIG = {
-  pending:  { label: "טרם סומן",        color: "bg-amber-50 text-amber-500"  },
-  inShop:   { label: "נשאר בחנות ✓",   color: "bg-green-50 text-green-600"  },
-  toOrg:    { label: "עבר לעמותה ✓",   color: "bg-blue-50 text-blue-500"    },
-};
+import { loadInventoryFor, saveInventoryFor } from "../../utils/shopInventoryStorage";
+import { getInventoryStatusInfo } from "../../utils/statusLabels";
 
 const FILTERS = [
   { id: "all",     label: "הכל"          },
@@ -53,7 +16,7 @@ const FILTERS = [
 ];
 
 function InventoryCard({ item, onMark }) {
-  const statusInfo = STATUS_CONFIG[item.status];
+  const statusInfo = getInventoryStatusInfo(item.status);
   const isPending  = item.status === "pending";
 
   return (

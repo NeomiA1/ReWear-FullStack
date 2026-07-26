@@ -2,13 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
 import { useState } from "react";
-
-const STATUS_DISPLAY = {
-  approved:  { label: "ממתין לתיאום", color: "bg-amber-50 text-amber-500"  },
-  scheduled: { label: "תואם ✓",       color: "bg-blue-50 text-blue-500"    },
-  collected: { label: "נאסף ✓",       color: "bg-green-50 text-green-600"  },
-  rejected:  { label: "נדחה",         color: "bg-red-50 text-red-400"      },
-};
+import { getDonationStatusInfo } from "../../utils/statusLabels";
 
 const FILTERS = [
   { id: "all",       label: "הכל"     },
@@ -18,7 +12,7 @@ const FILTERS = [
 ];
 
 function PickupCard({ pickup, onCollect, onCancel }) {
-  const statusInfo = STATUS_DISPLAY[pickup.status] || STATUS_DISPLAY.approved;
+  const statusInfo = getDonationStatusInfo(pickup.status);
   const isDone     = pickup.status === "collected" || pickup.status === "rejected";
 
   const bagLabel  = pickup.bag

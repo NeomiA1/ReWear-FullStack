@@ -11,16 +11,7 @@ import {
   linkBagToDonationRequest
 } from "../../services/donationRequestService";
 import { checkAssociationExists } from "../../services/associationService";
-
-const BAG_STATUS_LABELS = {
-  Draft:                  { label: "טיוטה",              color: "bg-gray-100 text-gray-500"  },
-  Published:              { label: "פורסם",              color: "bg-blue-50 text-blue-500"   },
-  WaitingForAssociation:  { label: "ממתין לתגובת עמותה",  color: "bg-amber-50 text-amber-500" },
-  Accepted:               { label: "אושר ✓",              color: "bg-green-50 text-green-600" },
-  Rejected:               { label: "נדחה",                color: "bg-red-50 text-red-400"     },
-  PickupScheduled:        { label: "תואם איסוף",          color: "bg-purple-50 text-purple-500" },
-  Completed:              { label: "הושלם ✓",             color: "bg-green-50 text-green-600" },
-};
+import { getBagStatusInfo } from "../../utils/statusLabels";
 
 // TODO(server): these are placeholder organizations for browsing — there is
 // no GET /api/associations (list/search) endpoint yet, so the client can't
@@ -301,8 +292,8 @@ export default function ProfilePage() {
                     <div className="flex flex-col items-end gap-1 flex-1">
                       <div className="flex items-center gap-2">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
-                          ${(BAG_STATUS_LABELS[bag.status] || BAG_STATUS_LABELS.Draft).color}`}>
-                          {(BAG_STATUS_LABELS[bag.status] || BAG_STATUS_LABELS.Draft).label}
+                          ${getBagStatusInfo(bag.status).color}`}>
+                          {getBagStatusInfo(bag.status).label}
                         </span>
                         <span className="font-semibold text-rw-title text-sm">
                           שק {bag.index}

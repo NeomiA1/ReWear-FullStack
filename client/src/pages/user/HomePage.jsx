@@ -1,24 +1,11 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
-
-// סטטוס תרומה לתצוגה
-const STATUS_DISPLAY = {
-  pending:     { label: "ממתין לאישור",    color: "bg-amber-50 text-amber-500"  },
-  approved:    { label: "אושר – תאמי איסוף", color: "bg-blue-50 text-blue-500"  },
-  scheduled:   { label: "תואם ✓",          color: "bg-green-50 text-green-600"  },
-  collected:   { label: "נאסף ✓",           color: "bg-gray-100 text-gray-400"   },
-  rejected:    { label: "נדחה",             color: "bg-red-50 text-red-400"      },
-};
+import { getDonationStatusInfo } from "../../utils/statusLabels";
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { user, unreadCount, sentDonations } = useUser();
-
-  useEffect(() => {
-    if (!user) navigate("/");
-  }, [user]);
 
   // ── חישוב רמת אימפקט לפי מספר תרומות שהושלמו ──────────────────────────
   const completedDonations = (sentDonations || []).filter(d => d.status === "collected").length;
@@ -97,14 +84,18 @@ export default function HomePage() {
               <span className="text-xl">👕</span>
             </div>
             <span className="text-rw-sub text-xs mb-1">פריטים שנתרמו</span>
-            <span className="text-2xl font-bold text-rw-title">{user.itemsDonated || 0}</span>
+            <span className="text-2xl font-bold text-rw-title">
+              {typeof user.itemsDonated === "number" ? user.itemsDonated : "—"}
+            </span>
           </div>
           <div className="bg-rw-card rounded-2xl p-4 shadow-sm flex flex-col items-center">
             <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mb-2">
               <span className="text-xl">🌲</span>
             </div>
             <span className="text-rw-sub text-xs mb-1">ליטר מים נחסכו</span>
-            <span className="text-2xl font-bold text-rw-title">{user.waterSaved || 0}</span>
+            <span className="text-2xl font-bold text-rw-title">
+              {typeof user.waterSaved === "number" ? user.waterSaved : "—"}
+            </span>
           </div>
         </div>
 
@@ -125,7 +116,7 @@ export default function HomePage() {
           ) : (
             <div className="flex flex-col gap-3">
               {activeDonations.map(donation => {
-                const statusInfo = STATUS_DISPLAY[donation.status] || STATUS_DISPLAY.pending;
+                const statusInfo = getDonationStatusInfo(donation.status);
                 const isApproved = donation.status === "approved";
                 return (
                   <div key={donation.id}

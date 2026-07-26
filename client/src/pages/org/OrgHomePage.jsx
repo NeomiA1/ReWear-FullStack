@@ -48,11 +48,6 @@ export default function OrgHomePage() {
     setUrgentNeeds(prev => prev.filter(n => n.id !== id));
   };
 
-  useEffect(() => {
-    const saved = localStorage.getItem("rewear_user");
-    if (!saved) navigate("/");
-  }, []);
-
   const savedUser = JSON.parse(localStorage.getItem("rewear_user") || "{}");
   const orgName   = user?.orgName || savedUser?.orgName || 'עמותת "לב חם"';
 

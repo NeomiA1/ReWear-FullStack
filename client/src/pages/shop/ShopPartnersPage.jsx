@@ -20,15 +20,10 @@
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import ShopBottomNav from "../../components/ShopBottomNav";
-
-const STATUS_DISPLAY = {
-  pending:  { label: "ממתין לאישור",       color: "bg-amber-50 text-amber-500"  },
-  approved: { label: "שיתוף פעולה פעיל ✓", color: "bg-green-50 text-green-600" },
-  rejected: { label: "נדחה",               color: "bg-red-50 text-red-400"      },
-};
+import { getCollabStatusInfo } from "../../utils/statusLabels";
 
 function CollabCard({ collab, onApprove, onReject, onChat }) {
-  const statusInfo = STATUS_DISPLAY[collab.status];
+  const statusInfo = getCollabStatusInfo(collab.status);
   const isDone     = collab.status === "approved" || collab.status === "rejected";
 
   return (

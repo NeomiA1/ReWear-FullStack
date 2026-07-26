@@ -18,11 +18,19 @@ function Toggle({ value, onChange }) {
 
 export default function OrgProfilePage() {
   const navigate = useNavigate();
-  const { user, updateOrgSettings, getOrgSettings, logout } = useUser();
+  const { user, updateOrgSettings, getOrgSettings, logout, sentDonations } = useUser();
 
   const savedUser = JSON.parse(localStorage.getItem("rewear_user") || "{}");
   const orgName   = user?.orgName || savedUser?.orgName || "העמותה שלי";
   const currentSettings = getOrgSettings(orgName);
+
+  // מחושב מאותו מקור נתונים ש-OrgHomePage כבר משתמש בו (sentDonations),
+  // במקום שני מספרים קבועים שלא היו קשורים לשום דבר.
+  const donations = sentDonations || [];
+  const totalReceived = donations.filter(d =>
+    ["approved", "scheduled", "collected"].includes(d.status)
+  ).length;
+  const totalPickupsCoordinated = donations.filter(d => d.pickupScheduled).length;
 
   const [isAvailable,   setIsAvailable]   = useState(currentSettings.isAvailable);
   const [acceptsPickup, setAcceptsPickup] = useState(currentSettings.acceptsPickup);
@@ -92,11 +100,11 @@ export default function OrgProfilePage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-rw-input rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-rw-title">42</p>
+              <p className="text-2xl font-bold text-rw-title">{totalReceived}</p>
               <p className="text-xs text-rw-sub mt-1">תרומות שהתקבלו</p>
             </div>
             <div className="bg-rw-input rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-rw-title">18</p>
+              <p className="text-2xl font-bold text-rw-title">{totalPickupsCoordinated}</p>
               <p className="text-xs text-rw-sub mt-1">תיאומי איסוף</p>
             </div>
           </div>
