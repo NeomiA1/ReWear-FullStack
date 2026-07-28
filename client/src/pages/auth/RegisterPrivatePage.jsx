@@ -48,7 +48,9 @@ export default function RegisterPrivatePage() {
         type: "private"
       });
 
-      navigate("/home");
+      // שלב onboarding — בחירת נושאי תרומה מועדפים — לפני דף הבית, כדי
+      // שמנוע ההמלצות יקבל אות אישי כבר מההמלצה הראשונה.
+      navigate("/register/private/causes");
 
     } catch (error) {
 

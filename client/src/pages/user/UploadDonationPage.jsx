@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
 import { createDonationBag } from "../../services/donationBagService";
+import { getBagCategory } from "../../utils/associationRecommendation";
+import { recordDonatedCategory } from "../../utils/recommendationHistory";
 
 export default function UploadDonationPage() {
   const navigate = useNavigate();
@@ -86,6 +88,9 @@ export default function UploadDonationPage() {
           clothesCondition: bag.condition,
         };
         await createDonationBag(donationBag);
+        // מזין את מנוע ההמלצות עם קטגוריית השק שנתרם בפועל — אות היסטוריה,
+        // לא נתון עסקי משותף.
+        recordDonatedCategory(user.userId, getBagCategory(bag));
       }
       // ✅ A1 תיקון: setUploaded(true) נקרא אחרי הצלחה
       setUploaded(true);

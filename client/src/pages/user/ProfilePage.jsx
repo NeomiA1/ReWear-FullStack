@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import AssociationRecommendationList from "../../components/AssociationRecommendationList";
 import {
   getDonationBagsByUserId,
   updateDonationBagStatus
@@ -12,20 +13,8 @@ import {
 } from "../../services/donationRequestService";
 import { checkAssociationExists } from "../../services/associationService";
 import { getBagStatusInfo } from "../../utils/statusLabels";
-
-// TODO(server): these are placeholder organizations for browsing — there is
-// no GET /api/associations (list/search) endpoint yet, so the client can't
-// show real organizations from the database. Before actually sending a
-// donation request we try to resolve each one against the real DB via
-// checkAssociationExists(name, email); if that fails we fall back to a
-// local-only "demo" send instead of corrupting real data with a fake id.
-const MOCK_ORGS = [
-  { id: 1, name: "ויצו",      email: "vizo@example-demo.org",     city: "תל אביב",  types: "בגדי נשים, ילדים",  area: "מרכז"    },
-  { id: 2, name: "נעמת",      email: "naamat@example-demo.org",   city: "חיפה",     types: "כל סוגי הבגדים",    area: "צפון"    },
-  { id: 3, name: "לתת",       email: "latet@example-demo.org",    city: "ירושלים",  types: "בגדי חורף, מעילים", area: "ירושלים" },
-  { id: 4, name: "יד שרה",    email: "yadsarah@example-demo.org", city: "באר שבע",  types: "בגדים לקשישים",     area: "דרום"    },
-  { id: 5, name: "קרן חיים",  email: "keren@example-demo.org",    city: "רמת גן",   types: "בגדי ילדים",        area: "מרכז"    },
-];
+import { getBagCategory } from "../../utils/associationRecommendation";
+import { recordAssociationSelected, recordDonatedCategory } from "../../utils/recommendationHistory";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -35,7 +24,6 @@ export default function ProfilePage() {
   
   const [selectedBag, setSelectedBag] = useState(null);
   const [selectedOrg, setSelectedOrg] = useState(null);
-  const [search, setSearch] = useState("");
   const [sent, setSent] = useState(false);
   const [sentAsDemo, setSentAsDemo] = useState(false);
   const [sendError, setSendError] = useState(null);
@@ -65,10 +53,6 @@ export default function ProfilePage() {
 
     loadBags();
   }, [user]);
-
-  const filteredOrgs = MOCK_ORGS.filter(org =>
-    org.name.toLowerCase().includes(search.toLowerCase())
-  );
 
   const handleSendToOrg = async () => {
     if (!selectedBag || !selectedOrg || !user) return;
@@ -143,6 +127,13 @@ export default function ProfilePage() {
         setSentAsDemo(true);
       }
 
+      // מזינים את מנוע ההמלצות: העמותה שנבחרה בפועל + קטגוריית השק שנשלח —
+      // אותות "היסטוריה" ל-scoreAssociation.js, לא נתון עסקי משותף.
+      if (user?.userId != null) {
+        recordAssociationSelected(user.userId, selectedOrg.id);
+        recordDonatedCategory(user.userId, getBagCategory(selectedBag));
+      }
+
       setSentBagIds(prev => [...prev, selectedBag.id]);
       setSent(true);
 
@@ -165,6 +156,7 @@ export default function ProfilePage() {
   const allBags = (serverBags || []).map((bag, index) => ({
     id: bag.bagId,
     size: bag.sizes || "",
+    age: bag.targetAges || "",
     gender: bag.targetGender || "",
     condition: bag.clothesCondition || "",
     description: bag.shortDescription || "",
@@ -326,62 +318,19 @@ export default function ProfilePage() {
             שלב 2 – בחרי עמותה
           </h2>
 
-          <div className="flex gap-2 mb-3">
-            <input type="text" placeholder="חיפוש לפי שם עמותה..."
-              value={search} onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 border border-rw-border rounded-xl px-4 py-2.5
-                         text-sm text-right outline-none bg-rw-card focus:border-rw-btn" />
+          <div className="flex justify-end mb-3">
             <button onClick={() => navigate("/map")}
-              className="bg-rw-card border border-rw-border rounded-xl px-3
+              className="bg-rw-card border border-rw-border rounded-xl px-3 py-2
                          flex items-center gap-1 text-rw-sub text-sm active:bg-rw-input">
               <span>🗺️</span><span>מפה</span>
             </button>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {filteredOrgs.map((org) => {
-              const settings = getOrgSettings(org.name);
-              return (
-                <div key={org.id} onClick={() => { setSelectedOrg(org); setSendError(null); }}
-                  className={`bg-rw-card rounded-2xl shadow-sm p-4
-                             flex flex-col gap-2 cursor-pointer border-2 transition-all
-                             ${selectedOrg?.id === org.id
-                               ? "border-rw-btn"
-                               : "border-transparent"}`}>
-                  <div className="flex items-center justify-between">
-                    {selectedOrg?.id === org.id && (
-                      <span className="text-rw-btn text-lg">✓</span>
-                    )}
-                    <span className="font-semibold text-rw-title text-sm">{org.name}</span>
-                  </div>
-                  <span className="text-xs text-rw-sub text-right">
-                    📍 {org.city} · {org.area}
-                  </span>
-                  <span className="text-xs text-rw-sub text-right">{org.types}</span>
-                  <div className="flex flex-wrap gap-2 justify-end mt-1">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium
-                      ${settings.isAvailable
-                        ? "bg-green-50 text-green-600"
-                        : "bg-red-50 text-red-400"}`}>
-                      {settings.isAvailable ? "✓ זמינה לתרומות" : "✗ לא זמינה כרגע"}
-                    </span>
-                    {settings.acceptsPickup && (
-                      <span className="text-xs px-2 py-1 rounded-full
-                                       bg-blue-50 text-blue-500 font-medium">
-                        🚗 איסוף מהבית
-                      </span>
-                    )}
-                    {settings.acceptsDropoff && (
-                      <span className="text-xs px-2 py-1 rounded-full
-                                       bg-purple-50 text-purple-500 font-medium">
-                        🏢 הגעה לעמותה
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <AssociationRecommendationList
+            bag={selectedBag}
+            selectedId={selectedOrg?.id}
+            onSelect={(org) => { setSelectedOrg(org); setSendError(null); }}
+          />
         </div>
 
         {/* כפתור שליחה */}

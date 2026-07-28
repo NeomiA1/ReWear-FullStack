@@ -5,6 +5,7 @@ import RequireAuth from "./components/RequireAuth";
 import LoginPage           from "./pages/auth/LoginPage";
 import RegisterTypePage    from "./pages/auth/RegisterTypePage";
 import RegisterPrivatePage from "./pages/auth/RegisterPrivatePage";
+import RegisterCausesPage  from "./pages/auth/RegisterCausesPage";
 import RegisterOrgPage     from "./pages/auth/RegisterOrgPage";
 import RegisterShopPage    from "./pages/auth/RegisterShopPage";
 
@@ -42,7 +43,8 @@ function App() {
         {/* Auth */}
         <Route path="/"                  element={<LoginPage />} />
         <Route path="/register"          element={<RegisterTypePage />} />
-        <Route path="/register/private"  element={<RegisterPrivatePage />} />
+        <Route path="/register/private"        element={<RegisterPrivatePage />} />
+        <Route path="/register/private/causes" element={<RequireAuth type="private"><RegisterCausesPage /></RequireAuth>} />
         <Route path="/register/org"      element={<RegisterOrgPage />} />
         <Route path="/register/shop"     element={<RegisterShopPage />} />
 

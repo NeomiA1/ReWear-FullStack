@@ -1,22 +1,9 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const MOCK_ORGS = [
-  { id: 1, name: "ויצו",     city: "תל אביב",  types: "בגדי נשים, ילדים",  area: "מרכז" },
-  { id: 2, name: "נעמת",     city: "חיפה",     types: "כל סוגי הבגדים",    area: "צפון" },
-  { id: 3, name: "לתת",      city: "ירושלים",  types: "בגדי חורף, מעילים", area: "ירושלים" },
-  { id: 4, name: "יד שרה",   city: "באר שבע",  types: "בגדים לקשישים",    area: "דרום" },
-  { id: 5, name: "קרן חיים", city: "רמת גן",   types: "בגדי ילדים",        area: "מרכז" },
-];
+import AssociationRecommendationList from "../../components/AssociationRecommendationList";
 
 export default function MapPage() {
 
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-
-  const filteredOrgs = MOCK_ORGS.filter(org =>
-    org.name.toLowerCase().includes(search.toLowerCase())
-  );
 
   // פתיחת Google Maps בדפדפן עם חיפוש עמותות בגדים
   const openGoogleMaps = () => {
@@ -91,44 +78,22 @@ export default function MapPage() {
 
         </div>
 
-        {/* חיפוש */}
-        <input
-          type="text"
-          placeholder="חיפוש לפי שם עמותה..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border border-rw-border rounded-xl px-4 py-2.5
-                     text-sm text-right outline-none bg-rw-card
-                     focus:border-rw-btn w-full"
-        />
-
-        {/* רשימת עמותות */}
-        <div className="flex flex-col gap-3">
-          {filteredOrgs.map((org) => (
-            <div
-              key={org.id}
-              className="bg-rw-card rounded-2xl shadow-sm p-4
-                         flex items-center justify-between"
+        {/* רשימת עמותות מומלצות — אותו מנוע ואותם פילטרים כמו ב-ProfilePage */}
+        <AssociationRecommendationList
+          bag={null}
+          renderAction={(org) => (
+            <button
+              onClick={() => window.open(
+                `https://www.google.com/maps/search/${org.name}+${org.city}`,
+                "_blank"
+              )}
+              className="bg-rw-btn text-white rounded-xl px-3 py-2
+                         text-xs font-semibold active:bg-rw-btn-hover"
             >
-              <button
-                onClick={() => window.open(
-                  `https://www.google.com/maps/search/${org.name}+${org.city}`,
-                  "_blank"
-                )}
-                className="bg-rw-btn text-white rounded-xl px-3 py-2
-                           text-xs font-semibold active:bg-rw-btn-hover"
-              >
-                במפה
-              </button>
-
-              <div className="flex flex-col items-end gap-1">
-                <span className="font-semibold text-rw-title text-sm">{org.name}</span>
-                <span className="text-xs text-rw-sub">📍 {org.city} · {org.area}</span>
-                <span className="text-xs text-rw-sub">{org.types}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+              במפה
+            </button>
+          )}
+        />
 
       </div>
     </div>
