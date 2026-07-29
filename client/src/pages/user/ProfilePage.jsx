@@ -15,6 +15,7 @@ import { checkAssociationExists } from "../../services/associationService";
 import { getBagStatusInfo } from "../../utils/statusLabels";
 import { getBagCategory } from "../../utils/associationRecommendation";
 import { recordAssociationSelected, recordDonatedCategory } from "../../utils/recommendationHistory";
+import { recordDonationSent } from "../../utils/donationSendLog";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -69,6 +70,7 @@ export default function ProfilePage() {
       // מנסים לאתר את העמותה האמיתית במסד הנתונים (התאמה מדויקת של שם+מייל —
       // ראו TODO(server) למעלה, אין endpoint לרשימת עמותות אמיתית).
       let realAssociation = null;
+      let sentRequestId = null;
       try {
         realAssociation = await checkAssociationExists(selectedOrg.name, selectedOrg.email);
       } catch {
@@ -91,6 +93,7 @@ export default function ProfilePage() {
         };
 
         const result = await createDonationRequest(request);
+        sentRequestId = result.requestId;
         await linkBagToDonationRequest(result.requestId, selectedBag.id);
 
         // מעדכנים את סטטוס השק בשרת ל"ממתין לתגובת עמותה" — קריאה אמיתית,
@@ -132,6 +135,15 @@ export default function ProfilePage() {
       if (user?.userId != null) {
         recordAssociationSelected(user.userId, selectedOrg.id);
         recordDonatedCategory(user.userId, getBagCategory(selectedBag));
+
+        // שונה מהותית מה-TODO(server) למעלה: זו לא סימולציה של "גילוי" ע"י
+        // העמותה — זו רק זכירה של פעולה אמיתית שהדפדפן הזה עצמו ביצע (איזו
+        // עמותה נבחרה ומתי), למסך "מסע התרומה" (DonationStatusPage).
+        recordDonationSent(user.userId, selectedBag.id, {
+          associationName: selectedOrg.name,
+          associationId: realAssociation?.associationId ?? null,
+          requestId: sentRequestId,
+        });
       }
 
       setSentBagIds(prev => [...prev, selectedBag.id]);
