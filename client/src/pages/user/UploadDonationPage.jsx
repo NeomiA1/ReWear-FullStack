@@ -1,20 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog";
 import { createDonationBag } from "../../services/donationBagService";
 import { getBagCategory } from "../../utils/associationRecommendation";
 import { recordDonatedCategory } from "../../utils/recommendationHistory";
+import { validateDonationImage, MAX_IMAGES } from "../../utils/imageValidation";
+
+const EMPTY_BAG = () => ({
+  size: "", age: "", gender: "", condition: "", description: "",
+  imagePreview: null, imageFile: null, imageError: null,
+});
 
 export default function UploadDonationPage() {
   const navigate = useNavigate();
   const { user, addDonation } = useUser();
-  const [bags, setBags] = useState([
-    { id: 1, size: "", age: "", gender: "", condition: "", description: "", imagePreview: null }
-  ]);
+  const [bags, setBags] = useState([{ id: 1, ...EMPTY_BAG() }]);
   const [uploaded, setUploaded]   = useState(false);
   const [loading,  setLoading]    = useState(false);
   const [error,    setError]      = useState(null);
+  const { confirm, confirmDialogProps } = useConfirmDialog();
+
+  // מונע דליפת object URL שנשארה תלויה כשעוזבים את המסך עם תמונות עדיין
+  // בזיכרון. משתמשים ב-ref כדי שה-cleanup ירוץ רק פעם אחת, ב-unmount
+  // האמיתי, אבל תמיד יראה את רשימת ה-bags העדכנית ביותר.
+  const bagsRef = useRef(bags);
+  useEffect(() => { bagsRef.current = bags; }, [bags]);
+  useEffect(() => {
+    return () => {
+      bagsRef.current.forEach((bag) => {
+        if (bag.imagePreview) URL.revokeObjectURL(bag.imagePreview);
+      });
+    };
+  }, []);
 
   const updateBag = (bagId, field, value) => {
     setBags(bags.map(bag =>
@@ -22,29 +42,97 @@ export default function UploadDonationPage() {
     ));
   };
 
-  const handleImageChange = (bagId, file) => {
+  const handleImageChange = async (bagId, file) => {
     if (!file) return;
-    const previewUrl = URL.createObjectURL(file);
-    setBags(bags.map(bag =>
-      bag.id === bagId ? { ...bag, imagePreview: previewUrl } : bag
-    ));
+
+    const existingFiles = bags
+      .filter((b) => b.id !== bagId)
+      .map((b) => b.imageFile)
+      .filter(Boolean);
+
+    const validationMessage = await validateDonationImage(file, existingFiles);
+
+    if (validationMessage) {
+      setBags((prev) => prev.map((b) =>
+        b.id === bagId ? { ...b, imageError: validationMessage } : b
+      ));
+      return;
+    }
+
+    setBags((prev) => prev.map((b) => {
+      if (b.id !== bagId) return b;
+      if (b.imagePreview) URL.revokeObjectURL(b.imagePreview); // מחליפים תמונה — משחררים את הישנה
+      return { ...b, imagePreview: URL.createObjectURL(file), imageFile: file, imageError: null };
+    }));
+  };
+
+  const removeImage = (bagId) => {
+    setBags((prev) => prev.map((b) => {
+      if (b.id !== bagId) return b;
+      if (b.imagePreview) URL.revokeObjectURL(b.imagePreview);
+      return { ...b, imagePreview: null, imageFile: null, imageError: null };
+    }));
+  };
+
+  const handleRemoveImageClick = (bagId) => {
+    confirm({
+      title: "הסרת תמונה",
+      message: "להסיר את התמונה שנבחרה לשק הזה?",
+      confirmText: "הסירי תמונה",
+      cancelText: "ביטול",
+      destructive: true,
+      icon: "🖼️",
+      onConfirm: () => removeImage(bagId),
+    });
   };
 
   const addBag = () => {
-    setBags([...bags, {
-      id: bags.length + 1,
-      size: "", age: "", gender: "", condition: "", description: "", imagePreview: null
-    }]);
+    if (bags.length >= MAX_IMAGES) return;
+    setBags([...bags, { id: bags.length + 1, ...EMPTY_BAG() }]);
   };
 
-  const deleteBag = (bagId) => {
+  const deleteBagReal = (bagId) => {
+    setBags((prev) => {
+      const target = prev.find((b) => b.id === bagId);
+      if (target?.imagePreview) URL.revokeObjectURL(target.imagePreview);
+      return prev.filter((b) => b.id !== bagId);
+    });
+  };
+
+  const handleDeleteBagClick = (bagId) => {
     if (bags.length === 1) return;
-    const confirmed = window.confirm("למחוק את השק הזה?");
-    if (!confirmed) return;
-    setBags(bags.filter(bag => bag.id !== bagId));
+    confirm({
+      title: "מחיקת שק",
+      message: "האם למחוק את השק הזה? הפעולה אינה הפיכה.",
+      confirmText: "מחקי שק",
+      cancelText: "ביטול",
+      destructive: true,
+      icon: "🗑️",
+      onConfirm: () => deleteBagReal(bagId),
+    });
   };
 
-  // שדות חובה לכל שק: מידה, מגדר, מצב הבגדים, ותמונה/וידאו אחד לפחות.
+  const hasUnsavedData = bags.some((b) =>
+    b.size || b.age || b.gender || b.condition || b.description.trim() || b.imageFile
+  );
+
+  const handleBack = () => {
+    if (!hasUnsavedData) {
+      navigate("/home");
+      return;
+    }
+    confirm({
+      title: "לצאת בלי לשמור?",
+      message: "מילאת פרטי תרומה שעדיין לא נשמרו. אם תצאי עכשיו הם יימחקו.",
+      confirmText: "צאי בלי לשמור",
+      cancelText: "המשיכי למלא",
+      destructive: true,
+      icon: "⚠️",
+      onConfirm: () => navigate("/home"),
+    });
+  };
+
+  // שדות חובה לכל שק: מידה, מגדר, מצב הבגדים, ותמונה אחת לפחות.
   // תיאור נשאר רשות (כמו שמסומן בטופס).
   const validateBags = () => {
     for (let i = 0; i < bags.length; i++) {
@@ -52,8 +140,8 @@ export default function UploadDonationPage() {
       if (!bag.size || !bag.gender || !bag.condition) {
         return `שק ${i + 1}: יש למלא מידה, מגדר ומצב בגדים`;
       }
-      if (!bag.imagePreview) {
-        return `שק ${i + 1}: יש להעלות תמונה או וידאו`;
+      if (!bag.imageFile) {
+        return `שק ${i + 1}: יש להוסיף לפחות תמונה אחת`;
       }
     }
     return null;
@@ -96,7 +184,7 @@ export default function UploadDonationPage() {
       setUploaded(true);
     } catch (error) {
       console.error(error);
-      alert("שגיאה בהעלאת השק: " + error);
+      setError("שגיאה בהעלאת השק: " + error);
     } finally {
       setLoading(false);
     }
@@ -106,6 +194,10 @@ export default function UploadDonationPage() {
   const ageOptions       = ["תינוקות", "ילדים", "נוער", "מבוגרים", "קשישים"];
   const genderOptions    = ["בנים", "בנות", "יוניסקס"];
   const conditionOptions = ["חדש", "כמו חדש", "תקין", "משומש"];
+
+  const imagesSelectedCount = bags.filter((b) => b.imageFile).length;
+  const remainingSlots = Math.max(0, MAX_IMAGES - bags.length);
+  const canSubmit = !loading && bags.every((b) => b.imageFile);
 
   if (uploaded) {
     return (
@@ -123,7 +215,7 @@ export default function UploadDonationPage() {
           </button>
           <button onClick={() => {
             setUploaded(false);
-            setBags([{ id: 1, size: "", age: "", gender: "", condition: "", description: "", imagePreview: null }]);
+            setBags([{ id: 1, ...EMPTY_BAG() }]);
           }}
             className="w-full border border-rw-border text-rw-sub rounded-2xl py-3 text-sm font-semibold">
             העלאת שק נוסף
@@ -139,7 +231,7 @@ export default function UploadDonationPage() {
       <div className="sticky top-0 bg-rw-bg z-10
                       flex items-center justify-between
                       px-5 py-4 border-b border-rw-border">
-        <button onClick={() => navigate("/home")} className="text-rw-sub text-2xl">→</button>
+        <button onClick={handleBack} className="text-rw-sub text-2xl">→</button>
         <h1 className="font-bold text-rw-title text-base">העלאת שק תרומה</h1>
         <div className="w-6" />
       </div>
@@ -156,7 +248,7 @@ export default function UploadDonationPage() {
           <div key={bag.id} className="bg-rw-card rounded-2xl shadow-sm p-4">
 
             <div className="flex justify-between items-center mb-3">
-              <button onClick={() => deleteBag(bag.id)}
+              <button onClick={() => handleDeleteBagClick(bag.id)}
                 className={`text-xl ${bags.length === 1 ? "opacity-30" : "text-gray-400"}`}>
                 🗑️
               </button>
@@ -169,7 +261,7 @@ export default function UploadDonationPage() {
             <div className="relative border-2 border-dashed border-rw-border
                             rounded-xl bg-rw-input overflow-hidden
                             flex flex-col items-center justify-center
-                            mb-4 cursor-pointer"
+                            cursor-pointer"
                  style={{ minHeight: "120px" }}>
               {bag.imagePreview ? (
                 <img src={bag.imagePreview} alt="תצוגה מקדימה"
@@ -177,15 +269,29 @@ export default function UploadDonationPage() {
               ) : (
                 <div className="flex flex-col items-center py-10">
                   <span className="text-4xl text-rw-btn mb-2">📷</span>
-                  <p className="text-rw-sub text-sm">הוספת תמונה או וידאו</p>
+                  <p className="text-rw-sub text-sm">הוספת תמונה</p>
+                  <p className="text-rw-sub text-[11px] mt-1">JPG · PNG · WEBP, עד 5MB</p>
                 </div>
               )}
-              <input type="file" accept="image/*,video/*"
+              <input type="file" accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => handleImageChange(bag.id, e.target.files[0])}
                 className="absolute inset-0 opacity-0 cursor-pointer" />
+              {bag.imagePreview && (
+                <button type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveImageClick(bag.id); }}
+                  aria-label="הסרת תמונה"
+                  className="absolute top-2 left-2 z-10 w-7 h-7 bg-black/60 text-white
+                             rounded-full flex items-center justify-center text-sm">
+                  ✕
+                </button>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            {bag.imageError && (
+              <p className="text-red-500 text-xs text-right mt-1.5">{bag.imageError}</p>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 mt-3">
               {[
                 { field: "size",      label: "מידה",  options: sizeOptions      },
                 { field: "age",       label: "גיל",   options: ageOptions       },
@@ -213,14 +319,25 @@ export default function UploadDonationPage() {
           </div>
         ))}
 
-        <button onClick={addBag}
+        <div className="text-center">
+          <p className="text-rw-sub text-xs">
+            {imagesSelectedCount} מתוך {MAX_IMAGES} תמונות נבחרו
+            {remainingSlots > 0 && ` · אפשר להוסיף עוד ${remainingSlots}`}
+          </p>
+          {bags.length >= MAX_IMAGES && (
+            <p className="text-rw-sub text-[11px] mt-0.5">ניתן להעלות עד {MAX_IMAGES} תמונות</p>
+          )}
+        </div>
+
+        <button onClick={addBag} disabled={bags.length >= MAX_IMAGES}
           className="w-full border-2 border-dashed border-rw-border
                      rounded-2xl py-4 text-rw-green text-sm font-semibold
-                     flex items-center justify-center gap-2 active:bg-rw-input">
+                     flex items-center justify-center gap-2 active:bg-rw-input
+                     disabled:opacity-40 disabled:cursor-not-allowed">
           <span>⊕</span><span>הוספת שק נוסף</span>
         </button>
 
-        <button onClick={handleUpload} disabled={loading}
+        <button onClick={handleUpload} disabled={!canSubmit}
           className="w-full bg-rw-btn text-white rounded-2xl py-4
                      text-sm font-semibold flex items-center justify-center gap-2
                      active:bg-rw-btn-hover mb-4 disabled:opacity-60">
@@ -230,6 +347,7 @@ export default function UploadDonationPage() {
 
       </div>
 
+      <ConfirmDialog {...confirmDialogProps} />
       <BottomNav active="donate" />
     </div>
   );

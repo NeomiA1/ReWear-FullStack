@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
 import AssociationRecommendationList from "../../components/AssociationRecommendationList";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog";
 import {
   getDonationBagsByUserId,
   updateDonationBagStatus
@@ -34,6 +36,7 @@ export default function ProfilePage() {
   const [sentBagIds, setSentBagIds] = useState([]);
   const [loadingBags, setLoadingBags] = useState(false);
   const [bagsError, setBagsError] = useState(null);
+  const { confirm, confirmDialogProps } = useConfirmDialog();
 
   useEffect(() => {
     const loadBags = async () => {
@@ -160,6 +163,40 @@ export default function ProfilePage() {
     } finally {
       setSending(false);
     }
+  };
+
+  // בחירת עמותה חדשה כשכבר יש נבחרת — זו החלפה, לא בחירה ראשונית, אז
+  // מאשרים לפני שמאבדים את הבחירה הקודמת. בחירה ראשונית (אין נבחרת עדיין)
+  // או לחיצה חוזרת על אותה עמותה נשארות מיידיות — אין כאן שום דבר לאבד.
+  const handleSelectOrg = (org) => {
+    if (selectedOrg && selectedOrg.id !== org.id) {
+      confirm({
+        title: "החלפת עמותה",
+        message: `העמותה שנבחרה תוחלף מ${selectedOrg.name} ל${org.name}.`,
+        confirmText: "החליפי עמותה",
+        cancelText: "ביטול",
+        icon: "🔁",
+        onConfirm: () => {
+          setSelectedOrg(org);
+          setSendError(null);
+        },
+      });
+      return;
+    }
+    setSelectedOrg(org);
+    setSendError(null);
+  };
+
+  const handleSendClick = () => {
+    if (!selectedBag || !selectedOrg) return;
+    confirm({
+      title: "שליחת תרומה",
+      message: `לשלוח את השק ל${selectedOrg.name}?`,
+      confirmText: "כן, שלחי",
+      cancelText: "ביטול",
+      icon: "📦",
+      onConfirm: handleSendToOrg,
+    });
   };
 
   if (!user) return null;
@@ -341,7 +378,7 @@ export default function ProfilePage() {
           <AssociationRecommendationList
             bag={selectedBag}
             selectedId={selectedOrg?.id}
-            onSelect={(org) => { setSelectedOrg(org); setSendError(null); }}
+            onSelect={handleSelectOrg}
           />
         </div>
 
@@ -365,7 +402,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            <button onClick={handleSendToOrg} disabled={sending}
+            <button onClick={handleSendClick} disabled={sending}
               className="w-full bg-rw-btn text-white rounded-xl py-3
                          text-sm font-semibold flex items-center justify-center gap-2
                          active:bg-rw-btn-hover disabled:opacity-50">
@@ -382,6 +419,7 @@ export default function ProfilePage() {
 
       </div>
 
+      <ConfirmDialog {...confirmDialogProps} />
       <BottomNav active="profile" />
     </div>
   );
