@@ -173,7 +173,7 @@ export default function AssociationRecommendationList({ bag = null, selectedId =
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {displayed.map(({ association: org, reasons, isAvailable }) => (
+          {displayed.map(({ association: org, percent, reasons, isAvailable }) => (
             <div
               key={org.id}
               onClick={() => onSelect && onSelect(org)}
@@ -184,16 +184,26 @@ export default function AssociationRecommendationList({ bag = null, selectedId =
             >
               <div className="flex items-center justify-between">
                 {selectedId === org.id && <span className="text-rw-btn text-lg">✓</span>}
-                <span className="font-semibold text-rw-title text-sm">{org.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-rw-title text-sm">{org.name}</span>
+                  <span className="text-[11px] font-bold text-rw-btn bg-rw-btn/10 px-2 py-0.5 rounded-full shrink-0">
+                    {percent}% התאמה
+                  </span>
+                </div>
               </div>
 
               <span className="text-xs text-rw-sub text-right">📍 {org.city} · {org.area}</span>
               <span className="text-xs text-rw-sub text-right">{org.types}</span>
 
               {reasons.length > 0 && (
-                <div className="flex flex-col gap-0.5 items-end">
-                  {reasons.map((reason, i) => (
-                    <span key={i} className="text-[11px] text-rw-green text-right">✨ {reason}</span>
+                <div className="border-t border-rw-border pt-2 mt-1 flex flex-col gap-1 items-end">
+                  <span className="text-[10px] font-bold text-rw-sub">למה המלצנו על זה?</span>
+                  {reasons.map((reason) => (
+                    <span key={reason.id} className="text-[11px] text-rw-green text-right
+                                                      flex items-center gap-1.5 justify-end">
+                      <span>{reason.text}</span>
+                      <span className="shrink-0">{reason.icon}</span>
+                    </span>
                   ))}
                 </div>
               )}

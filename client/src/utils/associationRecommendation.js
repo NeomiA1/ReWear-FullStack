@@ -180,7 +180,16 @@ const CATEGORY_LABELS_BY_ID = {
   elderly: "הקשישים",
 };
 
-// מנקדת עמותה בודדת ומחזירה גם רשימת "סיבות" קריאה (עד 3, לפי משקל).
+// הופך ניקוד 0–100 לאחוז תצוגה — קלאם הגנתי בלבד, לא נוסחה נפרדת: score
+// כבר בנוי כך שסכום המשקלים המקסימלי הוא 100 בדיוק (ראו פירוט המשקלים
+// למעלה), אז האחוז הוא פשוט הניקוד עצמו.
+export function getRecommendationPercent(score) {
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+// מנקדת עמותה בודדת ומחזירה גם רשימת "סיבות" — רק ממדים שבאמת תרמו נקודות
+// (או, עבור זמינות, שבאמת התקיימו). אין הגבלה מלאכותית על הכמות: עמותה עם
+// ניקוד נמוך תציג פחות סיבות באופן טבעי, כי פחות ממדים בכלל תרמו לה נקודות.
 export function scoreAssociation(org, { user, bag, preferredCauses, profile, isAvailable }) {
   const bagCategory = getBagCategory(bag);
 
@@ -196,51 +205,56 @@ export function scoreAssociation(org, { user, bag, preferredCauses, profile, isA
 
   if (cat.reason === "current_need") {
     candidates.push({
+      id: "current_need",
+      icon: "🎯",
       text: `העמותה זקוקה כרגע בדיוק לבגדי ${CATEGORY_LABELS_BY_ID[cat.meta] || ""} כמו בשק שלך`,
       weight: cat.points,
     });
   } else if (cat.reason === "accepts") {
     candidates.push({
+      id: "category_match",
+      icon: "👕",
       text: `מקבלת בגדי ${CATEGORY_LABELS_BY_ID[cat.meta] || ""}, כמו בשק שלך`,
       weight: cat.points,
     });
   } else if (cat.reason === "accepts_general") {
-    candidates.push({ text: "מקבלת את כל סוגי הבגדים", weight: cat.points });
+    candidates.push({ id: "category_match", icon: "👕", text: "מקבלת את כל סוגי הבגדים", weight: cat.points });
   }
 
   if (cause.points > 0) {
     const labels = cause.matched.map((id) => CAUSE_LABELS_BY_ID[id]).filter(Boolean);
     candidates.push({
+      id: "causes_match",
+      icon: "💚",
       text: labels.length > 0 ? `תואמת נושאים שחשובים לך: ${labels.join(", ")}` : "תואמת נושאים שחשובים לך",
       weight: cause.points,
     });
   }
 
   if (dist.reason) {
-    candidates.push({ text: dist.reason, weight: dist.points });
+    candidates.push({ id: "distance", icon: "📍", text: dist.reason, weight: dist.points });
   }
 
   if (hist.reasons.includes("previously_selected")) {
-    candidates.push({ text: "בחרת בעמותה הזו בעבר", weight: 6 });
+    candidates.push({ id: "previously_selected", icon: "🔁", text: "בחרת בעמותה הזו בעבר", weight: 6 });
   }
   if (hist.reasons.includes("donated_category_match")) {
-    candidates.push({ text: "תואמת קטגוריות שתרמת בעבר", weight: 4 });
+    candidates.push({ id: "donated_category_match", icon: "🕘", text: "תואמת קטגוריות שתרמת בעבר", weight: 4 });
   }
 
   if (fresh.points > 0) {
-    candidates.push({ text: "עמותה חדשה במערכת", weight: fresh.points });
+    candidates.push({ id: "new_association", icon: "🆕", text: "עמותה חדשה במערכת", weight: fresh.points });
   }
 
   if (isAvailable) {
-    candidates.push({ text: "פתוחה כרגע לתרומות", weight: 1 });
+    candidates.push({ id: "available", icon: "✅", text: "פתוחה כרגע לתרומות", weight: 1 });
   }
 
   const reasons = candidates
     .sort((a, b) => b.weight - a.weight)
-    .slice(0, 3)
-    .map((c) => c.text);
+    .map(({ id, icon, text }) => ({ id, icon, text }));
 
-  return { score, reasons, bagCategory };
+  return { score, percent: getRecommendationPercent(score), reasons, bagCategory };
 }
 
 // שלב 1: ניקוד ומיון. מבוסס על onboarding + היסטוריה + השק הנוכחי + זמינות
@@ -254,7 +268,7 @@ export function rankAssociations(associations, { user, bag, profile, orgSettings
     .map(normalizeAssociation)
     .map((org) => {
       const isAvailable = getIsAssociationAvailable(org, orgSettings);
-      const { score, reasons, bagCategory } = scoreAssociation(org, {
+      const { score, percent, reasons, bagCategory } = scoreAssociation(org, {
         user,
         bag,
         preferredCauses,
@@ -268,6 +282,7 @@ export function rankAssociations(associations, { user, bag, profile, orgSettings
       return {
         association: org,
         score,
+        percent,
         reasons,
         isAvailable,
         bagCategory,
