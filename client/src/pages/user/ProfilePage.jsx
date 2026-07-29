@@ -16,7 +16,7 @@ import {
 import { checkAssociationExists } from "../../services/associationService";
 import { getBagStatusInfo } from "../../utils/statusLabels";
 import { getBagCategory } from "../../utils/associationRecommendation";
-import { recordAssociationSelected, recordDonatedCategory } from "../../utils/recommendationHistory";
+import { getRecoProfile, recordAssociationSelected, recordDonatedCategory } from "../../utils/recommendationHistory";
 import { recordDonationSent } from "../../utils/donationSendLog";
 
 export default function ProfilePage() {
@@ -136,7 +136,12 @@ export default function ProfilePage() {
       // מזינים את מנוע ההמלצות: העמותה שנבחרה בפועל + קטגוריית השק שנשלח —
       // אותות "היסטוריה" ל-scoreAssociation.js, לא נתון עסקי משותף.
       if (user?.userId != null) {
-        recordAssociationSelected(user.userId, selectedOrg.id);
+        // הנושאים שסוננו בפועל בסשן הנוכחי — לא העדפות ה-onboarding. הפילטר
+        // החי ב-AssociationRecommendationList כבר נכתב ל-lastFilters.causes
+        // (synchronous, ראו saveLastFilters) בכל פעם שהמשתמשת בחרה/ביטלה
+        // נושא, אז קריאה חוזרת שלו כאן משקפת בדיוק את מה שהיה פעיל.
+        const activeCauseFilters = getRecoProfile(user.userId).lastFilters.causes || [];
+        recordAssociationSelected(user.userId, selectedOrg.id, activeCauseFilters);
         recordDonatedCategory(user.userId, getBagCategory(selectedBag));
 
         // שונה מהותית מה-TODO(server) למעלה: זו לא סימולציה של "גילוי" ע"י

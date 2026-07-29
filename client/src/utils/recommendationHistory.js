@@ -4,6 +4,8 @@
 // ולא כל נתון עסקי משותף אחר. זה לא תחליף לנתונים אמיתיים מהשרת; זה קלט
 // למנוע ההמלצות ב-associationRecommendation.js בלבד.
 //
+import { CAUSES } from "../data/associations";
+
 // onboardingCauses  — נושאים שנבחרו בשלב ה-onboarding מיד אחרי ההרשמה
 //                      (RegisterCausesPage). זהו האות האישי הראשוני,
 //                      נשמר פעם אחת ומשמש כבסיס להמלצות מהשנייה הראשונה.
@@ -65,20 +67,34 @@ function dedupCapped(list, maxLength = MAX_LIST_LENGTH) {
   return [...new Set(list)].slice(-maxLength);
 }
 
+const VALID_CAUSE_IDS = new Set(CAUSES.map((c) => c.id));
+
+// מסננת ערכי נושא לא-תקפים (למשל מזהה ישן/שגוי) לפני שהם נכנסים בכלל
+// לפרופיל השמור — כך selectedCauses/onboardingCauses לעולם לא צוברים
+// ערכים שלא קיימים ברשימת הנושאים האמיתית.
+function sanitizeCauseIds(ids) {
+  if (!Array.isArray(ids)) return [];
+  return ids.filter((id) => VALID_CAUSE_IDS.has(id));
+}
+
 // נקראת פעם אחת ב-RegisterCausesPage (שלב ה-onboarding, מיד אחרי ההרשמה).
 export function saveOnboardingCauses(userId, causeIds) {
   const profile = getRecoProfile(userId);
-  profile.onboardingCauses = dedupCapped(causeIds || []);
+  profile.onboardingCauses = dedupCapped(sanitizeCauseIds(causeIds));
   saveRecoProfile(userId, profile);
 }
 
 // נקראת כשהמשתמש בפועל שולח תרומה לעמותה — גם רושמת את העמותה שנבחרה,
-// וגם "מלמדת" את מנוע ההמלצות מהנושאים שהיו מסוננים באותו רגע (אם היו).
+// וגם "מלמדת" את מנוע ההמלצות מהנושאים שהיו מסוננים בפועל בסשן הנוכחי
+// (activeCauseFilters — ראו ProfilePage.jsx: נקרא מ-lastFilters.causes,
+// שמשתקף שם באופן חי מפילטר הנושאים הפעיל ב-AssociationRecommendationList,
+// לא מ-onboardingCauses).
 export function recordAssociationSelected(userId, associationId, activeCauseFilters = []) {
   const profile = getRecoProfile(userId);
   profile.selectedAssociationIds = dedupCapped([...profile.selectedAssociationIds, associationId]);
-  if (activeCauseFilters.length > 0) {
-    profile.selectedCauses = dedupCapped([...profile.selectedCauses, ...activeCauseFilters]);
+  const validFilters = sanitizeCauseIds(activeCauseFilters);
+  if (validFilters.length > 0) {
+    profile.selectedCauses = dedupCapped([...profile.selectedCauses, ...validFilters]);
   }
   saveRecoProfile(userId, profile);
 }
