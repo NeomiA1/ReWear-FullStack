@@ -14,6 +14,8 @@ namespace RewearApi.BL
 
         public string? UserNote { get; set; }
         public string? CharityResponse { get; set; }
+        public string? ContactPhone { get; set; }
+        public string? PickupAddress { get; set; }
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

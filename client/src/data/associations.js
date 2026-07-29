@@ -3,16 +3,6 @@
 // ב-associationService.js). עד אז זהו המקור היחיד שכל מסכי ההמלצה
 // (ProfilePage/MapPage) קוראים ממנו, כדי שלא יהיו יותר מערכים כפולים.
 
-// שישה נושאי תרומה — משמשים גם בבחירת עדיפויות בהרשמה וגם בפילטר הנושאים.
-export const CAUSES = [
-  { id: "domestic_violence",   label: "נשים נפגעות אלימות במשפחה" },
-  { id: "babies_children",     label: "תינוקות וילדים" },
-  { id: "families_in_need",    label: "משפחות במצוקה" },
-  { id: "holocaust_survivors", label: "ניצולי שואה" },
-  { id: "soldiers",            label: "חיילים" },
-  { id: "animals",             label: "בעלי חיים" },
-];
-
 // קטגוריות בגדים — נגזרות מאותם ערכי "גיל" שכבר קיימים ב-UploadDonationPage.
 export const CATEGORIES = [
   { id: "baby",     label: "בגדי תינוקות" },

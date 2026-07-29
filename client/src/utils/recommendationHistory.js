@@ -4,7 +4,6 @@
 // ולא כל נתון עסקי משותף אחר. זה לא תחליף לנתונים אמיתיים מהשרת; זה קלט
 // למנוע ההמלצות ב-associationRecommendation.js בלבד.
 //
-import { CAUSES } from "../data/associations";
 
 // onboardingCauses  — נושאים שנבחרו בשלב ה-onboarding מיד אחרי ההרשמה
 //                      (RegisterCausesPage). זהו האות האישי הראשוני,
@@ -67,14 +66,11 @@ function dedupCapped(list, maxLength = MAX_LIST_LENGTH) {
   return [...new Set(list)].slice(-maxLength);
 }
 
-const VALID_CAUSE_IDS = new Set(CAUSES.map((c) => c.id));
-
-// מסננת ערכי נושא לא-תקפים (למשל מזהה ישן/שגוי) לפני שהם נכנסים בכלל
-// לפרופיל השמור — כך selectedCauses/onboardingCauses לעולם לא צוברים
-// ערכים שלא קיימים ברשימת הנושאים האמיתית.
+// סינון בסיסי בלבד — הרשימה התקפה כיום מגיעה מ-GET /api/Causes (מקור
+// אמת יחיד), לא ממערך קשיח בצד לקוח, אז אין כאן יותר whitelist מקומי.
 function sanitizeCauseIds(ids) {
   if (!Array.isArray(ids)) return [];
-  return ids.filter((id) => VALID_CAUSE_IDS.has(id));
+  return ids.filter((id) => typeof id === "string" && id.length > 0);
 }
 
 // נקראת פעם אחת ב-RegisterCausesPage (שלב ה-onboarding, מיד אחרי ההרשמה).

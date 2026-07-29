@@ -19,8 +19,10 @@ namespace RewearApi.BL
         // Populated from AssociationCauses JOIN; empty list = no causes on record.
         public List<string> Causes { get; set; } = new();
 
-        // Phase-B fields: not in DB yet — always empty for now.
+        // AcceptedCategories: backed by AssociationCategories (Phase F).
         public List<string> AcceptedCategories { get; set; } = new();
+
+        // CurrentNeeds: no backing source yet — always empty for now.
         public List<string> CurrentNeeds { get; set; } = new();
     }
 }

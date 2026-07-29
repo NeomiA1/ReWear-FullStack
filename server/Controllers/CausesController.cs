@@ -23,5 +23,25 @@ namespace RewearApi.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("user/{userId}")]
+        public ActionResult<List<string>> GetUserCauses(int userId)
+        {
+            if (userId <= 0)
+                return BadRequest("userId must be greater than 0");
+
+            List<string> causeIds = _causeDal.GetUserCauses(userId);
+            return Ok(causeIds);
+        }
+
+        [HttpPost("user/{userId}")]
+        public ActionResult SaveUserCauses(int userId, [FromBody] List<string> causeIds)
+        {
+            if (userId <= 0)
+                return BadRequest("userId must be greater than 0");
+
+            _causeDal.SaveUserCauses(userId, causeIds ?? new List<string>());
+            return Ok("User causes saved successfully");
+        }
     }
 }

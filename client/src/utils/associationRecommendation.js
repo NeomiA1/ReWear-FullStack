@@ -163,15 +163,6 @@ export function getIsAssociationAvailable(org, orgSettings) {
   return org.isAvailableDefault;
 }
 
-const CAUSE_LABELS_BY_ID = {
-  domestic_violence: "נשים נפגעות אלימות במשפחה",
-  babies_children: "תינוקות וילדים",
-  families_in_need: "משפחות במצוקה",
-  holocaust_survivors: "ניצולי שואה",
-  soldiers: "חיילים",
-  animals: "בעלי חיים",
-};
-
 const CATEGORY_LABELS_BY_ID = {
   baby: "התינוקות",
   children: "הילדים",
@@ -190,7 +181,7 @@ export function getRecommendationPercent(score) {
 // מנקדת עמותה בודדת ומחזירה גם רשימת "סיבות" — רק ממדים שבאמת תרמו נקודות
 // (או, עבור זמינות, שבאמת התקיימו). אין הגבלה מלאכותית על הכמות: עמותה עם
 // ניקוד נמוך תציג פחות סיבות באופן טבעי, כי פחות ממדים בכלל תרמו לה נקודות.
-export function scoreAssociation(org, { user, bag, preferredCauses, profile, isAvailable }) {
+export function scoreAssociation(org, { user, bag, preferredCauses, profile, isAvailable, causeLabelsById = {} }) {
   const bagCategory = getBagCategory(bag);
 
   const dist = distanceScore(user, org);
@@ -222,7 +213,7 @@ export function scoreAssociation(org, { user, bag, preferredCauses, profile, isA
   }
 
   if (cause.points > 0) {
-    const labels = cause.matched.map((id) => CAUSE_LABELS_BY_ID[id]).filter(Boolean);
+    const labels = cause.matched.map((id) => causeLabelsById[id]).filter(Boolean);
     candidates.push({
       id: "causes_match",
       icon: "💚",
@@ -259,7 +250,7 @@ export function scoreAssociation(org, { user, bag, preferredCauses, profile, isA
 
 // שלב 1: ניקוד ומיון. מבוסס על onboarding + היסטוריה + השק הנוכחי + זמינות
 // בלבד — *לא* מושפע מהפילטר החי של המסך (ראו applyFilters למטה).
-export function rankAssociations(associations, { user, bag, profile, orgSettings, now } = {}) {
+export function rankAssociations(associations, { user, bag, profile, orgSettings, now, causeLabelsById = {} } = {}) {
   const preferredCauses = [
     ...new Set([...(profile?.onboardingCauses || []), ...(profile?.selectedCauses || [])]),
   ];
@@ -274,6 +265,7 @@ export function rankAssociations(associations, { user, bag, profile, orgSettings
         preferredCauses,
         profile: profile || {},
         isAvailable,
+        causeLabelsById,
       });
       // מקדימים כאן חישוב מרחק/תאריך-הצטרפות גולמיים כדי ש-applyDisplaySort
       // (מיון "קרוב אליי"/"חדש במערכת") לא יצטרך לדעת שום דבר על user/now —
@@ -332,4 +324,4 @@ export function applyDisplaySort(filtered, sortBy) {
   return filtered;
 }
 
-export { CAUSE_LABELS_BY_ID, CATEGORY_LABELS_BY_ID };
+export { CATEGORY_LABELS_BY_ID };

@@ -43,6 +43,14 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
             {
                 using (SqlConnection con = Connect(CON_STR_NAME))
                 {
+                    string? causeCsv = (dto.CauseIds != null && dto.CauseIds.Count > 0)
+                        ? string.Join(",", dto.CauseIds)
+                        : null;
+
+                    string? categoryCsv = (dto.AcceptedCategoryIds != null && dto.AcceptedCategoryIds.Count > 0)
+                        ? string.Join(",", dto.AcceptedCategoryIds)
+                        : null;
+
                     var paramDic = new Dictionary<string, object>
                     {
                         { "@full_name",          dto.FullName              },
@@ -56,6 +64,8 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
                         { "@city",               (object?)dto.City      ?? DBNull.Value },
                         { "@work_mode",          dto.WorkMode              },
                         { "@delivery_mode",      dto.DeliveryMode          },
+                        { "@cause_ids_csv",      (object?)causeCsv      ?? DBNull.Value },
+                        { "@category_ids_csv",   (object?)categoryCsv   ?? DBNull.Value },
                     };
 
                     SqlCommand cmd = CreateCommand(SP_REGISTER_ORGANIZATION, con, paramDic);
@@ -97,10 +107,10 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
 
         /// <summary>
         /// Returns every association (available or not) as AssociationListItemDto,
-        /// including their Causes (from the AssociationCauses join table).
-        /// AcceptedCategories/CurrentNeeds have no backing DB column yet, so they
-        /// are always returned as empty lists — same for Latitude/Longitude (null),
-        /// there is no geocoding data in the schema.
+        /// including their Causes (AssociationCauses) and AcceptedCategories
+        /// (AssociationCategories). CurrentNeeds has no backing source yet, so it
+        /// is always returned as an empty list — same for Latitude/Longitude
+        /// (null), there is no geocoding data in the schema.
         /// </summary>
         public List<AssociationListItemDto> GetAll()
         {
@@ -162,6 +172,28 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
                     foreach (var a in results)
                         if (causesByAssoc.TryGetValue(a.Id, out var list))
                             a.Causes = list;
+
+                    // Bucket AssociationCategories rows the same way — CurrentNeeds
+                    // stays empty, there is no backing source for it yet.
+                    var categoriesByAssoc = new Dictionary<int, List<string>>();
+                    using (SqlCommand cmd = new SqlCommand(
+                        "SELECT association_id, category_id FROM AssociationCategories", con))
+                    {
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                int aid = Convert.ToInt32(reader["association_id"]);
+                                if (!categoriesByAssoc.TryGetValue(aid, out var list))
+                                    categoriesByAssoc[aid] = list = new List<string>();
+                                list.Add(reader["category_id"].ToString()!);
+                            }
+                        }
+                    }
+
+                    foreach (var a in results)
+                        if (categoriesByAssoc.TryGetValue(a.Id, out var list))
+                            a.AcceptedCategories = list;
                 }
 
                 return results;

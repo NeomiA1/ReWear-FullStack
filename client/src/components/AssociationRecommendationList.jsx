@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useUser } from "../context/UserContext";
-import { CAUSES, CATEGORIES } from "../data/associations";
+import { CATEGORIES } from "../data/associations";
 import { rankAssociations, applyFilters, applyDisplaySort } from "../utils/associationRecommendation";
 import { getRecoProfile, saveLastFilters } from "../utils/recommendationHistory";
 import { getAllAssociations } from "../services/associationService";
+import { getAllCauses } from "../services/causesService";
 
 const SORT_OPTIONS = [
   { id: "recommended", label: "מומלץ עבורך" },
@@ -24,6 +25,7 @@ export default function AssociationRecommendationList({ bag = null, selectedId =
   const { user, orgSettings } = useUser();
 
   const [associations, setAssociations] = useState([]);
+  const [causes, setCauses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -39,16 +41,19 @@ export default function AssociationRecommendationList({ bag = null, selectedId =
     setProfile(getRecoProfile(user?.userId));
   }, [user?.userId]);
 
-  // טעינת רשימת העמותות מה-API — פעם אחת, לא תלוי בפילטרים/משתמש.
+  // טעינת רשימת העמותות ומילון ה-Causes מה-API — פעם אחת, לא תלוי בפילטרים/משתמש.
   useEffect(() => {
     let cancelled = false;
 
     setLoading(true);
     setError(null);
 
-    getAllAssociations()
-      .then((data) => {
-        if (!cancelled) setAssociations(data);
+    Promise.all([getAllAssociations(), getAllCauses()])
+      .then(([associationsData, causesData]) => {
+        if (!cancelled) {
+          setAssociations(associationsData);
+          setCauses(causesData);
+        }
       })
       .catch((err) => {
         if (!cancelled) setError(typeof err === "string" ? err : "שגיאה בטעינת רשימת העמותות");
@@ -62,10 +67,15 @@ export default function AssociationRecommendationList({ bag = null, selectedId =
     };
   }, []);
 
+  const causeLabelsById = useMemo(
+    () => Object.fromEntries(causes.map((c) => [c.causeId, c.labelHe])),
+    [causes]
+  );
+
   const ranked = useMemo(
-    () => rankAssociations(associations, { user, bag, profile, orgSettings }),
+    () => rankAssociations(associations, { user, bag, profile, orgSettings, causeLabelsById }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [associations, user?.userId, user?.city, user?.location, bag?.id, bag?.age, profile, orgSettings]
+    [associations, user?.userId, user?.city, user?.location, bag?.id, bag?.age, profile, orgSettings, causeLabelsById]
   );
 
   const filtered = useMemo(
@@ -149,16 +159,16 @@ export default function AssociationRecommendationList({ bag = null, selectedId =
 
       {/* פילטר נושאים */}
       <div className="flex flex-wrap gap-2">
-        {CAUSES.map((cause) => (
+        {causes.map((cause) => (
           <button
-            key={cause.id}
-            onClick={() => toggleCause(cause.id)}
+            key={cause.causeId}
+            onClick={() => toggleCause(cause.causeId)}
             className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors
-              ${causesFilter.includes(cause.id)
+              ${causesFilter.includes(cause.causeId)
                 ? "bg-rw-green text-white border-rw-green"
                 : "bg-rw-card text-rw-sub border-rw-border"}`}
           >
-            {cause.label}
+            {cause.labelHe}
           </button>
         ))}
       </div>

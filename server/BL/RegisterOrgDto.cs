@@ -19,6 +19,12 @@ namespace RewearApi.BL
         public string WorkMode        { get; set; } = "";
         public string DeliveryMode    { get; set; } = "";
 
+        // Optional cause_id keys selected during registration (Causes catalog).
+        public List<string>? CauseIds { get; set; }
+
+        // Optional category_id keys the association accepts (baby/children/teen/adult/elderly).
+        public List<string>? AcceptedCategoryIds { get; set; }
+
         // ── Column length limits (from real DB schema) ────────────────────
         // Named constants so a schema change is a one-line edit here only.
         private const int MaxEmailLength           = 100;

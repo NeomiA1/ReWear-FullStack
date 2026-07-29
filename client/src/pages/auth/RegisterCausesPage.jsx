@@ -1,17 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-import { CAUSES } from "../../data/associations";
+import { getAllCauses, saveUserCauses } from "../../services/causesService";
 import { saveOnboardingCauses } from "../../utils/recommendationHistory";
 
 // שלב onboarding, מיד אחרי הרשמת משתמש פרטי (RegisterPrivatePage) ולפני
-// המעבר לדף הבית. הבחירה נשמרת צד-לקוח בלבד (recommendationHistory.js,
-// לפי userId) ומוזנת מיד למנוע ההמלצות — אין קריאת שרת כאן.
+// המעבר לדף הבית. הבחירה נשמרת גם בשרת (UserCauses, מקור האמת) וגם
+// ב-localStorage (recommendationHistory.js) כקלט מיידי למנוע ההמלצות.
 export default function RegisterCausesPage() {
   const { user } = useUser();
   const navigate = useNavigate();
 
+  const [causes, setCauses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(() => new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    getAllCauses()
+      .then((data) => {
+        if (!cancelled) setCauses(data);
+      })
+      .catch(() => {
+        // רשימה ריקה = פשוט לא יוצגו כפתורים; "דלג" עדיין עובד.
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const toggle = (causeId) => {
     setSelected((prev) => {
@@ -22,9 +41,16 @@ export default function RegisterCausesPage() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const causeIds = [...selected];
     if (user?.userId != null) {
-      saveOnboardingCauses(user.userId, [...selected]);
+      saveOnboardingCauses(user.userId, causeIds);
+      try {
+        await saveUserCauses(user.userId, causeIds);
+      } catch {
+        // best-effort סנכרון לשרת — localStorage כבר מזין את מנוע ההמלצות,
+        // אונבורדינג לא צריך להיחסם על תקלת רשת כאן.
+      }
     }
     navigate("/home");
   };
@@ -49,22 +75,26 @@ export default function RegisterCausesPage() {
       </p>
 
       <div className="bg-rw-card rounded-2xl shadow-sm p-6">
-        <div className="grid grid-cols-2 gap-3">
-          {CAUSES.map((cause) => {
-            const isSelected = selected.has(cause.id);
-            return (
-              <button
-                key={cause.id}
-                onClick={() => toggle(cause.id)}
-                className={`rounded-xl px-4 py-3 text-sm text-right border transition-colors
-                  ${isSelected
-                    ? "bg-rw-btn text-white border-rw-btn"
-                    : "bg-rw-input text-rw-title border-rw-border"}`}>
-                {cause.label}
-              </button>
-            );
-          })}
-        </div>
+        {loading ? (
+          <p className="text-rw-sub text-sm text-center">טוען נושאים...</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {causes.map((cause) => {
+              const isSelected = selected.has(cause.causeId);
+              return (
+                <button
+                  key={cause.causeId}
+                  onClick={() => toggle(cause.causeId)}
+                  className={`rounded-xl px-4 py-3 text-sm text-right border transition-colors
+                    ${isSelected
+                      ? "bg-rw-btn text-white border-rw-btn"
+                      : "bg-rw-input text-rw-title border-rw-border"}`}>
+                  {cause.labelHe}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* כפתורים */}

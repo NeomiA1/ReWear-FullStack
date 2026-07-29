@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { registerOrganization } from "../../services/associationService";
+import { getAllCauses } from "../../services/causesService";
+import { CATEGORIES } from "../../data/associations";
 
 const WORK_MODE_OPTIONS = [
   { value: "SecondHandStores", label: "חנויות יד שנייה"  },
@@ -27,11 +29,40 @@ export default function RegisterOrgPage() {
   const [logoPreview,  setLogoPreview]  = useState(null);
   const [workMode,     setWorkMode]     = useState("");
   const [deliveryMode, setDeliveryMode] = useState("");
+  const [causes,       setCauses]       = useState([]);
+  const [causeIds,     setCauseIds]     = useState([]);
+  const [acceptedCategoryIds, setAcceptedCategoryIds] = useState([]);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState(null);
 
   const { setUser } = useUser();
   const navigate    = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+    getAllCauses()
+      .then((data) => {
+        if (!cancelled) setCauses(data);
+      })
+      .catch(() => {
+        // רשימה ריקה = פשוט לא יוצגו checkbox-ים; שדה אופציונלי בהרשמה.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleCause = (causeId) => {
+    setCauseIds((prev) =>
+      prev.includes(causeId) ? prev.filter((c) => c !== causeId) : [...prev, causeId]
+    );
+  };
+
+  const toggleCategory = (categoryId) => {
+    setAcceptedCategoryIds((prev) =>
+      prev.includes(categoryId) ? prev.filter((c) => c !== categoryId) : [...prev, categoryId]
+    );
+  };
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
@@ -65,6 +96,8 @@ export default function RegisterOrgPage() {
         address:         address,
         workMode:        workMode,
         deliveryMode:    deliveryMode,
+        causeIds:        causeIds,
+        acceptedCategoryIds: acceptedCategoryIds,
       });
 
    
@@ -211,6 +244,48 @@ export default function RegisterOrgPage() {
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+        </div>
+
+        {/* Causes */}
+        {causes.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-rw-sub text-right">תחומי פעילות (אופציונלי)</label>
+            <div className="flex flex-wrap gap-2 justify-end">
+              {causes.map((cause) => (
+                <button
+                  key={cause.causeId}
+                  type="button"
+                  onClick={() => toggleCause(cause.causeId)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors
+                    ${causeIds.includes(cause.causeId)
+                      ? "bg-rw-btn text-white border-rw-btn"
+                      : "bg-rw-input text-rw-sub border-rw-border"}`}
+                >
+                  {cause.labelHe}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Accepted categories */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-rw-sub text-right">גילי יעד שהעמותה מקבלת (אופציונלי)</label>
+          <div className="flex flex-wrap gap-2 justify-end">
+            {CATEGORIES.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => toggleCategory(category.id)}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors
+                  ${acceptedCategoryIds.includes(category.id)
+                    ? "bg-rw-btn text-white border-rw-btn"
+                    : "bg-rw-input text-rw-sub border-rw-border"}`}
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Submit */}

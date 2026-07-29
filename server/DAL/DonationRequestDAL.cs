@@ -102,6 +102,11 @@ namespace RewearApi.DAL
 
                 return Convert.ToInt32(result);
             }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
 
