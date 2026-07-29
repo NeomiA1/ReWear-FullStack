@@ -1,6 +1,25 @@
 import API_BASE_URL from "./api";
 
 /**
+ * Fetches every association as AssociationListItemDto rows (id, name,
+ * email, city, area, deliveryMode, isAvailableDefault, joinedAt, types,
+ * latitude, longitude, causes, acceptedCategories, currentNeeds).
+ *
+ * @returns {Promise<object[]>}
+ * @throws {string} user-facing error message
+ */
+export async function getAllAssociations() {
+  const response = await fetch(`${API_BASE_URL}/Associations`);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return response.json();
+}
+
+/**
  * Registers a new organization in one server round-trip.
  * The server creates both a Users row and an Associations row
  * inside a single transaction and returns the created user object.

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useUser } from "../context/UserContext";
-import { ASSOCIATIONS, CAUSES, CATEGORIES } from "../data/associations";
+import { CAUSES, CATEGORIES } from "../data/associations";
 import { rankAssociations, applyFilters, applyDisplaySort } from "../utils/associationRecommendation";
 import { getRecoProfile, saveLastFilters } from "../utils/recommendationHistory";
+import { getAllAssociations } from "../services/associationService";
 
 const SORT_OPTIONS = [
   { id: "recommended", label: "מומלץ עבורך" },
@@ -22,6 +23,10 @@ const SORT_OPTIONS = [
 export default function AssociationRecommendationList({ bag = null, selectedId = null, onSelect, renderAction }) {
   const { user, orgSettings } = useUser();
 
+  const [associations, setAssociations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [profile, setProfile] = useState(() => getRecoProfile(user?.userId));
   const [search, setSearch] = useState("");
   const [causesFilter, setCausesFilter] = useState(() => getRecoProfile(user?.userId).lastFilters.causes || []);
@@ -34,10 +39,33 @@ export default function AssociationRecommendationList({ bag = null, selectedId =
     setProfile(getRecoProfile(user?.userId));
   }, [user?.userId]);
 
+  // טעינת רשימת העמותות מה-API — פעם אחת, לא תלוי בפילטרים/משתמש.
+  useEffect(() => {
+    let cancelled = false;
+
+    setLoading(true);
+    setError(null);
+
+    getAllAssociations()
+      .then((data) => {
+        if (!cancelled) setAssociations(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(typeof err === "string" ? err : "שגיאה בטעינת רשימת העמותות");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const ranked = useMemo(
-    () => rankAssociations(ASSOCIATIONS, { user, bag, profile, orgSettings }),
+    () => rankAssociations(associations, { user, bag, profile, orgSettings }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user?.userId, user?.city, user?.location, bag?.id, bag?.age, profile, orgSettings]
+    [associations, user?.userId, user?.city, user?.location, bag?.id, bag?.age, profile, orgSettings]
   );
 
   const filtered = useMemo(
@@ -160,7 +188,16 @@ export default function AssociationRecommendationList({ bag = null, selectedId =
       </div>
 
       {/* רשימת עמותות */}
-      {displayed.length === 0 ? (
+      {loading ? (
+        <div className="bg-rw-card rounded-2xl p-5 text-center shadow-sm">
+          <p className="text-rw-sub text-sm">טוען עמותות...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-rw-card rounded-2xl p-5 text-center shadow-sm">
+          <p className="text-3xl mb-2">⚠️</p>
+          <p className="text-rw-sub text-sm">{error}</p>
+        </div>
+      ) : displayed.length === 0 ? (
         <div className="bg-rw-card rounded-2xl p-5 text-center shadow-sm">
           <p className="text-3xl mb-2">🔍</p>
           <p className="text-rw-sub text-sm">לא נמצאו עמותות התואמות את הסינון</p>

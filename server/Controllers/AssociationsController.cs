@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RewearApi.BL;
 using RewearApi.DAL;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RewearApi.Controllers
@@ -12,6 +13,13 @@ namespace RewearApi.Controllers
         private readonly AssociationDAL _associationDal = new AssociationDAL();
 
         // ── New endpoint ─────────────────────────────────────────────────
+
+        [HttpGet]
+        public ActionResult<List<AssociationListItemDto>> GetAll()
+        {
+            List<AssociationListItemDto> associations = _associationDal.GetAll();
+            return Ok(associations);
+        }
 
         [HttpPost("register")]
         public ActionResult<User> RegisterOrganization([FromBody] RegisterOrgDto dto)

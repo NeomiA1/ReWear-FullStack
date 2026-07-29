@@ -93,6 +93,85 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
             }
         }
 
+        // ── New method ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns every association (available or not) as AssociationListItemDto,
+        /// including their Causes (from the AssociationCauses join table).
+        /// AcceptedCategories/CurrentNeeds have no backing DB column yet, so they
+        /// are always returned as empty lists — same for Latitude/Longitude (null),
+        /// there is no geocoding data in the schema.
+        /// </summary>
+        public List<AssociationListItemDto> GetAll()
+        {
+            try
+            {
+                var results = new List<AssociationListItemDto>();
+
+                using (SqlConnection con = Connect(CON_STR_NAME))
+                {
+                    using (SqlCommand cmd = new SqlCommand(
+                        "SELECT association_id, association_name, association_type, " +
+                        "city, area, email, delivery_mode, is_available, created_at " +
+                        "FROM Associations ORDER BY association_name", con))
+                    {
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                results.Add(new AssociationListItemDto
+                                {
+                                    Id                 = Convert.ToInt32(reader["association_id"]),
+                                    Name               = reader["association_name"].ToString()!,
+                                    Email              = reader["email"].ToString()!,
+                                    City               = reader["city"] == DBNull.Value
+                                                             ? null : reader["city"].ToString(),
+                                    Area               = reader["area"] == DBNull.Value
+                                                             ? null : reader["area"].ToString(),
+                                    DeliveryMode       = reader["delivery_mode"].ToString()!,
+                                    IsAvailableDefault = Convert.ToBoolean(reader["is_available"]),
+                                    JoinedAt           = Convert.ToDateTime(reader["created_at"])
+                                                             .ToString("o"),
+                                    Types              = reader["association_type"] == DBNull.Value
+                                                             ? null : reader["association_type"].ToString(),
+                                    Latitude           = null,
+                                    Longitude          = null,
+                                });
+                            }
+                        }
+                    }
+
+                    // Bucket AssociationCauses rows into a dictionary so each
+                    // association gets its causes without N+1 queries.
+                    var causesByAssoc = new Dictionary<int, List<string>>();
+                    using (SqlCommand cmd = new SqlCommand(
+                        "SELECT association_id, cause_id FROM AssociationCauses", con))
+                    {
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                int aid = Convert.ToInt32(reader["association_id"]);
+                                if (!causesByAssoc.TryGetValue(aid, out var list))
+                                    causesByAssoc[aid] = list = new List<string>();
+                                list.Add(reader["cause_id"].ToString()!);
+                            }
+                        }
+                    }
+
+                    foreach (var a in results)
+                        if (causesByAssoc.TryGetValue(a.Id, out var list))
+                            a.Causes = list;
+                }
+
+                return results;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
         // ── Existing methods — unchanged ─────────────────────────────────
 
         public Association? CheckAssociationExists(string name, string email)
