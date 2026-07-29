@@ -49,8 +49,8 @@ export default function RegisterShopPage() {
       // create real login credentials (bizNumber/contact aren't stored
       // either — Store has no matching columns). Needs a combined register
       // endpoint like /api/associations/register before a shop can log back
-      // in on its own; until then the session below is client-only, same as
-      // the demo logins.
+      // in on its own; until then the session below is client-only and is
+      // lost on refresh/logout.
       await registerStore({
         storeName: shopName,
         address,
