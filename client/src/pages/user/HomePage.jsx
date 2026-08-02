@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import PageContainer from "../../components/PageContainer";
 import { getDonationStatusInfo } from "../../utils/statusLabels";
 
 export default function HomePage() {
@@ -22,7 +23,7 @@ export default function HomePage() {
   ).slice(0, 3); // מקסימום 3 בדף הבית
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24">
+    <PageContainer className="pb-24" wide>
 
       {/* ── כותרת עליונה ── */}
       <div className="flex justify-between items-center px-5 pt-6 pb-4">
@@ -153,6 +154,6 @@ export default function HomePage() {
       </div>
 
       <BottomNav active="home" />
-    </div>
+    </PageContainer>
   );
 }

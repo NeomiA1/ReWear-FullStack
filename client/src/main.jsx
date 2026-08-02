@@ -7,10 +7,7 @@ import { UserProvider } from "./context/UserContext";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <UserProvider>
-      {/* מעטפת האייפון – עוטפת את כל האפליקציה */}
-      <div id="phone-wrapper">
-        <App />
-      </div>
+      <App />
     </UserProvider>
   </StrictMode>
 );

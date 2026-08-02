@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { registerUser, loginUser } from "../../services/userService";
+import AuthLayout from "../../components/AuthLayout";
 
 export default function RegisterPrivatePage() {
 
@@ -65,7 +66,7 @@ export default function RegisterPrivatePage() {
   const handleGoogle    = () => console.log("גוגל");
 
   return (
-    <div className="min-h-screen bg-rw-bg overflow-y-auto px-6 py-8">
+    <AuthLayout>
 
       {/* חץ חזרה */}
       <div className="flex justify-end mb-4">
@@ -178,6 +179,6 @@ export default function RegisterPrivatePage() {
         </span>
       </p>
 
-    </div>
+    </AuthLayout>
   );
 }

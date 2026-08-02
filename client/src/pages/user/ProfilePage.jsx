@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import PageContainer from "../../components/PageContainer";
 import AssociationRecommendationList from "../../components/AssociationRecommendationList";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { useConfirmDialog } from "../../hooks/useConfirmDialog";
@@ -223,7 +224,7 @@ export default function ProfilePage() {
   }));
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       {/* Header */}
       <div className="bg-rw-card px-5 pt-8 pb-6 shadow-sm">
@@ -313,7 +314,7 @@ export default function ProfilePage() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 md:grid md:grid-cols-2 xl:grid-cols-3 md:items-start">
               {allBags.map((bag) => {
                 const alreadySent = sentBagIds.includes(bag.id);
                 return (
@@ -426,6 +427,6 @@ export default function ProfilePage() {
 
       <ConfirmDialog {...confirmDialogProps} />
       <BottomNav active="profile" />
-    </div>
+    </PageContainer>
   );
 }

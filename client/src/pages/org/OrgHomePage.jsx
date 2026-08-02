@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
+import PageContainer from "../../components/PageContainer";
 import { checkAssociationExists } from "../../services/associationService";
 import { getNearbyStores } from "../../services/storeService";
 
@@ -134,7 +135,7 @@ export default function OrgHomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       {/* Header */}
       <div className="bg-rw-card px-5 pt-6 pb-4 shadow-sm
@@ -208,7 +209,7 @@ export default function OrgHomePage() {
             </div>
           )}
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-2 xl:grid-cols-3 md:items-start">
             {urgentNeeds.length === 0 ? (
               <div className="bg-rw-card rounded-2xl p-4 text-center shadow-sm">
                 <p className="text-rw-sub text-sm">אין צרכים דחופים כרגע</p>
@@ -386,6 +387,6 @@ export default function OrgHomePage() {
       </div>
 
       <OrgBottomNav active="home" />
-    </div>
+    </PageContainer>
   );
 }

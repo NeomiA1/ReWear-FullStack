@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
+import PageContainer from "../../components/PageContainer";
 import { useState } from "react";
 import { getDonationStatusInfo } from "../../utils/statusLabels";
 
@@ -112,7 +113,7 @@ export default function OrgPickupsPage() {
   const handleCancel  = (id) => updateSentDonation(id, { status: "rejected"  });
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       <div className="bg-rw-card px-5 pt-6 pb-4 shadow-sm
                       flex items-center justify-between">
@@ -169,6 +170,6 @@ export default function OrgPickupsPage() {
       </div>
 
       <OrgBottomNav active="pickups" />
-    </div>
+    </PageContainer>
   );
 }

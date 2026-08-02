@@ -4,6 +4,7 @@
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
+import PageContainer from "../../components/PageContainer";
 import { getCollabStatusInfo } from "../../utils/statusLabels";
 
 function CollabCard({ collab, onChat }) {
@@ -60,7 +61,7 @@ export default function OrgCollaborationsPage() {
   const handleChat = (id) => navigate(`/org/chat/${id}`);
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       {/* Header */}
       <div className="bg-rw-card px-5 pt-6 pb-4 shadow-sm
@@ -140,6 +141,6 @@ export default function OrgCollaborationsPage() {
       </div>
 
       <OrgBottomNav active="collaborations" />
-    </div>
+    </PageContainer>
   );
 }

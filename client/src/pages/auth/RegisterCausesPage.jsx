@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { getAllCauses, saveUserCauses } from "../../services/causesService";
 import { saveOnboardingCauses } from "../../utils/recommendationHistory";
+import AuthLayout from "../../components/AuthLayout";
 
 // שלב onboarding, מיד אחרי הרשמת משתמש פרטי (RegisterPrivatePage) ולפני
 // המעבר לדף הבית. הבחירה נשמרת גם בשרת (UserCauses, מקור האמת) וגם
@@ -58,7 +59,7 @@ export default function RegisterCausesPage() {
   const handleSkip = () => navigate("/home");
 
   return (
-    <div className="min-h-screen bg-rw-bg overflow-y-auto px-6 py-8">
+    <AuthLayout wide>
 
       {/* לוגו */}
       <div className="w-14 h-14 rounded-2xl bg-rw-logo flex items-center
@@ -78,7 +79,7 @@ export default function RegisterCausesPage() {
         {loading ? (
           <p className="text-rw-sub text-sm text-center">טוען נושאים...</p>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {causes.map((cause) => {
               const isSelected = selected.has(cause.causeId);
               return (
@@ -112,6 +113,6 @@ export default function RegisterCausesPage() {
         </button>
       </div>
 
-    </div>
+    </AuthLayout>
   );
 }

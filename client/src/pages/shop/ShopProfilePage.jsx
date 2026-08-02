@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import ShopBottomNav from "../../components/ShopBottomNav";
+import PageContainer from "../../components/PageContainer";
 
 function Toggle({ value, onChange }) {
   return (
@@ -53,7 +54,7 @@ export default function ShopProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       {/* Header */}
       <div className="bg-rw-card px-5 pt-6 pb-5 shadow-sm">
@@ -141,6 +142,6 @@ export default function ShopProfilePage() {
       </div>
 
       <ShopBottomNav active="profile" />
-    </div>
+    </PageContainer>
   );
 }

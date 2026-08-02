@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import AssociationRecommendationList from "../../components/AssociationRecommendationList";
+import PageContainer from "../../components/PageContainer";
 
 export default function MapPage() {
 
@@ -32,7 +33,7 @@ export default function MapPage() {
   };
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-10 overflow-y-auto">
+    <PageContainer className="pb-10 overflow-y-auto" wide>
 
       {/* כותרת */}
       <div className="sticky top-0 bg-rw-bg z-10
@@ -96,6 +97,6 @@ export default function MapPage() {
         />
 
       </div>
-    </div>
+    </PageContainer>
   );
 }

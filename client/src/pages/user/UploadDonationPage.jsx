@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import PageContainer from "../../components/PageContainer";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { useConfirmDialog } from "../../hooks/useConfirmDialog";
 import { createDonationBag } from "../../services/donationBagService";
@@ -226,7 +227,7 @@ export default function UploadDonationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       <div className="sticky top-0 bg-rw-bg z-10
                       flex items-center justify-between
@@ -349,6 +350,6 @@ export default function UploadDonationPage() {
 
       <ConfirmDialog {...confirmDialogProps} />
       <BottomNav active="donate" />
-    </div>
+    </PageContainer>
   );
 }

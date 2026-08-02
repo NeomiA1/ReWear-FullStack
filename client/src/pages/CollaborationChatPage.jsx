@@ -80,8 +80,13 @@ export default function CollaborationChatPage() {
 
   const messages = collab.messages || [];
 
+  // עמוד עם צורה מיוחדת (צ'אט במסך מלא, בלי ניווט תחתון/סיידבר) — לא עובר
+  // דרך PageContainer (שבנוי בהנחת "תוכן גליל + ניווט נפרד") אלא מיישם את
+  // אותה סקאלת רוחב רספונסיבית ישירות, עם lg:mx-auto כדי למרכז את השיחה
+  // כטור אחד גם במסכים רחבים, במקום להימתח על פני כל הרוחב.
   return (
-    <div className="min-h-screen bg-rw-bg flex flex-col">
+    <div className="min-h-screen bg-rw-bg flex flex-col
+                    lg:max-w-[760px] lg:mx-auto lg:border-x lg:border-rw-border">
 
     
       <div className="bg-rw-card px-5 pt-6 pb-4 shadow-sm
@@ -134,7 +139,11 @@ export default function CollaborationChatPage() {
       </div>
 
     
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto
+      {/* max-width זהה לזה של העמוד עצמו (lg:max-w-[760px] למעלה) — אחרת
+          ב-fixed הוא ממורכז מול כל רוחב ה-viewport ולא מתיישר עם עמודת
+          הצ'אט שמעליו במסכים רחבים. */}
+      <div className="fixed bottom-0 left-0 right-0
+                      max-w-[480px] md:max-w-[640px] lg:max-w-[760px] mx-auto
                       bg-rw-card border-t border-rw-border px-4 py-3 flex flex-col gap-2">
 
     

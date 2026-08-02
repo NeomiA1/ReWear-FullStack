@@ -219,7 +219,7 @@ export default function AssociationRecommendationList({ bag = null, selectedId =
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:grid md:grid-cols-2 xl:grid-cols-3 md:items-start">
           {displayed.map(({ association: org, percent, reasons, isAvailable }) => (
             <div
               key={org.id}

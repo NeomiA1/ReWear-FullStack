@@ -4,6 +4,7 @@
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import PageContainer from "../../components/PageContainer";
 
 // קבועי חישוב קיימות (ממוצעים מחקריים)
 const KG_PER_BAG        = 3;    // ק"ג ממוצע לשק בגדים
@@ -73,7 +74,7 @@ export default function ImpactPage() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       {/* Header */}
       <div className="sticky top-0 bg-rw-bg z-10
@@ -110,7 +111,7 @@ export default function ImpactPage() {
           האימפקט הסביבתי שלך
         </h2>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <ImpactCard
             icon="👗"
             value={itemsRescued}
@@ -167,6 +168,6 @@ export default function ImpactPage() {
       </div>
 
       <BottomNav active="impact" />
-    </div>
+    </PageContainer>
   );
 }

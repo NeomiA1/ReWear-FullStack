@@ -1,6 +1,7 @@
 // src/components/ShopBottomNav.jsx
 
 import { useNavigate } from "react-router-dom";
+import DesktopSidebar from "./DesktopSidebar";
 
 const NAV_ITEMS = [
   { id: "home",      icon: "🏠", label: "בית",     path: "/shop/home"      },
@@ -12,18 +13,24 @@ const NAV_ITEMS = [
 export default function ShopBottomNav({ active }) {
   const navigate = useNavigate();
   return (
-    <nav className="sticky bottom-0 w-full bg-rw-card border-t border-rw-border
-                    flex justify-around items-center py-3 px-4 z-50">
-      {NAV_ITEMS.map((item) => (
-        <button key={item.id} onClick={() => navigate(item.path)}
-          className="flex flex-col items-center gap-1">
-          <span className="text-xl">{item.icon}</span>
-          <span className={`text-xs font-semibold
-            ${active === item.id ? "text-rw-btn" : "text-rw-sub"}`}>
-            {item.label}
-          </span>
-        </button>
-      ))}
-    </nav>
+    <>
+      {/* מובייל/טאבלט */}
+      <nav className="lg:hidden sticky bottom-0 w-full bg-rw-card border-t border-rw-border
+                      flex justify-around items-center py-3 px-4 z-50">
+        {NAV_ITEMS.map((item) => (
+          <button key={item.id} onClick={() => navigate(item.path)}
+            className="flex flex-col items-center gap-1">
+            <span className="text-xl">{item.icon}</span>
+            <span className={`text-xs font-semibold
+              ${active === item.id ? "text-rw-btn" : "text-rw-sub"}`}>
+              {item.label}
+            </span>
+          </button>
+        ))}
+      </nav>
+
+      {/* דסקטופ */}
+      <DesktopSidebar items={NAV_ITEMS} active={active} />
+    </>
   );
 }

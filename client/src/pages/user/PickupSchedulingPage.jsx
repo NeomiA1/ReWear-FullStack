@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
+import PageContainer from "../../components/PageContainer";
 
 export default function PickupSchedulingPage() {
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ export default function PickupSchedulingPage() {
     : "שק תרומה";
 
   return (
-    <div className="min-h-screen bg-rw-bg overflow-y-auto pb-10">
+    <PageContainer className="overflow-y-auto pb-10">
 
       {/* כותרת */}
       <div className="sticky top-0 bg-rw-bg z-10
@@ -208,6 +209,6 @@ export default function PickupSchedulingPage() {
           </>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AuthLayout from "../../components/AuthLayout";
 
 export default function RegisterTypePage() {
 
@@ -38,8 +39,8 @@ export default function RegisterTypePage() {
   ];
 
   return (
-    // רקע חם בהיר – rw-bg
-    <div className="min-h-screen bg-rw-bg flex flex-col items-center justify-center px-6">
+    <AuthLayout>
+      <div className="flex flex-col items-center w-full">
 
       {/* לוגו – ריבוע מעוגל ירוק עם R */}
       <div className="w-16 h-16 rounded-2xl bg-rw-logo flex items-center justify-center mb-5">
@@ -109,6 +110,7 @@ export default function RegisterTypePage() {
         </span>
       </p>
 
-    </div>
+      </div>
+    </AuthLayout>
   );
 }

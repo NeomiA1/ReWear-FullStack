@@ -4,6 +4,7 @@ import { useUser } from "../../context/UserContext";
 import { registerOrganization } from "../../services/associationService";
 import { getAllCauses } from "../../services/causesService";
 import { CATEGORIES } from "../../data/associations";
+import AuthLayout from "../../components/AuthLayout";
 
 const WORK_MODE_OPTIONS = [
   { value: "SecondHandStores", label: "חנויות יד שנייה"  },
@@ -119,7 +120,7 @@ export default function RegisterOrgPage() {
   };
 
   return (
-    <div className="min-h-screen bg-rw-bg overflow-y-auto px-6 py-8">
+    <AuthLayout wide showBranding={false}>
 
       {/* Back arrow */}
       <div className="flex justify-end mb-6">
@@ -306,6 +307,6 @@ export default function RegisterOrgPage() {
         </span>
       </p>
 
-    </div>
+    </AuthLayout>
   );
 }

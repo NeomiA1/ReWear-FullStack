@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav"; // ✅ מהקובץ המשותף
+import PageContainer from "../../components/PageContainer";
 import { checkAssociationExists, updateAssociationAvailability } from "../../services/associationService";
 
 function Toggle({ value, onChange }) {
@@ -61,7 +62,7 @@ export default function OrgProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       <div className="sticky top-0 bg-rw-bg z-10
                       flex items-center justify-between
@@ -152,6 +153,6 @@ export default function OrgProfilePage() {
       </div>
 
       <OrgBottomNav active="profile" />
-    </div>
+    </PageContainer>
   );
 }

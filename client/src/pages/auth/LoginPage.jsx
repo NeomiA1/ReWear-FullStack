@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { loginUser } from "../../services/userService";
+import AuthLayout from "../../components/AuthLayout";
 
 function deriveType(userType) {
   switch (userType) {
@@ -57,7 +58,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-rw-bg flex flex-col items-center justify-center px-6">
+    <AuthLayout>
+      <div className="flex flex-col items-center w-full">
 
       <div className="w-16 h-16 rounded-2xl bg-rw-logo flex items-center justify-center mb-5">
         <span className="text-white text-2xl font-bold">R</span>
@@ -103,6 +105,7 @@ export default function LoginPage() {
         </span>
       </p>
 
-    </div>
+      </div>
+    </AuthLayout>
   );
 }

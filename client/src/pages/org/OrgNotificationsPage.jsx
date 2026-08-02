@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PageContainer from "../../components/PageContainer";
 
 // ─── נתונים לדוגמה ───────────────────────────────────────
 // בשלב הבא יגיעו מהשרת
@@ -201,7 +202,7 @@ export default function OrgNotificationsPage() {
   const approved  = notifications.filter(n => n.status === "approved");
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-10 overflow-y-auto">
+    <PageContainer className="pb-10 overflow-y-auto" wide>
 
       {/* ── כותרת ── */}
       <div className="sticky top-0 bg-rw-bg z-10
@@ -307,6 +308,6 @@ export default function OrgNotificationsPage() {
         )}
 
       </div>
-    </div>
+    </PageContainer>
   );
 }

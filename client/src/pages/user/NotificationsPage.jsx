@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import PageContainer from "../../components/PageContainer";
 
 export default function NotificationsPage() {
 
@@ -14,7 +15,7 @@ export default function NotificationsPage() {
   const withChat = sentDonations.filter(d => d.hasChat);
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       {/* כותרת */}
       <div className="sticky top-0 bg-rw-bg z-10
@@ -115,6 +116,6 @@ export default function NotificationsPage() {
       </div>
 
       <BottomNav />
-    </div>
+    </PageContainer>
   );
 }

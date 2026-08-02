@@ -19,16 +19,23 @@
   box-sizing: border-box;
 }
 
+html, body {
+  /* מונע גלילה אופקית ברמת האפליקציה כולה — רשת ביטחון גלובלית, לא תחליף
+     לתכנון רוחב נכון בכל עמוד. */
+  overflow-x: hidden;
+}
+
 body {
   background-color: #f0ede8;
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
 }
 
+/* #root היה נעול היסטורית ל-480px (מראה "אפליקציית טלפון" גם בדסקטופ).
+   הרוחב המקסימלי האמיתי לכל עמוד מנוהל כעת ע"י PageContainer/AuthLayout
+   (client/src/components/), שתי נקודות מרכזיות במקום נעילה גלובלית אחת —
+   כך שרוחב שונה לעמודי דשבורד לעומת טפסים אפשרי בלי לגעת כאן שוב. */
 #root {
   width: 100%;
-  max-width: 480px;
   min-height: 100vh;
   background-color: #f0ede8;
 }

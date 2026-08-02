@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { registerStore } from "../../services/storeService";
+import AuthLayout from "../../components/AuthLayout";
 
 // המסך זהה לעמותה, רק עם שינויים קטנים:
 // - כותרת שונה
@@ -78,7 +79,7 @@ export default function RegisterShopPage() {
   };
 
   return (
-    <div className="min-h-screen bg-rw-bg overflow-y-auto px-6 py-8">
+    <AuthLayout wide showBranding={false}>
 
       {/* חץ חזרה */}
       <div className="flex justify-end mb-6">
@@ -193,6 +194,6 @@ export default function RegisterShopPage() {
         </span>
       </p>
 
-    </div>
+    </AuthLayout>
   );
 }

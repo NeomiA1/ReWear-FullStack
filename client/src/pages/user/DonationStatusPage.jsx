@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
+import PageContainer from "../../components/PageContainer";
 import DonationJourneyTimeline from "../../components/DonationJourneyTimeline";
 import { getDonationBagsByUserId } from "../../services/donationBagService";
 import { buildDonationJourney } from "../../utils/donationJourney";
@@ -43,7 +44,7 @@ export default function DonationStatusPage() {
   );
 
   return (
-    <div className="min-h-screen bg-rw-bg pb-24 overflow-y-auto">
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       {/* Header */}
       <div className="sticky top-0 bg-rw-bg z-10
@@ -112,6 +113,6 @@ export default function DonationStatusPage() {
       </div>
 
       <BottomNav active="status" />
-    </div>
+    </PageContainer>
   );
 }
