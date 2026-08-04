@@ -224,38 +224,77 @@ namespace RewearApi.DAL
 
             return bags;
         }
+public bool BelongsToUser(
+    int bagId,
+    int userId
+)
+{
+    using (SqlConnection con =
+           Connect(CON_STR_NAME))
+    {
+        const string query = @"
+            SELECT COUNT(*)
+            FROM dbo.DonationBags
+            WHERE bag_id = @bag_id
+              AND user_id = @user_id";
 
+        using SqlCommand cmd =
+            new SqlCommand(query, con);
 
-        public void UpdateDonationBagStatus(
-            int bagId,
-            string donationStatus
-        )
-        {
-            using (SqlConnection con =
-                   Connect(CON_STR_NAME))
+        cmd.Parameters.AddWithValue(
+            "@bag_id",
+            bagId
+        );
+
+        cmd.Parameters.AddWithValue(
+            "@user_id",
+            userId
+        );
+
+        object? result =
+            cmd.ExecuteScalar();
+
+        return result != null
+            && result != DBNull.Value
+            && Convert.ToInt32(result) > 0;
+    }
+}
+
+       public void UpdateDonationBagStatus(
+    int bagId,
+    int userId,
+    string donationStatus
+)
+{
+    using (SqlConnection con =
+           Connect(CON_STR_NAME))
+    {
+        var paramDic =
+            new Dictionary<string, object>
             {
-                var paramDic =
-                    new Dictionary<string, object>
-                    {
-                        {
-                            "@bag_id",
-                            bagId
-                        },
-                        {
-                            "@donation_status",
-                            donationStatus
-                        }
-                    };
+                {
+                    "@bag_id",
+                    bagId
+                },
+                {
+                    "@user_id",
+                    userId
+                },
+                {
+                    "@donation_status",
+                    donationStatus
+                }
+            };
 
-                SqlCommand cmd = CreateCommand(
-                    SP_UPDATE_DONATION_BAG_STATUS,
-                    con,
-                    paramDic
-                );
+        SqlCommand cmd = CreateCommand(
+            SP_UPDATE_DONATION_BAG_STATUS,
+            con,
+            paramDic
+        );
 
-                cmd.ExecuteNonQuery();
-            }
-        }
+        cmd.ExecuteNonQuery();
+    }
+}
 
 
         public void DeleteDonationBag(

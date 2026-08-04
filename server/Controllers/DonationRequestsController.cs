@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RewearApi.BL;
 using RewearApi.DAL;
+using RewearApi.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,28 +11,43 @@ namespace RewearApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DonationRequestsController : ControllerBase
+    [Authorize]
+    public class DonationRequestsController :
+        ControllerBase
     {
-        private readonly DonationRequestDAL _donationRequestDal =
-            new DonationRequestDAL();
+        private readonly DonationRequestDAL
+            _donationRequestDal =
+                new DonationRequestDAL();
 
 
         [HttpGet("user/{userId}")]
-        public ActionResult<List<UserDonationRequestDto>> GetByUser(
-            int userId
-        )
+        public ActionResult<
+            List<UserDonationRequestDto>
+        > GetByUser(int userId)
         {
             if (userId <= 0)
             {
-                return BadRequest(
-                    "userId must be greater than 0"
-                );
+                return BadRequest(new
+                {
+                    message =
+                        "userId must be greater than 0"
+                });
+            }
+
+            int currentUserId =
+                User.GetCurrentUserId();
+
+            if (userId != currentUserId)
+            {
+                return Forbid();
             }
 
             try
             {
                 List<UserDonationRequestDto> requests =
-                    _donationRequestDal.GetByUserId(userId);
+                    _donationRequestDal.GetByUserId(
+                        currentUserId
+                    );
 
                 return Ok(requests);
             }
@@ -45,21 +62,34 @@ namespace RewearApi.Controllers
 
 
         [HttpGet("association/user/{userId}")]
-        public ActionResult<List<DonationRequestDto>>
-            GetByAssociationUser(int userId)
+        public ActionResult<
+            List<DonationRequestDto>
+        > GetByAssociationUser(int userId)
         {
             if (userId <= 0)
             {
-                return BadRequest(
-                    "userId must be greater than 0"
-                );
+                return BadRequest(new
+                {
+                    message =
+                        "userId must be greater than 0"
+                });
+            }
+
+            int currentUserId =
+                User.GetCurrentUserId();
+
+            if (userId != currentUserId)
+            {
+                return Forbid();
             }
 
             try
             {
                 List<DonationRequestDto> requests =
                     _donationRequestDal
-                        .GetByAssociationUserId(userId);
+                        .GetByAssociationUserId(
+                            currentUserId
+                        );
 
                 return Ok(requests);
             }
@@ -80,12 +110,20 @@ namespace RewearApi.Controllers
         {
             if (request == null)
             {
-                return BadRequest(
-                    "DonationRequest object is null"
-                );
+                return BadRequest(new
+                {
+                    message =
+                        "DonationRequest object is null"
+                });
             }
 
-            var errors = request.Validate();
+            int currentUserId =
+                User.GetCurrentUserId();
+
+            request.UserId = currentUserId;
+
+            List<string> errors =
+                request.Validate();
 
             if (errors.Any())
             {
@@ -96,11 +134,14 @@ namespace RewearApi.Controllers
             {
                 int requestId =
                     _donationRequestDal
-                        .CreateDonationRequest(request);
+                        .CreateDonationRequest(
+                            request
+                        );
 
                 return Ok(new
                 {
                     requestId,
+
                     message =
                         "Donation request created successfully"
                 });
@@ -149,60 +190,85 @@ namespace RewearApi.Controllers
             int bagId
         )
         {
-            if (requestId <= 0 || bagId <= 0)
+            if (
+                requestId <= 0
+                || bagId <= 0
+            )
             {
-                return BadRequest(
-                    "requestId and bagId must be greater than 0"
-                );
+                return BadRequest(new
+                {
+                    message =
+                        "requestId and bagId must be greater than 0"
+                });
             }
+
+            int currentUserId =
+                User.GetCurrentUserId();
 
             try
             {
                 _donationRequestDal
                     .LinkBagToDonationRequest(
                         requestId,
-                        bagId
+                        bagId,
+                        currentUserId
                     );
 
-                return Ok(
-                    "Bag linked to donation request successfully"
-                );
+                return Ok(new
+                {
+                    message =
+                        "התרומה נשלחה בהצלחה"
+                });
             }
             catch (Exception ex)
-{
-    if (
-        ex.Message.Contains(
-            "Donation bag is incomplete",
-            StringComparison.OrdinalIgnoreCase
-        )
-    )
-    {
-        return BadRequest(new
-        {
-            message =
-                "לא ניתן לשלוח את התרומה. חובה למלא כמות פריטים, תיאור, מידה, מצב בגדים ולהעלות לפחות תמונה אחת."
-        });
-    }
+            {
+                if (
+                    ex.Message.Contains(
+                        "Donation bag is incomplete",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "לא ניתן לשלוח את התרומה. חובה למלא כמות פריטים, תיאור, מידה, מצב בגדים ולהעלות לפחות תמונה אחת."
+                    });
+                }
 
-    if (
-        ex.Message.Contains(
-            "Donation bag has already been sent",
-            StringComparison.OrdinalIgnoreCase
-        )
-    )
-    {
-        return Conflict(new
-        {
-            message =
-                "Donation bag has already been sent to an association."
-        });
-    }
+                if (
+                    ex.Message.Contains(
+                        "Donation bag has already been sent",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return Conflict(new
+                    {
+                        message =
+                            "Donation bag has already been sent to an association."
+                    });
+                }
 
-    return BadRequest(new
-    {
-        message = ex.Message
-    });
-}
+                if (
+                    ex.Message.Contains(
+                        "does not belong",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return NotFound(new
+                    {
+                        message =
+                            "Donation request or donation bag was not found."
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
 
 
@@ -214,33 +280,62 @@ namespace RewearApi.Controllers
         {
             if (requestId <= 0)
             {
-                return BadRequest(
-                    "requestId must be greater than 0"
-                );
+                return BadRequest(new
+                {
+                    message =
+                        "requestId must be greater than 0"
+                });
             }
 
             if (dto == null)
             {
-                return BadRequest(
-                    "Response object is null"
-                );
+                return BadRequest(new
+                {
+                    message =
+                        "Response object is null"
+                });
             }
+
+            int currentAssociationUserId =
+                User.GetCurrentUserId();
 
             try
             {
                 _donationRequestDal
                     .RespondToDonationRequest(
                         requestId,
+                        currentAssociationUserId,
                         dto.NewStatus,
                         dto.AssociationResponse
                     );
 
-                return Ok(
-                    "Donation request response updated successfully"
-                );
+                return Ok(new
+                {
+                    message =
+                        "תגובת העמותה נשמרה בהצלחה"
+                });
             }
             catch (Exception ex)
             {
+                if (
+                    ex.Message.Contains(
+                        "does not belong",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                    ||
+                    ex.Message.Contains(
+                        "not associated",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return NotFound(new
+                    {
+                        message =
+                            "Donation request was not found."
+                    });
+                }
+
                 return BadRequest(new
                 {
                     message = ex.Message

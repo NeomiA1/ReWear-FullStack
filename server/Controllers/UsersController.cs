@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RewearApi.BL;
 using RewearApi.DAL;
+using RewearApi.Services;
 using System;
 using System.Linq;
 
@@ -12,7 +13,14 @@ namespace RewearApi.Controllers
     {
         private readonly UserDAL _userDal =
             new UserDAL();
+private readonly JwtTokenService _jwtTokenService;
 
+public UsersController(
+    JwtTokenService jwtTokenService
+)
+{
+    _jwtTokenService = jwtTokenService;
+}
 
         [HttpPost("register")]
         public ActionResult Register(
@@ -92,7 +100,24 @@ namespace RewearApi.Controllers
                     );
                 }
 
-                return Ok(user);
+                string token =
+    _jwtTokenService.CreateToken(user);
+
+return Ok(new
+{
+    token,
+
+    user = new
+    {
+        user.UserId,
+        user.FullName,
+        user.Username,
+        user.Email,
+        user.UserType,
+        user.Phone,
+        user.City
+    }
+});
             }
             catch (Exception ex)
             {

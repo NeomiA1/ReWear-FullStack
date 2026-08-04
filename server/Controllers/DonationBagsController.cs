@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using RewearApi.Extensions;
 using Microsoft.Extensions.Hosting;
 using RewearApi.BL;
 using RewearApi.DAL;
@@ -13,6 +15,7 @@ namespace RewearApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DonationBagsController : ControllerBase
     {
         private readonly DonationBagDAL _donationBagDal =
@@ -44,7 +47,10 @@ namespace RewearApi.Controllers
                     message = "DonationBag object is null"
                 });
             }
+int currentUserId =
+    User.GetCurrentUserId();
 
+bag.UserId = currentUserId;
             var errors = bag.Validate();
 
             if (errors.Any())
@@ -72,18 +78,27 @@ namespace RewearApi.Controllers
         }
 
 
-        [HttpGet("user/{userId}")]
+       [HttpGet("user/{userId}")]
 public ActionResult GetDonationBagsByUserId(
     int userId,
     [FromQuery] string? size,
     [FromQuery] string? status
 )
 {
+    int currentUserId =
+        User.GetCurrentUserId();
+
+    if (userId != currentUserId)
+    {
+        return Forbid();
+    }
+
     if (userId <= 0)
     {
         return BadRequest(new
         {
-            message = "UserId must be greater than zero"
+            message =
+                "UserId must be greater than zero"
         });
     }
 
@@ -94,7 +109,8 @@ public ActionResult GetDonationBagsByUserId(
     {
         return BadRequest(new
         {
-            message = "Invalid donation bag status",
+            message =
+                "Invalid donation bag status",
 
             allowedStatuses =
                 DonationBag.AllowedDonationStatuses
@@ -105,7 +121,7 @@ public ActionResult GetDonationBagsByUserId(
     {
         List<DonationBag> bags =
             _donationBagDal.GetDonationBagsByUserId(
-                userId,
+                currentUserId,
                 size,
                 status
             );
@@ -136,6 +152,22 @@ public ActionResult GetDonationBagsByUserId(
                         "BagId must be greater than zero"
                 });
             }
+            int currentUserId =
+    User.GetCurrentUserId();
+
+if (
+    !_donationBagDal.BelongsToUser(
+        bagId,
+        currentUserId
+    )
+)
+{
+    return NotFound(new
+    {
+        message =
+            "The donation bag was not found."
+    });
+}
 
             if (
                 request == null
@@ -157,10 +189,11 @@ public ActionResult GetDonationBagsByUserId(
 
             try
             {
-                _donationBagDal.UpdateDonationBagStatus(
-                    bagId,
-                    request.DonationStatus!
-                );
+               _donationBagDal.UpdateDonationBagStatus(
+    bagId,
+    currentUserId,
+    request.DonationStatus!
+);
 
                 return Ok(new
                 {
@@ -212,315 +245,350 @@ public ActionResult GetDonationBagsByUserId(
 
 
         [HttpPost("{bagId}/media")]
-        [RequestSizeLimit(300L * 1024L * 1024L)]
-        public async Task<ActionResult> UploadBagMedia(
-            int bagId,
-            [FromForm] IFormFile file,
-            [FromForm] string? mediaDescription
-        )
+[RequestSizeLimit(300L * 1024L * 1024L)]
+public async Task<ActionResult> UploadBagMedia(
+    int bagId,
+    [FromForm] IFormFile file,
+    [FromForm] string? mediaDescription
+)
+{
+    if (bagId <= 0)
+    {
+        return BadRequest(new
         {
-            if (bagId <= 0)
-            {
-                return BadRequest(new
-                {
-                    message =
-                        "BagId must be greater than zero"
-                });
-            }
+            message =
+                "BagId must be greater than zero"
+        });
+    }
 
-            var fileErrors =
-                BagMedia.ValidateUploadedFile(file);
+    int currentUserId =
+        User.GetCurrentUserId();
 
-            if (fileErrors.Any())
-            {
-                return BadRequest(new
-                {
-                    message =
-                        "The uploaded file is invalid",
+    if (
+        !_donationBagDal.BelongsToUser(
+            bagId,
+            currentUserId
+        )
+    )
+    {
+        return NotFound(new
+        {
+            message =
+                "The donation bag was not found."
+        });
+    }
 
-                    errors = fileErrors
-                });
-            }
+    var fileErrors =
+        BagMedia.ValidateUploadedFile(file);
 
-            try
-            {
-                string webRootPath =
-                    _environment.WebRootPath
-                    ?? Path.Combine(
-                        Directory.GetCurrentDirectory(),
-                        "wwwroot"
-                    );
+    if (fileErrors.Any())
+    {
+        return BadRequest(new
+        {
+            message =
+                "The uploaded file is invalid",
 
-                string uploadsFolder =
-                    Path.Combine(
-                        webRootPath,
-                        "uploads",
-                        "bags"
-                    );
+            errors = fileErrors
+        });
+    }
 
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(
-                        uploadsFolder
-                    );
-                }
+    try
+    {
+        string webRootPath =
+            _environment.WebRootPath
+            ?? Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot"
+            );
 
-                string extension =
-                    Path.GetExtension(file.FileName)
-                        .ToLowerInvariant();
+        string uploadsFolder =
+            Path.Combine(
+                webRootPath,
+                "uploads",
+                "bags"
+            );
 
-                string storedFileName =
-                    $"{Guid.NewGuid()}{extension}";
-
-                string fullFilePath =
-                    Path.Combine(
-                        uploadsFolder,
-                        storedFileName
-                    );
-
-                await using (
-                    FileStream stream =
-                        new FileStream(
-                            fullFilePath,
-                            FileMode.Create
-                        )
-                )
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                string mediaUrl =
-                    $"/uploads/bags/{storedFileName}";
-
-                BagMedia media =
-                    new BagMedia
-                    {
-                        BagId = bagId,
-
-                        MediaType =
-                            BagMedia.GetMediaType(file),
-
-                        MediaUrl = mediaUrl,
-
-                        MediaDescription =
-                            mediaDescription
-                    };
-
-                try
-                {
-                    _bagMediaDal.AddBagMedia(media);
-                }
-                catch
-                {
-                    if (
-                        System.IO.File.Exists(
-                            fullFilePath
-                        )
-                    )
-                    {
-                        System.IO.File.Delete(
-                            fullFilePath
-                        );
-                    }
-
-                    throw;
-                }
-
-                string absoluteMediaUrl =
-                    $"{Request.Scheme}://" +
-                    $"{Request.Host}" +
-                    mediaUrl;
-
-                return Ok(new
-                {
-                    message =
-                        "Bag media uploaded successfully",
-
-                    mediaUrl =
-                        absoluteMediaUrl,
-
-                    mediaType =
-                        media.MediaType,
-
-                    originalFileName =
-                        file.FileName,
-
-                    fileSize =
-                        file.Length
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
+        if (!Directory.Exists(uploadsFolder))
+        {
+            Directory.CreateDirectory(
+                uploadsFolder
+            );
         }
 
+        string extension =
+            Path.GetExtension(file.FileName)
+                .ToLowerInvariant();
 
-        [HttpDelete("{bagId}/user/{userId}")]
-        public ActionResult DeleteDonationBag(
-            int bagId,
-            int userId
+        string storedFileName =
+            $"{Guid.NewGuid()}{extension}";
+
+        string fullFilePath =
+            Path.Combine(
+                uploadsFolder,
+                storedFileName
+            );
+
+        await using (
+            FileStream stream =
+                new FileStream(
+                    fullFilePath,
+                    FileMode.Create
+                )
         )
         {
-            if (bagId <= 0 || userId <= 0)
+            await file.CopyToAsync(stream);
+        }
+
+        string mediaUrl =
+            $"/uploads/bags/{storedFileName}";
+
+        BagMedia media =
+            new BagMedia
             {
-                return BadRequest(new
-                {
-                    message =
-                        "BagId and UserId must be greater than zero"
-                });
+                BagId = bagId,
+
+                MediaType =
+                    BagMedia.GetMediaType(file),
+
+                MediaUrl = mediaUrl,
+
+                MediaDescription =
+                    mediaDescription
+            };
+
+        try
+        {
+            _bagMediaDal.AddBagMedia(media);
+        }
+        catch
+        {
+            if (
+                System.IO.File.Exists(
+                    fullFilePath
+                )
+            )
+            {
+                System.IO.File.Delete(
+                    fullFilePath
+                );
             }
 
+            throw;
+        }
+
+        string absoluteMediaUrl =
+            $"{Request.Scheme}://" +
+            $"{Request.Host}" +
+            mediaUrl;
+
+        return Ok(new
+        {
+            message =
+                "Bag media uploaded successfully",
+
+            mediaUrl =
+                absoluteMediaUrl,
+
+            mediaType =
+                media.MediaType,
+
+            originalFileName =
+                file.FileName,
+
+            fileSize =
+                file.Length
+        });
+    }
+    catch (Exception ex)
+    {
+        return BadRequest(new
+        {
+            message = ex.Message
+        });
+    }
+}
+
+
+       [HttpDelete("{bagId}")]
+public ActionResult DeleteDonationBag(
+    int bagId
+)
+{
+    if (bagId <= 0)
+    {
+        return BadRequest(new
+        {
+            message =
+                "BagId must be greater than zero"
+        });
+    }
+
+    int currentUserId =
+        User.GetCurrentUserId();
+
+    if (
+        !_donationBagDal.BelongsToUser(
+            bagId,
+            currentUserId
+        )
+    )
+    {
+        return NotFound(new
+        {
+            message =
+                "The donation bag was not found."
+        });
+    }
+
+    try
+    {
+        List<string> mediaUrls =
+            _bagMediaDal
+                .GetMediaUrlsByBagId(bagId);
+
+        _donationBagDal.DeleteDonationBag(
+            bagId,
+            currentUserId
+        );
+
+        List<string> filesThatCouldNotBeDeleted =
+            new List<string>();
+
+        string webRootPath =
+            _environment.WebRootPath
+            ?? Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot"
+            );
+
+        string allowedUploadsFolder =
+            Path.GetFullPath(
+                Path.Combine(
+                    webRootPath,
+                    "uploads",
+                    "bags"
+                )
+            );
+
+        foreach (string mediaUrl in mediaUrls)
+        {
             try
             {
-                List<string> mediaUrls =
-                    _bagMediaDal
-                        .GetMediaUrlsByBagId(bagId);
+                string relativePath =
+                    mediaUrl
+                        .TrimStart('/')
+                        .Replace(
+                            '/',
+                            Path.DirectorySeparatorChar
+                        );
 
-                _donationBagDal.DeleteDonationBag(
-                    bagId,
-                    userId
-                );
-
-                List<string> filesThatCouldNotBeDeleted =
-                    new List<string>();
-
-                string webRootPath =
-                    _environment.WebRootPath
-                    ?? Path.Combine(
-                        Directory.GetCurrentDirectory(),
-                        "wwwroot"
-                    );
-
-                string allowedUploadsFolder =
+                string physicalPath =
                     Path.GetFullPath(
                         Path.Combine(
                             webRootPath,
-                            "uploads",
-                            "bags"
+                            relativePath
                         )
                     );
 
-                foreach (string mediaUrl in mediaUrls)
+                bool isInsideUploadsFolder =
+                    physicalPath.StartsWith(
+                        allowedUploadsFolder
+                        + Path.DirectorySeparatorChar,
+                        StringComparison.OrdinalIgnoreCase
+                    );
+
+                if (!isInsideUploadsFolder)
                 {
-                    try
-                    {
-                        string relativePath =
-                            mediaUrl
-                                .TrimStart('/')
-                                .Replace(
-                                    '/',
-                                    Path.DirectorySeparatorChar
-                                );
+                    filesThatCouldNotBeDeleted.Add(
+                        mediaUrl
+                    );
 
-                        string physicalPath =
-                            Path.GetFullPath(
-                                Path.Combine(
-                                    webRootPath,
-                                    relativePath
-                                )
-                            );
-
-                        bool isInsideUploadsFolder =
-                            physicalPath.StartsWith(
-                                allowedUploadsFolder
-                                + Path.DirectorySeparatorChar,
-                                StringComparison
-                                    .OrdinalIgnoreCase
-                            );
-
-                        if (!isInsideUploadsFolder)
-                        {
-                            filesThatCouldNotBeDeleted.Add(
-                                mediaUrl
-                            );
-
-                            continue;
-                        }
-
-                        if (
-                            System.IO.File.Exists(
-                                physicalPath
-                            )
-                        )
-                        {
-                            System.IO.File.Delete(
-                                physicalPath
-                            );
-                        }
-                    }
-                    catch
-                    {
-                        filesThatCouldNotBeDeleted.Add(
-                            mediaUrl
-                        );
-                    }
+                    continue;
                 }
 
-                if (filesThatCouldNotBeDeleted.Any())
+                if (
+                    System.IO.File.Exists(
+                        physicalPath
+                    )
+                )
                 {
-                    return Ok(new
-                    {
-                        message =
-                            "Donation bag was deleted, but some physical files could not be removed.",
-
-                        deletedBagId = bagId,
-
-                        filesThatCouldNotBeDeleted
-                    });
+                    System.IO.File.Delete(
+                        physicalPath
+                    );
                 }
-
-                return Ok(new
-                {
-                    message =
-                        "Donation bag and its files were deleted successfully",
-
-                    deletedBagId = bagId
-                });
             }
-            catch (Exception ex)
+            catch
             {
-                if (
-                    ex.Message.Contains(
-                        "does not exist or does not belong",
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                )
-                {
-                    return NotFound(new
-                    {
-                        message =
-                            "The donation bag was not found or does not belong to this user."
-                    });
-                }
-
-                if (
-                    ex.Message.Contains(
-                        "locked after approval",
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                    ||
-                    ex.Message.Contains(
-                        "active donation bag cannot be deleted",
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                )
-                {
-                    return Conflict(new
-                    {
-                        message =
-                            "The donation is locked after approval and cannot be deleted."
-                    });
-                }
-
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
+                filesThatCouldNotBeDeleted.Add(
+                    mediaUrl
+                );
             }
         }
+
+        if (filesThatCouldNotBeDeleted.Any())
+        {
+            return Ok(new
+            {
+                message =
+                    "Donation bag was deleted, but some physical files could not be removed.",
+
+                deletedBagId = bagId,
+
+                filesThatCouldNotBeDeleted
+            });
+        }
+
+        return Ok(new
+        {
+            message =
+                "Donation bag and its files were deleted successfully",
+
+            deletedBagId = bagId
+        });
+    }
+    catch (Exception ex)
+    {
+        if (
+            ex.Message.Contains(
+                "does not exist or does not belong",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            return NotFound(new
+            {
+                message =
+                    "The donation bag was not found."
+            });
+        }
+
+        if (
+            ex.Message.Contains(
+                "locked after approval",
+                StringComparison.OrdinalIgnoreCase
+            )
+            ||
+            ex.Message.Contains(
+                "active donation bag cannot be deleted",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            return Conflict(new
+            {
+                message =
+                    "The donation is locked after approval and cannot be deleted."
+            });
+        }
+
+        return BadRequest(new
+        {
+            message = ex.Message
+        });
     }
 }
+    }
+}
+            
+    
+    

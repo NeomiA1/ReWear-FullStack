@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RewearApi.BL;
 using RewearApi.DAL;
+using RewearApi.Extensions;
 using System;
 using System.Collections.Generic;
 
@@ -8,6 +10,7 @@ namespace RewearApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class NotificationsController : ControllerBase
     {
         private readonly NotificationDAL _notificationDal =
@@ -27,10 +30,20 @@ namespace RewearApi.Controllers
                 });
             }
 
+            int currentUserId =
+                User.GetCurrentUserId();
+
+            if (userId != currentUserId)
+            {
+                return Forbid();
+            }
+
             try
             {
                 List<Notification> notifications =
-                    _notificationDal.GetByUserId(userId);
+                    _notificationDal.GetByUserId(
+                        currentUserId
+                    );
 
                 return Ok(notifications);
             }
@@ -56,10 +69,20 @@ namespace RewearApi.Controllers
                 });
             }
 
+            int currentUserId =
+                User.GetCurrentUserId();
+
+            if (userId != currentUserId)
+            {
+                return Forbid();
+            }
+
             try
             {
                 int unreadCount =
-                    _notificationDal.GetUnreadCount(userId);
+                    _notificationDal.GetUnreadCount(
+                        currentUserId
+                    );
 
                 return Ok(new
                 {
@@ -78,25 +101,27 @@ namespace RewearApi.Controllers
 
         [HttpPut("{notificationId}/read")]
         public ActionResult MarkAsRead(
-            int notificationId,
-            [FromQuery] int userId
+            int notificationId
         )
         {
-            if (notificationId <= 0 || userId <= 0)
+            if (notificationId <= 0)
             {
                 return BadRequest(new
                 {
                     message =
-                        "notificationId and userId must be greater than 0"
+                        "notificationId must be greater than 0"
                 });
             }
+
+            int currentUserId =
+                User.GetCurrentUserId();
 
             try
             {
                 bool updated =
                     _notificationDal.MarkAsRead(
                         notificationId,
-                        userId
+                        currentUserId
                     );
 
                 if (!updated)
@@ -104,7 +129,7 @@ namespace RewearApi.Controllers
                     return NotFound(new
                     {
                         message =
-                            "Notification was not found for this user"
+                            "Notification was not found."
                     });
                 }
 
