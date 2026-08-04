@@ -933,7 +933,9 @@ GO
 Return the creator name, creation date and last update date.
 */
 CREATE OR ALTER PROCEDURE dbo.sp_GetDonationBagsByUserId
-    @user_id INT
+    @user_id INT,
+    @size NVARCHAR(50) = NULL,
+    @status NVARCHAR(50) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -951,10 +953,30 @@ BEGIN
         db.donation_status,
         db.created_at,
         db.updated_at
+
     FROM dbo.DonationBags db
+
     INNER JOIN dbo.Users u
         ON db.user_id = u.user_id
+
     WHERE db.user_id = @user_id
+
+      AND
+      (
+          @size IS NULL
+          OR LTRIM(RTRIM(@size)) = N''
+          OR db.sizes LIKE
+             N'%' + LTRIM(RTRIM(@size)) + N'%'
+      )
+
+      AND
+      (
+          @status IS NULL
+          OR LTRIM(RTRIM(@status)) = N''
+          OR db.donation_status =
+             LTRIM(RTRIM(@status))
+      )
+
     ORDER BY db.created_at DESC;
 END
 GO
@@ -984,7 +1006,14 @@ BEGIN
 
 
     SELECT
-        COUNT(*) AS total_donations,
+        SUM
+(
+    CASE
+        WHEN donation_status <> N'Draft'
+        THEN 1
+        ELSE 0
+    END
+) AS total_donations,
 
         SUM
         (

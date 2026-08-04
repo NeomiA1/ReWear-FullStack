@@ -74,8 +74,10 @@ namespace RewearApi.DAL
 
 
         public List<DonationBag> GetDonationBagsByUserId(
-            int userId
-        )
+    int userId,
+    string? size = null,
+    string? status = null
+)
         {
             List<DonationBag> bags =
                 new List<DonationBag>();
@@ -84,13 +86,25 @@ namespace RewearApi.DAL
                    Connect(CON_STR_NAME))
             {
                 var paramDic =
-                    new Dictionary<string, object>
-                    {
-                        {
-                            "@user_id",
-                            userId
-                        }
-                    };
+    new Dictionary<string, object>
+    {
+        {
+            "@user_id",
+            userId
+        },
+        {
+            "@size",
+            string.IsNullOrWhiteSpace(size)
+                ? DBNull.Value
+                : size.Trim()
+        },
+        {
+            "@status",
+            string.IsNullOrWhiteSpace(status)
+                ? DBNull.Value
+                : status.Trim()
+        }
+    };
 
                 SqlCommand cmd = CreateCommand(
                     SP_GET_DONATION_BAGS_BY_USER_ID,

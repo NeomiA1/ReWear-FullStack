@@ -73,35 +73,53 @@ namespace RewearApi.Controllers
 
 
         [HttpGet("user/{userId}")]
-        public ActionResult GetDonationBagsByUserId(
-            int userId
-        )
+public ActionResult GetDonationBagsByUserId(
+    int userId,
+    [FromQuery] string? size,
+    [FromQuery] string? status
+)
+{
+    if (userId <= 0)
+    {
+        return BadRequest(new
         {
-            if (userId <= 0)
-            {
-                return BadRequest(new
-                {
-                    message =
-                        "UserId must be greater than zero"
-                });
-            }
+            message = "UserId must be greater than zero"
+        });
+    }
 
-            try
-            {
-                List<DonationBag> bags =
-                    _donationBagDal
-                        .GetDonationBagsByUserId(userId);
+    if (
+        !string.IsNullOrWhiteSpace(status)
+        && !DonationBag.IsValidDonationStatus(status)
+    )
+    {
+        return BadRequest(new
+        {
+            message = "Invalid donation bag status",
 
-                return Ok(bags);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
-        }
+            allowedStatuses =
+                DonationBag.AllowedDonationStatuses
+        });
+    }
+
+    try
+    {
+        List<DonationBag> bags =
+            _donationBagDal.GetDonationBagsByUserId(
+                userId,
+                size,
+                status
+            );
+
+        return Ok(bags);
+    }
+    catch (Exception ex)
+    {
+        return BadRequest(new
+        {
+            message = ex.Message
+        });
+    }
+}
 
 
         [HttpPatch("{bagId}/status")]
