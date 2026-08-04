@@ -12,8 +12,7 @@ namespace RewearApi.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class DonationRequestsController :
-        ControllerBase
+    public class DonationRequestsController : ControllerBase
     {
         private readonly DonationRequestDAL
             _donationRequestDal =
@@ -21,9 +20,8 @@ namespace RewearApi.Controllers
 
 
         [HttpGet("user/{userId}")]
-        public ActionResult<
-            List<UserDonationRequestDto>
-        > GetByUser(int userId)
+        public ActionResult<List<UserDonationRequestDto>>
+            GetByUser(int userId)
         {
             if (userId <= 0)
             {
@@ -62,9 +60,8 @@ namespace RewearApi.Controllers
 
 
         [HttpGet("association/user/{userId}")]
-        public ActionResult<
-            List<DonationRequestDto>
-        > GetByAssociationUser(int userId)
+        public ActionResult<List<DonationRequestDto>>
+            GetByAssociationUser(int userId)
         {
             if (userId <= 0)
             {
@@ -103,8 +100,12 @@ namespace RewearApi.Controllers
         }
 
 
-        [HttpPost]
-        public ActionResult CreateDonationRequest(
+        /*
+         * פעולה עסקית מאוחדת:
+         * יצירת בקשת תרומה + קישור השק לבקשה.
+         */
+        [HttpPost("submit")]
+        public ActionResult SubmitDonationRequest(
             [FromBody] DonationRequest request
         )
         {
@@ -120,21 +121,31 @@ namespace RewearApi.Controllers
             int currentUserId =
                 User.GetCurrentUserId();
 
+            /*
+             * לא סומכים על userId שמגיע מה-Client.
+             */
             request.UserId = currentUserId;
+            request.Status = "Pending";
 
             List<string> errors =
                 request.Validate();
 
             if (errors.Any())
             {
-                return BadRequest(errors);
+                return BadRequest(new
+                {
+                    message =
+                        "פרטי בקשת התרומה אינם תקינים",
+
+                    errors
+                });
             }
 
             try
             {
                 int requestId =
                     _donationRequestDal
-                        .CreateDonationRequest(
+                        .SubmitDonationRequest(
                             request
                         );
 
@@ -142,26 +153,15 @@ namespace RewearApi.Controllers
                 {
                     requestId,
 
+                    bagId =
+                        request.BagId,
+
                     message =
-                        "Donation request created successfully"
+                        "התרומה נשלחה בהצלחה"
                 });
             }
             catch (Exception ex)
             {
-                if (
-                    ex.Message.Contains(
-                        "currently unavailable for donations",
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                )
-                {
-                    return Conflict(new
-                    {
-                        message =
-                            "The association is no longer available to receive donations."
-                    });
-                }
-
                 if (
                     ex.Message.Contains(
                         "Association does not exist",
@@ -172,56 +172,43 @@ namespace RewearApi.Controllers
                     return NotFound(new
                     {
                         message =
-                            "The selected association does not exist."
+                            "העמותה שנבחרה אינה קיימת."
                     });
                 }
 
-                return BadRequest(new
+                if (
+                    ex.Message.Contains(
+                        "currently unavailable for donations",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
                 {
-                    message = ex.Message
-                });
-            }
-        }
+                    return Conflict(new
+                    {
+                        message =
+                            "העמותה אינה זמינה כרגע לקבלת תרומות."
+                    });
+                }
 
-
-        [HttpPost("{requestId}/bags/{bagId}")]
-        public ActionResult LinkBagToRequest(
-            int requestId,
-            int bagId
-        )
-        {
-            if (
-                requestId <= 0
-                || bagId <= 0
-            )
-            {
-                return BadRequest(new
+                if (
+                    ex.Message.Contains(
+                        "Donation bag does not exist",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                    ||
+                    ex.Message.Contains(
+                        "does not belong",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
                 {
-                    message =
-                        "requestId and bagId must be greater than 0"
-                });
-            }
+                    return NotFound(new
+                    {
+                        message =
+                            "השק לא נמצא או שאינו שייך למשתמש המחובר."
+                    });
+                }
 
-            int currentUserId =
-                User.GetCurrentUserId();
-
-            try
-            {
-                _donationRequestDal
-                    .LinkBagToDonationRequest(
-                        requestId,
-                        bagId,
-                        currentUserId
-                    );
-
-                return Ok(new
-                {
-                    message =
-                        "התרומה נשלחה בהצלחה"
-                });
-            }
-            catch (Exception ex)
-            {
                 if (
                     ex.Message.Contains(
                         "Donation bag is incomplete",
@@ -232,13 +219,13 @@ namespace RewearApi.Controllers
                     return BadRequest(new
                     {
                         message =
-                            "לא ניתן לשלוח את התרומה. חובה למלא כמות פריטים, תיאור, מידה, מצב בגדים ולהעלות לפחות תמונה אחת."
+                            "לא ניתן לשלוח את התרומה. חובה למלא כמות פריטים, תיאור, מידה, קהל יעד, מצב בגדים ולהעלות לפחות תמונה אחת."
                     });
                 }
 
                 if (
                     ex.Message.Contains(
-                        "Donation bag has already been sent",
+                        "already been sent",
                         StringComparison.OrdinalIgnoreCase
                     )
                 )
@@ -246,21 +233,21 @@ namespace RewearApi.Controllers
                     return Conflict(new
                     {
                         message =
-                            "Donation bag has already been sent to an association."
+                            "השק כבר נשלח לעמותה."
                     });
                 }
 
                 if (
                     ex.Message.Contains(
-                        "does not belong",
+                        "Delivery type is required",
                         StringComparison.OrdinalIgnoreCase
                     )
                 )
                 {
-                    return NotFound(new
+                    return BadRequest(new
                     {
                         message =
-                            "Donation request or donation bag was not found."
+                            "חובה לבחור צורת מסירה."
                     });
                 }
 
@@ -332,7 +319,21 @@ namespace RewearApi.Controllers
                     return NotFound(new
                     {
                         message =
-                            "Donation request was not found."
+                            "בקשת התרומה לא נמצאה."
+                    });
+                }
+
+                if (
+                    ex.Message.Contains(
+                        "already been answered",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return Conflict(new
+                    {
+                        message =
+                            "הבקשה כבר קיבלה תשובה."
                     });
                 }
 

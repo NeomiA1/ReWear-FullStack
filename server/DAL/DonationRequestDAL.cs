@@ -10,11 +10,8 @@ namespace RewearApi.DAL
         private const string CON_STR_NAME =
             "RewearDB";
 
-        private const string SP_CREATE_DONATION_REQUEST =
-            "sp_CreateDonationRequest";
-
-        private const string SP_LINK_BAG_TO_DONATION_REQUEST =
-            "sp_LinkBagToDonationRequest";
+        private const string SP_SUBMIT_DONATION_REQUEST =
+            "sp_SubmitDonationRequest";
 
         private const string SP_RESPOND_DONATION_REQUEST =
             "sp_RespondDonationRequest";
@@ -167,7 +164,7 @@ namespace RewearApi.DAL
         }
 
 
-        public int CreateDonationRequest(
+        public int SubmitDonationRequest(
             DonationRequest request
         )
         {
@@ -182,6 +179,10 @@ namespace RewearApi.DAL
                         {
                             "@user_id",
                             request.UserId
+                        },
+                        {
+                            "@bag_id",
+                            request.BagId
                         },
                         {
                             "@association_id",
@@ -204,7 +205,7 @@ namespace RewearApi.DAL
                     };
 
                 SqlCommand cmd = CreateCommand(
-                    SP_CREATE_DONATION_REQUEST,
+                    SP_SUBMIT_DONATION_REQUEST,
                     con,
                     paramDic
                 );
@@ -218,50 +219,11 @@ namespace RewearApi.DAL
                 )
                 {
                     throw new Exception(
-                        "Donation request was not created."
+                        "Donation request was not submitted."
                     );
                 }
 
                 return Convert.ToInt32(result);
-            }
-        }
-
-
-        public void LinkBagToDonationRequest(
-            int requestId,
-            int bagId,
-            int userId
-        )
-        {
-            using (
-                SqlConnection con =
-                    Connect(CON_STR_NAME)
-            )
-            {
-                Dictionary<string, object> paramDic =
-                    new Dictionary<string, object>
-                    {
-                        {
-                            "@request_id",
-                            requestId
-                        },
-                        {
-                            "@bag_id",
-                            bagId
-                        },
-                        {
-                            "@user_id",
-                            userId
-                        }
-                    };
-
-                SqlCommand cmd = CreateCommand(
-                    SP_LINK_BAG_TO_DONATION_REQUEST,
-                    con,
-                    paramDic
-                );
-
-                cmd.ExecuteNonQuery();
             }
         }
 
