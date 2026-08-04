@@ -169,26 +169,40 @@ namespace RewearApi.Controllers
                 );
             }
             catch (Exception ex)
-            {
-                if (
-                    ex.Message.Contains(
-                        "Donation bag has already been sent",
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                )
-                {
-                    return Conflict(new
-                    {
-                        message =
-                            "Donation bag has already been sent to an association."
-                    });
-                }
+{
+    if (
+        ex.Message.Contains(
+            "Donation bag is incomplete",
+            StringComparison.OrdinalIgnoreCase
+        )
+    )
+    {
+        return BadRequest(new
+        {
+            message =
+                "לא ניתן לשלוח את התרומה. חובה למלא כמות פריטים, תיאור, מידה, מצב בגדים ולהעלות לפחות תמונה אחת."
+        });
+    }
 
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
+    if (
+        ex.Message.Contains(
+            "Donation bag has already been sent",
+            StringComparison.OrdinalIgnoreCase
+        )
+    )
+    {
+        return Conflict(new
+        {
+            message =
+                "Donation bag has already been sent to an association."
+        });
+    }
+
+    return BadRequest(new
+    {
+        message = ex.Message
+    });
+}
         }
 
 

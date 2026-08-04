@@ -12,6 +12,8 @@ namespace RewearApi.BL
         public string? CreatorName { get; set; }
 
         public string? ShortDescription { get; set; }
+       
+        public int ItemCount { get; set; }
 
         public string? Sizes { get; set; }
 
@@ -51,15 +53,49 @@ namespace RewearApi.BL
 
 
         public List<string> Validate()
-        {
-            List<string> errors = new List<string>();
+{
+    List<string> errors = new List<string>();
 
-            if (UserId <= 0)
-            {
-                errors.Add("UserId חובה");
-            }
+    if (UserId <= 0)
+    {
+        errors.Add("חובה לבחור משתמש תקין");
+    }
 
-            return errors;
-        }
+    if (ItemCount <= 0)
+    {
+        errors.Add("חובה להזין לפחות פריט אחד");
+    }
+
+    if (string.IsNullOrWhiteSpace(ShortDescription))
+    {
+        errors.Add("חובה להזין תיאור לתרומה");
+    }
+    else if (ShortDescription.Trim().Length < 5)
+    {
+        errors.Add("תיאור התרומה חייב להכיל לפחות 5 תווים");
+    }
+
+    if (string.IsNullOrWhiteSpace(Sizes))
+    {
+        errors.Add("חובה להזין מידה");
+    }
+
+    if (string.IsNullOrWhiteSpace(ClothesCondition))
+    {
+        errors.Add("חובה להזין את מצב הבגדים");
+    }
+
+    if (string.IsNullOrWhiteSpace(TargetGender))
+    {
+        errors.Add("חובה לבחור קהל יעד");
+    }
+
+    if (!IsValidDonationStatus(DonationStatus))
+    {
+        errors.Add("סטטוס התרומה אינו תקין");
+    }
+
+    return errors;
+}
     }
 }
