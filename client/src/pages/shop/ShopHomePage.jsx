@@ -8,13 +8,6 @@ import PageContainer from "../../components/PageContainer";
 import { loadInventoryFor } from "../../utils/shopInventoryStorage";
 import { getCollabStatusInfo } from "../../utils/statusLabels";
 
-const INITIAL_NEW_ITEMS = [
-  { id: 1, title: "3 שקיות – בגדי נשים",     org: "עמותת לב חם", condition: "מצב טוב",  itemStatus: "new" },
-  { id: 2, title: "שק – נעלי ילדים",          org: "ידיים לעתיד", condition: "כמו חדש",  itemStatus: "new" },
-  { id: 3, title: "2 שקיות – מעילים לגברים", org: "עמותת לב חם", condition: "מצב סביר", itemStatus: "new" },
-  { id: 4, title: "שק – בגדי ילדים מעורב",    org: "נשים בקהילה", condition: "מצב טוב",  itemStatus: "new" },
-];
-
 function KpiCard({ kpi }) {
   return (
     <div className="bg-rw-card rounded-2xl p-4 shadow-sm
@@ -90,7 +83,7 @@ export default function ShopHomePage() {
   const navigate = useNavigate();
   const { user, logout, collaborations } = useUser();
 
-  const [newItems, setNewItems] = useState(INITIAL_NEW_ITEMS);
+  const [newItems, setNewItems] = useState([]);
 
   const handleAddToInventory = (id) => {
     setNewItems(prev => prev.map(item =>
@@ -195,11 +188,20 @@ export default function ShopHomePage() {
             )}
             <h2 className="font-bold text-rw-title text-base">פריטים חדשים שהתקבלו</h2>
           </div>
-          <div className="flex flex-col gap-3">
-            {newItems.map(item => (
-              <NewItemCard key={item.id} item={item} onAdd={handleAddToInventory} />
-            ))}
-          </div>
+          {newItems.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {newItems.map(item => (
+                <NewItemCard key={item.id} item={item} onAdd={handleAddToInventory} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-rw-card rounded-2xl p-6 shadow-sm
+                            flex flex-col items-center gap-2 text-center">
+              <span className="text-3xl">📭</span>
+              <p className="text-rw-title text-sm font-semibold">עדיין לא התקבלו פריטים</p>
+              <p className="text-rw-sub text-xs">פריטים שיתקבלו מעמותות יופיעו כאן</p>
+            </div>
+          )}
         </div>
 
       </div>

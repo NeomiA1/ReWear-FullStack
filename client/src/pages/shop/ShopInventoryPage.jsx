@@ -146,6 +146,12 @@ export default function ShopInventoryPage() {
           visible.map(item => (
             <InventoryCard key={item.id} item={item} onMark={handleMark} />
           ))
+        ) : items.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 pt-10">
+            <span className="text-4xl">📭</span>
+            <p className="text-rw-title text-sm font-semibold">עדיין לא התקבלו פריטים</p>
+            <p className="text-rw-sub text-xs">פריטים שיתקבלו מעמותות יופיעו כאן</p>
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-3 pt-10">
             <span className="text-4xl">📭</span>

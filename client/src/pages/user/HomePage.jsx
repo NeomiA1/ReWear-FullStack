@@ -3,6 +3,7 @@ import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
 import PageContainer from "../../components/PageContainer";
 import { getDonationStatusInfo } from "../../utils/statusLabels";
+import { getUserDisplayName, getUserInitial } from "../../utils/userDisplay";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -45,13 +46,13 @@ export default function HomePage() {
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-end">
             <span className="font-bold text-rw-title text-base">
-              שלום, {user.fullName}
+              שלום, {getUserDisplayName(user)}
             </span>
             <span className="text-xs text-rw-sub">רמת אימפקט: {impactLevel}</span>
           </div>
           <div className="w-10 h-10 rounded-full bg-rw-logo
                           flex items-center justify-center">
-            <span className="text-white font-bold">{user.fullName.charAt(0)}</span>
+            <span className="text-white font-bold">{getUserInitial(user)}</span>
           </div>
         </div>
       </div>

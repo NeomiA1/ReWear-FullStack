@@ -15,6 +15,7 @@ import {
   linkBagToDonationRequest
 } from "../../services/donationRequestService";
 import { checkAssociationExists } from "../../services/associationService";
+import { getUserDisplayName, getUserInitial } from "../../utils/userDisplay";
 import { getBagStatusInfo } from "../../utils/statusLabels";
 import { getBagCategory } from "../../utils/associationRecommendation";
 import { getRecoProfile, recordAssociationSelected, recordDonatedCategory } from "../../utils/recommendationHistory";
@@ -236,7 +237,7 @@ export default function ProfilePage() {
           </button>
           <div className="flex items-center gap-3">
             <div className="flex flex-col items-end">
-              <h1 className="font-bold text-rw-title text-lg">{user.fullName}</h1>
+              <h1 className="font-bold text-rw-title text-lg">{getUserDisplayName(user)}</h1>
               <p className="text-rw-sub text-sm">{user.email}</p>
               {user.location && (
                 <p className="text-rw-sub text-xs mt-0.5">📍 {user.location}</p>
@@ -245,7 +246,7 @@ export default function ProfilePage() {
             <div className="w-16 h-16 rounded-full bg-rw-logo
                             flex items-center justify-center">
               <span className="text-white text-2xl font-bold">
-                {user.fullName?.charAt(0)}
+                {getUserInitial(user)}
               </span>
             </div>
           </div>

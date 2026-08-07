@@ -109,20 +109,16 @@ export default function OrgHomePage() {
   const totalReceived = donations.filter(d =>
     ["approved","scheduled","collected"].includes(d.status)
   ).length;
-  const totalCollected = donations.filter(d => d.status === "collected").length;
-  // ציון אימפקט = אחוז בקשות שהושלמו מתוך כלל הבקשות (0–100)
-  const impactScore = donations.length > 0
-    ? Math.round((totalCollected / donations.length) * 100)
-    : 0;
+  const pendingRequests = donations.filter(d => d.status === "pending").length;
 
   const KPI_DATA = [
     {
       id: 1,
-      label:    "ציון אימפקט",
-      value:    String(impactScore),
-      change:   impactScore > 0 ? `${totalCollected} תרומות הושלמו` : "אין נתונים עדיין",
-      positive: impactScore > 0,
-      icon:     "🌿",
+      label:    "בקשות ממתינות",
+      value:    String(pendingRequests),
+      change:   pendingRequests > 0 ? `מתוך ${donations.length} בקשות סה״כ` : "אין נתונים עדיין",
+      positive: pendingRequests > 0,
+      icon:     "⏳",
     },
     {
       id: 2,
