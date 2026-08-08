@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import ShopBottomNav from "../../components/ShopBottomNav";
+import { useToast } from "../../hooks/useToast";
 import PageContainer from "../../components/PageContainer";
 
 function Toggle({ value, onChange }) {
@@ -22,6 +23,7 @@ function Toggle({ value, onChange }) {
 export default function ShopProfilePage() {
   const navigate = useNavigate();
   const { user, logout, getShopSettings, updateShopSettings } = useUser();
+  const toast = useToast();
 
   const shopName = user?.shopName || user?.fullName || "החנות שלי";
   const shopCity = user?.city || "";
@@ -36,7 +38,7 @@ export default function ShopProfilePage() {
 
   const handleSave = () => {
     updateShopSettings(shopName, { isAvailable, acceptsPickup, itemTypes });
-    alert("ההגדרות נשמרו בהצלחה ✅");
+    toast.success("ההגדרות נשמרו בהצלחה");
   };
 
   const toggleItemType = (key) => {

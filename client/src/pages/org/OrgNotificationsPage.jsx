@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageContainer from "../../components/PageContainer";
+import { useToast } from "../../hooks/useToast";
 
 // ─── נתונים לדוגמה ───────────────────────────────────────
 // בשלב הבא יגיעו מהשרת
@@ -175,6 +176,7 @@ export default function OrgNotificationsPage() {
 
   // state של ההתראות – בשלב הבא יגיע מ-Context או שרת
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const toast = useToast();
 
   // ─── אישור בקשה ──────────────────────────────────────
   const handleApprove = (notification) => {
@@ -186,12 +188,16 @@ export default function OrgNotificationsPage() {
           : n
       )
     );
-    alert(`אישרת את בקשת ${notification.donor} ✅`);
+    toast.success(`אישרת את בקשת ${notification.donor}`);
   };
 
   // ─── פתיחת בקשה ──────────────────────────────────────
   const handleOpen = (notification) => {
-    alert(`פרטי בקשה של ${notification.donor}:\n${notification.bagDesc}`);
+    // info עם duration: null — זה תוכן לקריאה, לא הבזק חולף, אז לא נעלם מעצמו
+    toast.info(`פרטי בקשה של ${notification.donor}`, {
+      description: notification.bagDesc,
+      duration: null,
+    });
     // בשלב הבא: navigate(`/org/request/${notification.id}`)
   };
 

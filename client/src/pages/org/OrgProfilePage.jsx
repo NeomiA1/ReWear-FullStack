@@ -4,6 +4,7 @@ import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav"; // ✅ מהקובץ המשותף
 import PageContainer from "../../components/PageContainer";
 import { checkAssociationExists, updateAssociationAvailability } from "../../services/associationService";
+import { useToast } from "../../hooks/useToast";
 
 function Toggle({ value, onChange }) {
   return (
@@ -37,6 +38,7 @@ export default function OrgProfilePage() {
   const [acceptsPickup, setAcceptsPickup] = useState(currentSettings.acceptsPickup);
   const [acceptsDropoff,setAcceptsDropoff]= useState(currentSettings.acceptsDropoff);
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
   const handleSave = async () => {
     // תמיד שומרים מקומית — זו ההתנהגות הקיימת, וממשיכה לעבוד גם אם העמותה
@@ -52,10 +54,10 @@ export default function OrgProfilePage() {
       if (real) {
         await updateAssociationAvailability(real.associationId, isAvailable);
       }
-      alert("ההגדרות נשמרו בהצלחה ✅");
+      toast.success("ההגדרות נשמרו בהצלחה");
     } catch (err) {
       console.error(err);
-      alert("ההגדרות נשמרו מקומית, אך אירעה שגיאה בעדכון השרת.");
+      toast.warning("ההגדרות נשמרו מקומית, אך אירעה שגיאה בעדכון השרת.");
     } finally {
       setSaving(false);
     }

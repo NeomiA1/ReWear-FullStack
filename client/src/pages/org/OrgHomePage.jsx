@@ -5,6 +5,7 @@ import OrgBottomNav from "../../components/OrgBottomNav";
 import PageContainer from "../../components/PageContainer";
 import { checkAssociationExists } from "../../services/associationService";
 import { getNearbyStores } from "../../services/storeService";
+import { useToast } from "../../hooks/useToast";
 
 // רשימת גיבוי — משמשת רק אם העמותה טרם רשומה במסד הנתונים האמיתי, או שאין
 // חנויות אמיתיות בקרבתה, או שהקריאה לשרת נכשלה. ברגע שיש תשובה אמיתית
@@ -24,6 +25,7 @@ const DEFAULT_URGENT_NEEDS = [
 export default function OrgHomePage() {
   const navigate = useNavigate();
   const { user, logout, collaborations, sendCollaborationRequest, sentDonations } = useUser();
+  const toast = useToast();
 
   const [selectedStore, setSelectedStore] = useState(null);
   const [searchQuery,   setSearchQuery]   = useState("");
@@ -338,7 +340,7 @@ export default function OrgHomePage() {
                       <button onClick={() => {
                           const org = { name: orgName, city: "", types: "" };
                           const sent = sendCollaborationRequest(org, store);
-                          if (!sent) alert("כבר נשלחה בקשה לחנות זו");
+                          if (!sent) toast.warning("כבר נשלחה בקשה לחנות זו");
                         }}
                         className="bg-rw-btn text-white rounded-xl px-3 py-2
                                    text-xs font-semibold active:bg-rw-btn-hover

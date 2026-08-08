@@ -5,6 +5,7 @@ import { registerOrganization } from "../../services/associationService";
 import { getAllCauses } from "../../services/causesService";
 import { CATEGORIES } from "../../data/associations";
 import AuthLayout from "../../components/AuthLayout";
+import { useToast } from "../../hooks/useToast";
 
 const WORK_MODE_OPTIONS = [
   { value: "SecondHandStores", label: "חנויות יד שנייה"  },
@@ -34,10 +35,10 @@ export default function RegisterOrgPage() {
   const [causeIds,     setCauseIds]     = useState([]);
   const [acceptedCategoryIds, setAcceptedCategoryIds] = useState([]);
   const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState(null);
 
   const { setUser } = useUser();
   const navigate    = useNavigate();
+  const toast       = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -74,16 +75,15 @@ export default function RegisterOrgPage() {
   const handleRegister = async () => {
     if (!orgName || !orgNumber || !contact || !phone ||
         !email || !password || !address || !workMode || !deliveryMode) {
-      setError("אנא מלאי את כל השדות");
+      toast.warning("אנא מלאי את כל השדות");
       return;
     }
     if (password.length < 6) {
-      setError("הסיסמה חייבת להכיל לפחות 6 תווים");
+      toast.warning("הסיסמה חייבת להכיל לפחות 6 תווים");
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const createdUser = await registerOrganization({
@@ -113,7 +113,7 @@ export default function RegisterOrgPage() {
       navigate("/org/home");
 
     } catch (err) {
-      setError(typeof err === "string" ? err : "שגיאה בהרשמה. אנא נסי שוב.");
+      toast.error(typeof err === "string" ? err : "שגיאה בהרשמה. אנא נסי שוב.");
     } finally {
       setLoading(false);
     }
@@ -148,13 +148,6 @@ export default function RegisterOrgPage() {
 
       {/* Form card */}
       <div className="bg-rw-card rounded-2xl shadow-sm p-6 flex flex-col gap-5">
-
-        {/* Inline error banner */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-            <p className="text-red-600 text-sm text-right whitespace-pre-line">{error}</p>
-          </div>
-        )}
 
         {/* Org name */}
         <div className="flex flex-col gap-1">

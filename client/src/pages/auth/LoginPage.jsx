@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { loginUser } from "../../services/userService";
 import AuthLayout from "../../components/AuthLayout";
+import { homeRouteForRole } from "../../utils/roles";
+import { useToast } from "../../hooks/useToast";
 
 function deriveType(userType) {
   switch (userType) {
@@ -13,15 +15,6 @@ function deriveType(userType) {
   }
 }
 
-function homeRouteForType(type) {
-  switch (type) {
-    case "org":     return "/org/home";
-    case "shop":    return "/shop/home";
-    case "private":
-    default:        return "/home";
-  }
-}
-
 export default function LoginPage() {
 
   const [email, setEmail]       = useState("");
@@ -29,10 +22,11 @@ export default function LoginPage() {
 
   const navigate    = useNavigate();
   const { setUser } = useUser();
+  const toast       = useToast();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      alert("אנא מלאי אימייל וסיסמה");
+      toast.warning("אנא מלאי אימייל וסיסמה");
       return;
     }
 
@@ -46,14 +40,14 @@ export default function LoginPage() {
         type,      
       });
 
-      navigate(homeRouteForType(type));
+      navigate(homeRouteForRole(type));
 
     } catch (error) {
       console.error(error);
       // loginUser throws the server's error text (e.g. "Invalid email or
       // password") as a string; a real network/exception failure throws an
       // Error object instead — tell those two cases apart for the user.
-      alert(typeof error === "string" ? "אימייל או סיסמה שגויים" : "שגיאה בהתחברות לשרת");
+      toast.error(typeof error === "string" ? "אימייל או סיסמה שגויים" : "שגיאה בהתחברות לשרת");
     }
   };
 

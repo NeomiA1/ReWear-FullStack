@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "../../components/AuthLayout";
+import { useToast } from "../../hooks/useToast";
 
 export default function RegisterTypePage() {
 
   const [userType, setUserType] = useState("");
   const navigate = useNavigate();
+  const toast    = useToast();
 
   const handleContinue = () => {
     if (!userType) {
-      alert("אנא בחרי סוג משתמש");
+      toast.warning("אנא בחרי סוג משתמש");
       return;
     }
     if (userType === "private") navigate("/register/private");

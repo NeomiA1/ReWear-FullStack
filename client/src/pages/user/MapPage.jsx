@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import AssociationRecommendationList from "../../components/AssociationRecommendationList";
 import PageContainer from "../../components/PageContainer";
+import { useToast } from "../../hooks/useToast";
 
 export default function MapPage() {
 
   const navigate = useNavigate();
+  const toast = useToast();
 
   // פתיחת Google Maps בדפדפן עם חיפוש עמותות בגדים
   const openGoogleMaps = () => {
@@ -17,7 +19,7 @@ export default function MapPage() {
   // פתיחת Google Maps עם מיקום המשתמש
   const openMyLocation = () => {
     if (!navigator.geolocation) {
-      alert("הדפדפן לא תומך במיקום");
+      toast.error("הדפדפן לא תומך במיקום");
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -28,7 +30,7 @@ export default function MapPage() {
           "_blank"
         );
       },
-      () => alert("לא ניתן לקבל מיקום")
+      () => toast.error("לא ניתן לקבל מיקום")
     );
   };
 

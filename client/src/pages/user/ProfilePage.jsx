@@ -20,6 +20,7 @@ import { getBagStatusInfo } from "../../utils/statusLabels";
 import { getBagCategory } from "../../utils/associationRecommendation";
 import { getRecoProfile, recordAssociationSelected, recordDonatedCategory } from "../../utils/recommendationHistory";
 import { recordDonationSent } from "../../utils/donationSendLog";
+import { useToast } from "../../hooks/useToast";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -31,7 +32,6 @@ export default function ProfilePage() {
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [sent, setSent] = useState(false);
   const [sentAsDemo, setSentAsDemo] = useState(false);
-  const [sendError, setSendError] = useState(null);
   const [sending, setSending] = useState(false);
   const [serverBags, setServerBags] = useState([]);
   // שקים שכבר נשלחו לעמותה בסשן הנוכחי — מונע שליחה כפולה של אותו שק
@@ -39,6 +39,7 @@ export default function ProfilePage() {
   const [loadingBags, setLoadingBags] = useState(false);
   const [bagsError, setBagsError] = useState(null);
   const { confirm, confirmDialogProps } = useConfirmDialog();
+  const toast = useToast();
 
   useEffect(() => {
     const loadBags = async () => {
@@ -64,11 +65,10 @@ export default function ProfilePage() {
     if (!selectedBag || !selectedOrg || !user) return;
 
     if (sentBagIds.includes(selectedBag.id)) {
-      setSendError("השק הזה כבר נשלח לעמותה. לא ניתן לשלוח את אותו שק פעמיים.");
+      toast.warning("השק הזה כבר נשלח לעמותה. לא ניתן לשלוח את אותו שק פעמיים.");
       return;
     }
 
-    setSendError(null);
     setSending(true);
 
     try {
@@ -84,7 +84,7 @@ export default function ProfilePage() {
 
       if (realAssociation) {
         if (!realAssociation.isAvailable) {
-          setSendError("העמותה אינה זמינה לקבלת תרומות כרגע.");
+          toast.warning("העמותה אינה זמינה לקבלת תרומות כרגע.");
           setSending(false);
           return;
         }
@@ -128,7 +128,7 @@ export default function ProfilePage() {
         // עמותה זו אינה רשומה במסד הנתונים האמיתי (ראו TODO(server) למעלה) —
         // לא ניתן לשלוח בקשה אמיתית בלי מזהה תקין, ממשיכים במצב הדגמה מקומי.
         if (!getOrgSettings(selectedOrg.name).isAvailable) {
-          setSendError("העמותה אינה זמינה לקבלת תרומות כרגע.");
+          toast.warning("העמותה אינה זמינה לקבלת תרומות כרגע.");
           setSending(false);
           return;
         }
@@ -159,6 +159,12 @@ export default function ProfilePage() {
       setSentBagIds(prev => [...prev, selectedBag.id]);
       setSent(true);
 
+      toast.success("הבקשה נשלחה בהצלחה!", {
+        description: sentAsDemo
+          ? `${selectedOrg.name} (מצב הדגמה — עמותה זו טרם רשומה במערכת האמיתית)`
+          : `${selectedOrg.name} תיצור איתך קשר בקרוב`,
+      });
+
       setTimeout(() => {
         setSent(false);
         setSelectedBag(null);
@@ -166,7 +172,7 @@ export default function ProfilePage() {
       }, 3000);
     } catch (error) {
       console.error(error);
-      setSendError(typeof error === "string" ? error : "שגיאה בשליחת הבקשה. נסי שוב.");
+      toast.error(typeof error === "string" ? error : "שגיאה בשליחת הבקשה. נסי שוב.");
     } finally {
       setSending(false);
     }
@@ -185,13 +191,11 @@ export default function ProfilePage() {
         icon: "🔁",
         onConfirm: () => {
           setSelectedOrg(org);
-          setSendError(null);
         },
       });
       return;
     }
     setSelectedOrg(org);
-    setSendError(null);
   };
 
   const handleSendClick = () => {
@@ -266,25 +270,6 @@ export default function ProfilePage() {
 
       <div className="px-5 mt-5 flex flex-col gap-6">
 
-        {/* הודעת הצלחה */}
-        {sent && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-4
-                          flex items-center gap-3">
-            <span className="text-2xl">🎉</span>
-            <div>
-              <p className="font-semibold text-green-700 text-sm">הבקשה נשלחה בהצלחה!</p>
-              <p className="text-green-600 text-xs mt-0.5">
-                {selectedOrg?.name} תיצור איתך קשר בקרוב
-              </p>
-              {sentAsDemo && (
-                <p className="text-green-500 text-[11px] mt-0.5">
-                  (מצב הדגמה — עמותה זו טרם רשומה במערכת האמיתית)
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* שלב 1 – בחירת שק */}
         <div>
           <h2 className="font-bold text-rw-title text-base mb-3">
@@ -320,7 +305,7 @@ export default function ProfilePage() {
                 const alreadySent = sentBagIds.includes(bag.id);
                 return (
                   <div key={bag.id}
-                    onClick={() => { if (!alreadySent) { setSelectedBag(bag); setSendError(null); } }}
+                    onClick={() => { if (!alreadySent) { setSelectedBag(bag); } }}
                     className={`bg-rw-card rounded-2xl p-4 shadow-sm
                                flex items-center justify-between
                                border-2 transition-all
@@ -402,12 +387,6 @@ export default function ProfilePage() {
                 עמותה: {selectedOrg.name} – {selectedOrg.city}
               </p>
             </div>
-
-            {sendError && (
-              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2 mb-3">
-                <p className="text-red-600 text-xs text-right">{sendError}</p>
-              </div>
-            )}
 
             <button onClick={handleSendClick} disabled={sending}
               className="w-full bg-rw-btn text-white rounded-xl py-3

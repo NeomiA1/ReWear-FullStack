@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
 import PageContainer from "../../components/PageContainer";
+import { useToast } from "../../hooks/useToast";
 
 // TODO(server): this whole screen is demo-only local data (sentDonations in
 // UserContext, not the real DonationRequests). A real org→approve/reject
@@ -30,6 +31,7 @@ function RequestCard({ req, onApprove, onReject }) {
   const [selectedDays,  setSelectedDays]  = useState([]);
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [showSchedule,  setShowSchedule]  = useState(false);
+  const toast = useToast();
 
   const toggleDay  = (d) => setSelectedDays(prev =>
     prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
@@ -38,7 +40,7 @@ function RequestCard({ req, onApprove, onReject }) {
 
   const handleApprove = () => {
     if (!selectedDays.length || !selectedTimes.length) {
-      alert("אנא בחרי לפחות יום ושעה אחד");
+      toast.warning("אנא בחרי לפחות יום ושעה אחד");
       return;
     }
     onApprove(req.id, selectedDays, selectedTimes);

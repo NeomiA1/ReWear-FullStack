@@ -9,6 +9,7 @@ import { createDonationBag } from "../../services/donationBagService";
 import { getBagCategory } from "../../utils/associationRecommendation";
 import { recordDonatedCategory } from "../../utils/recommendationHistory";
 import { validateDonationImage, MAX_IMAGES } from "../../utils/imageValidation";
+import { useToast } from "../../hooks/useToast";
 
 const EMPTY_BAG = () => ({
   size: "", age: "", gender: "", condition: "", description: "",
@@ -21,8 +22,8 @@ export default function UploadDonationPage() {
   const [bags, setBags] = useState([{ id: 1, ...EMPTY_BAG() }]);
   const [uploaded, setUploaded]   = useState(false);
   const [loading,  setLoading]    = useState(false);
-  const [error,    setError]      = useState(null);
   const { confirm, confirmDialogProps } = useConfirmDialog();
+  const toast = useToast();
 
   // מונע דליפת object URL שנשארה תלויה כשעוזבים את המסך עם תמונות עדיין
   // בזיכרון. משתמשים ב-ref כדי שה-cleanup ירוץ רק פעם אחת, ב-unmount
@@ -151,10 +152,9 @@ export default function UploadDonationPage() {
   const handleUpload = async () => {
     const validationError = validateBags();
     if (validationError) {
-      setError(validationError);
+      toast.warning(validationError);
       return;
     }
-    setError(null);
 
     if (!user || !user.userId) {
       // ── דמו: משתמש בלי userId (כניסת דמו) ──────────────────────
@@ -185,7 +185,7 @@ export default function UploadDonationPage() {
       setUploaded(true);
     } catch (error) {
       console.error(error);
-      setError("שגיאה בהעלאת השק: " + error);
+      toast.error("שגיאה בהעלאת השק: " + error);
     } finally {
       setLoading(false);
     }
@@ -238,12 +238,6 @@ export default function UploadDonationPage() {
       </div>
 
       <div className="px-5 pt-5 flex flex-col gap-5">
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-            <p className="text-red-600 text-sm text-right">{error}</p>
-          </div>
-        )}
 
         {bags.map((bag) => (
           <div key={bag.id} className="bg-rw-card rounded-2xl shadow-sm p-4">

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { registerUser, loginUser } from "../../services/userService";
 import AuthLayout from "../../components/AuthLayout";
+import { useToast } from "../../hooks/useToast";
 
 export default function RegisterPrivatePage() {
 
@@ -14,14 +15,15 @@ export default function RegisterPrivatePage() {
 
   const { setUser } = useUser();
   const navigate    = useNavigate();
+  const toast       = useToast();
 
   const handleRegister = async () => {
     if (!fullName || !email || !phone || !password) {
-      alert("אנא מלאי את כל השדות");
+      toast.warning("אנא מלאי את כל השדות");
       return;
     }
     if (password.length < 6) {
-      alert("הסיסמה חייבת להכיל לפחות 6 תווים");
+      toast.warning("הסיסמה חייבת להכיל לפחות 6 תווים");
       return;
     }
 
@@ -56,7 +58,7 @@ export default function RegisterPrivatePage() {
     } catch (error) {
 
       console.error(error);
-      alert(error);
+      toast.error(typeof error === "string" ? error : "שגיאה בהרשמה. אנא נסי שוב.");
 
     }
   };

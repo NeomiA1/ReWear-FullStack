@@ -44,37 +44,37 @@ function App() {
         <Route path="/"                  element={<LoginPage />} />
         <Route path="/register"          element={<RegisterTypePage />} />
         <Route path="/register/private"        element={<RegisterPrivatePage />} />
-        <Route path="/register/private/causes" element={<RequireAuth type="private"><RegisterCausesPage /></RequireAuth>} />
+        <Route path="/register/private/causes" element={<RequireAuth allowedRoles="private"><RegisterCausesPage /></RequireAuth>} />
         <Route path="/register/org"      element={<RegisterOrgPage />} />
         <Route path="/register/shop"     element={<RegisterShopPage />} />
 
         {/* User */}
-        <Route path="/home"              element={<RequireAuth type="private"><HomePage /></RequireAuth>} />
-        <Route path="/upload"            element={<RequireAuth type="private"><UploadDonationPage /></RequireAuth>} />
-        <Route path="/profile"           element={<RequireAuth type="private"><ProfilePage /></RequireAuth>} />
-        <Route path="/map"               element={<RequireAuth type="private"><MapPage /></RequireAuth>} />
-        <Route path="/notifications"     element={<RequireAuth type="private"><NotificationsPage /></RequireAuth>} />
-        <Route path="/pickup/:id"        element={<RequireAuth type="private"><PickupSchedulingPage /></RequireAuth>} />
-        <Route path="/status"            element={<RequireAuth type="private"><DonationStatusPage /></RequireAuth>} />
-        <Route path="/impact"            element={<RequireAuth type="private"><ImpactPage /></RequireAuth>} />
+        <Route path="/home"              element={<RequireAuth allowedRoles="private"><HomePage /></RequireAuth>} />
+        <Route path="/upload"            element={<RequireAuth allowedRoles="private"><UploadDonationPage /></RequireAuth>} />
+        <Route path="/profile"           element={<RequireAuth allowedRoles="private"><ProfilePage /></RequireAuth>} />
+        <Route path="/map"               element={<RequireAuth allowedRoles="private"><MapPage /></RequireAuth>} />
+        <Route path="/notifications"     element={<RequireAuth allowedRoles="private"><NotificationsPage /></RequireAuth>} />
+        <Route path="/pickup/:id"        element={<RequireAuth allowedRoles="private"><PickupSchedulingPage /></RequireAuth>} />
+        <Route path="/status"            element={<RequireAuth allowedRoles="private"><DonationStatusPage /></RequireAuth>} />
+        <Route path="/impact"            element={<RequireAuth allowedRoles="private"><ImpactPage /></RequireAuth>} />
 
         {/* Org */}
-        <Route path="/org/home"              element={<RequireAuth type="org"><OrgHomePage /></RequireAuth>} />
-        <Route path="/org/profile"           element={<RequireAuth type="org"><OrgProfilePage /></RequireAuth>} />
-        <Route path="/org/notifications"     element={<RequireAuth type="org"><OrgNotificationsPage /></RequireAuth>} />
-        <Route path="/org/requests"          element={<RequireAuth type="org"><OrgRequestsPage /></RequireAuth>} />
-        <Route path="/org/pickups"           element={<RequireAuth type="org"><OrgPickupsPage /></RequireAuth>} />
-        <Route path="/org/collaborations"    element={<RequireAuth type="org"><OrgCollaborationsPage /></RequireAuth>} />
+        <Route path="/org/home"              element={<RequireAuth allowedRoles="org"><OrgHomePage /></RequireAuth>} />
+        <Route path="/org/profile"           element={<RequireAuth allowedRoles="org"><OrgProfilePage /></RequireAuth>} />
+        <Route path="/org/notifications"     element={<RequireAuth allowedRoles="org"><OrgNotificationsPage /></RequireAuth>} />
+        <Route path="/org/requests"          element={<RequireAuth allowedRoles="org"><OrgRequestsPage /></RequireAuth>} />
+        <Route path="/org/pickups"           element={<RequireAuth allowedRoles="org"><OrgPickupsPage /></RequireAuth>} />
+        <Route path="/org/collaborations"    element={<RequireAuth allowedRoles="org"><OrgCollaborationsPage /></RequireAuth>} />
 
         {/* Shop */}
-        <Route path="/shop/home"         element={<RequireAuth type="shop"><ShopHomePage /></RequireAuth>} />
-        <Route path="/shop/partners"     element={<RequireAuth type="shop"><ShopPartnersPage /></RequireAuth>} />
-        <Route path="/shop/profile"      element={<RequireAuth type="shop"><ShopProfilePage /></RequireAuth>} />
-        <Route path="/shop/inventory"    element={<RequireAuth type="shop"><ShopInventoryPage /></RequireAuth>} />
+        <Route path="/shop/home"         element={<RequireAuth allowedRoles="shop"><ShopHomePage /></RequireAuth>} />
+        <Route path="/shop/partners"     element={<RequireAuth allowedRoles="shop"><ShopPartnersPage /></RequireAuth>} />
+        <Route path="/shop/profile"      element={<RequireAuth allowedRoles="shop"><ShopProfilePage /></RequireAuth>} />
+        <Route path="/shop/inventory"    element={<RequireAuth allowedRoles="shop"><ShopInventoryPage /></RequireAuth>} />
 
         {/* Chat */}
-        <Route path="/org/chat/:id"      element={<RequireAuth type="org"><CollaborationChatPage /></RequireAuth>} />
-        <Route path="/shop/chat/:id"     element={<RequireAuth type="shop"><CollaborationChatPage /></RequireAuth>} />
+        <Route path="/org/chat/:id"      element={<RequireAuth allowedRoles="org"><CollaborationChatPage /></RequireAuth>} />
+        <Route path="/shop/chat/:id"     element={<RequireAuth allowedRoles="shop"><CollaborationChatPage /></RequireAuth>} />
       </Routes>
     </BrowserRouter>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { registerStore } from "../../services/storeService";
 import AuthLayout from "../../components/AuthLayout";
+import { useToast } from "../../hooks/useToast";
 
 // המסך זהה לעמותה, רק עם שינויים קטנים:
 // - כותרת שונה
@@ -20,10 +21,10 @@ export default function RegisterShopPage() {
   const [address, setAddress]         = useState(""); // כתובת
   const [logoPreview, setLogoPreview] = useState(null); // תצוגה מקדימה של לוגו
   const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState(null);
 
   const { setUser } = useUser();
   const navigate    = useNavigate();
+  const toast       = useToast();
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
@@ -33,16 +34,15 @@ export default function RegisterShopPage() {
 
   const handleRegister = async () => {
     if (!shopName || !bizNumber || !contact || !phone || !email || !password || !address) {
-      setError("אנא מלאי את כל השדות");
+      toast.warning("אנא מלאי את כל השדות");
       return;
     }
     if (password.length < 6) {
-      setError("הסיסמה חייבת להכיל לפחות 6 תווים");
+      toast.warning("הסיסמה חייבת להכיל לפחות 6 תווים");
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       // TODO(server): /api/stores only creates a standalone Store row — the
@@ -72,7 +72,7 @@ export default function RegisterShopPage() {
       navigate("/shop/home");
 
     } catch (err) {
-      setError(typeof err === "string" ? err : "שגיאה בהרשמה. אנא נסי שוב.");
+      toast.error(typeof err === "string" ? err : "שגיאה בהרשמה. אנא נסי שוב.");
     } finally {
       setLoading(false);
     }
@@ -106,13 +106,6 @@ export default function RegisterShopPage() {
 
       {/* טופס */}
       <div className="bg-rw-card rounded-2xl shadow-sm p-6 flex flex-col gap-5">
-
-        {/* הודעת שגיאה */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-            <p className="text-red-600 text-sm text-right whitespace-pre-line">{error}</p>
-          </div>
-        )}
 
         {/* שם החנות */}
         <div className="flex flex-col gap-1">

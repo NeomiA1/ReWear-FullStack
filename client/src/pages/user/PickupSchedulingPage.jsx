@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import PageContainer from "../../components/PageContainer";
+import { useToast } from "../../hooks/useToast";
 
 export default function PickupSchedulingPage() {
   const navigate = useNavigate();
   const { id }   = useParams();
   const { sentDonations, updateSentDonation } = useUser();
+  const toast = useToast();
 
   const donation = sentDonations.find(d => d.id === Number(id));
 
@@ -17,7 +19,7 @@ export default function PickupSchedulingPage() {
 
   const handleSubmit = () => {
     if (!selectedDay || !selectedTime || !address.trim()) {
-      alert("אנא מלאי את כל השדות");
+      toast.warning("אנא מלאי את כל השדות");
       return;
     }
     updateSentDonation(Number(id), {

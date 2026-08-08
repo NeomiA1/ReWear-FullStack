@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { useToast } from "../hooks/useToast";
 
 export default function CollaborationChatPage() {
   const navigate   = useNavigate();
@@ -17,6 +18,7 @@ export default function CollaborationChatPage() {
 
   const collab  = collaborations.find(c => c.id === Number(id));
   const [text, setText] = useState("");
+  const toast = useToast();
 
   const handleSend = () => {
     if (!text.trim()) return;
@@ -30,7 +32,7 @@ export default function CollaborationChatPage() {
       d.status === "approved" || d.status === "scheduled"
     );
     if (approved.length === 0) {
-      alert("אין תיאומי איסוף פעילים כרגע");
+      toast.warning("אין תיאומי איסוף פעילים כרגע");
       return;
     }
     const latest = approved[approved.length - 1];
