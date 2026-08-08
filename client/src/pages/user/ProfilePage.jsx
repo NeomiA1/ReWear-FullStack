@@ -52,7 +52,7 @@ export default function ProfilePage() {
         setServerBags(bagsFromServer);
       } catch (error) {
         console.error(error);
-        setBagsError("לא הצלחנו לטעון את השקים שלך. בדקי את החיבור ונסי שוב.");
+        setBagsError("לא הצלחנו לטעון את השקים שלך. בדק/י את החיבור ונסה/י שוב.");
       } finally {
         setLoadingBags(false);
       }
@@ -172,7 +172,7 @@ export default function ProfilePage() {
       }, 3000);
     } catch (error) {
       console.error(error);
-      toast.error(typeof error === "string" ? error : "שגיאה בשליחת הבקשה. נסי שוב.");
+      toast.error(typeof error === "string" ? error : "שגיאה בשליחת הבקשה. נסה/י שוב.");
     } finally {
       setSending(false);
     }
@@ -186,7 +186,7 @@ export default function ProfilePage() {
       confirm({
         title: "החלפת עמותה",
         message: `העמותה שנבחרה תוחלף מ${selectedOrg.name} ל${org.name}.`,
-        confirmText: "החליפי עמותה",
+        confirmText: "החליף עמותה",
         cancelText: "ביטול",
         icon: "🔁",
         onConfirm: () => {
@@ -273,7 +273,7 @@ export default function ProfilePage() {
         {/* שלב 1 – בחירת שק */}
         <div>
           <h2 className="font-bold text-rw-title text-base mb-3">
-            שלב 1 – בחרי שק לשליחה
+            שלב 1 – בחר/י שק לשליחה
           </h2>
 
           {loadingBags ? (
@@ -356,7 +356,7 @@ export default function ProfilePage() {
         {/* שלב 2 – בחירת עמותה */}
         <div>
           <h2 className="font-bold text-rw-title text-base mb-3">
-            שלב 2 – בחרי עמותה
+            שלב 2 – בחר/י עמותה
           </h2>
 
           <div className="flex justify-end mb-3">
@@ -393,7 +393,7 @@ export default function ProfilePage() {
                          text-sm font-semibold flex items-center justify-center gap-2
                          active:bg-rw-btn-hover disabled:opacity-50">
               <span>{sending ? "⏳" : "📦"}</span>
-              <span>{sending ? "שולחת..." : `שלחי תרומה ל${selectedOrg.name}`}</span>
+              <span>{sending ? "שולח/ת..." : `שלח/י תרומה ל${selectedOrg.name}`}</span>
             </button>
             {sending && (
               <p className="text-rw-sub text-[11px] text-center mt-2">
