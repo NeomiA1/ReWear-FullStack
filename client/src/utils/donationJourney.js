@@ -1,13 +1,4 @@
-// בניית "מסע התרומה" של שק בודד — ממפה נתונים אמיתיים בלבד (bag.status,
-// bag.createdAt מהשרת + רשומת שליחה מקומית אמיתית מ-donationSendLog.js)
-// לרשימת שלבים שמוצגת ע"י הרכיב הגנרי DonationJourneyTimeline.jsx.
-//
-// עקרון: כל שלב שמוצג כ-"הושלם" חייב להתבסס על אות אמיתי. שלבים שהשרת לא
-// יכול להבחין ביניהם (נאסף / התקבל בעמותה / חולק הלאה — כולם מתכנסים ל-
-// סטטוס "Completed" יחיד) מוצגים יחד כקבוצה שמתעדכנת בו-זמנית, בלי תאריך
-// בדוי לכל אחד בנפרד. שלב "הועבר לחנות שותפה" מושמט כברירת מחדל — אין שום
-// מקור נתונים שיודע להעיד עליו כרגע (זו בדיוק ההתנהגות של "שלב רשות" שמדלג
-// על עצמו כשאין לו על מה להתבסס).
+
 
 function formatDate(isoString) {
   if (!isoString) return null;
@@ -16,8 +7,6 @@ function formatDate(isoString) {
   return d.toLocaleDateString("he-IL");
 }
 
-// שלב 1–3 תמיד קיימים ברגע שהשק "יצא לדרך"; 4–5 תלויים בסטטוס האמיתי;
-// 6–9 מתכנסים יחד כשמגיעים ל-Completed (ראו הסבר למעלה).
 export function buildDonationJourney(bag, sendRecord) {
   const status = bag?.status || "Draft";
   const uploadedAt = formatDate(bag?.createdAt);
@@ -99,7 +88,6 @@ export function buildDonationJourney(bag, sendRecord) {
     state: status === "PickupScheduled" ? "current" : status === "Completed" ? "completed" : "upcoming",
   });
 
-  // ── שלבים שהשרת לא מבחין ביניהם — מתכנסים יחד ל-"הושלם" ────────────────
   const finalState = status === "Completed" ? "completed" : "upcoming";
   steps.push(
     { id: "collected", icon: "🚚", title: "השק נאסף", description: "השק נאסף מהמיקום שלך", timestamp: null, state: finalState },

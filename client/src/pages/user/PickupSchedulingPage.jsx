@@ -31,7 +31,6 @@ export default function PickupSchedulingPage() {
     setSent(true);
   };
 
-  // תרומה לא נמצאה
   if (!donation) {
     return (
       <div className="min-h-screen bg-rw-bg flex items-center justify-center px-6">
@@ -47,7 +46,6 @@ export default function PickupSchedulingPage() {
     );
   }
 
-  // תרומה טרם אושרה
   if (donation.status === "pending") {
     return (
       <div className="min-h-screen bg-rw-bg flex items-center justify-center px-6">

@@ -24,10 +24,6 @@ export default function UploadDonationPage() {
   const [loading,  setLoading]    = useState(false);
   const { confirm, confirmDialogProps } = useConfirmDialog();
   const toast = useToast();
-
-  // מונע דליפת object URL שנשארה תלויה כשעוזבים את המסך עם תמונות עדיין
-  // בזיכרון. משתמשים ב-ref כדי שה-cleanup ירוץ רק פעם אחת, ב-unmount
-  // האמיתי, אבל תמיד יראה את רשימת ה-bags העדכנית ביותר.
   const bagsRef = useRef(bags);
   useEffect(() => { bagsRef.current = bags; }, [bags]);
   useEffect(() => {
@@ -134,8 +130,6 @@ export default function UploadDonationPage() {
     });
   };
 
-  // שדות חובה לכל שק: מידה, מגדר, מצב הבגדים, ותמונה אחת לפחות.
-  // תיאור נשאר רשות (כמו שמסומן בטופס).
   const validateBags = () => {
     for (let i = 0; i < bags.length; i++) {
       const bag = bags[i];
@@ -157,8 +151,7 @@ export default function UploadDonationPage() {
     }
 
     if (!user || !user.userId) {
-      // ── דמו: משתמש בלי userId (כניסת דמו) ──────────────────────
-      // שומרים ב-Context בלבד ומציגים אישור
+    
       addDonation(bags);
       setUploaded(true);
       return;
@@ -166,7 +159,7 @@ export default function UploadDonationPage() {
 
     setLoading(true);
     try {
-      // ── משתמש אמיתי: שולחים לשרת ───────────────────────────────
+
       for (const bag of bags) {
         const donationBag = {
           userId:           user.userId,
@@ -177,11 +170,10 @@ export default function UploadDonationPage() {
           clothesCondition: bag.condition,
         };
         await createDonationBag(donationBag);
-        // מזין את מנוע ההמלצות עם קטגוריית השק שנתרם בפועל — אות היסטוריה,
-        // לא נתון עסקי משותף.
+
         recordDonatedCategory(user.userId, getBagCategory(bag));
       }
-      // ✅ A1 תיקון: setUploaded(true) נקרא אחרי הצלחה
+      
       setUploaded(true);
     } catch (error) {
       console.error(error);

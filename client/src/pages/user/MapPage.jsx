@@ -7,8 +7,6 @@ export default function MapPage() {
 
   const navigate = useNavigate();
   const toast = useToast();
-
-  // פתיחת Google Maps בדפדפן עם חיפוש עמותות בגדים
   const openGoogleMaps = () => {
     window.open(
       "https://www.google.com/maps/search/עמותות+בגדים+קרוב+אליי",
@@ -16,7 +14,6 @@ export default function MapPage() {
     );
   };
 
-  // פתיחת Google Maps עם מיקום המשתמש
   const openMyLocation = () => {
     if (!navigator.geolocation) {
       toast.error("הדפדפן לא תומך במיקום");

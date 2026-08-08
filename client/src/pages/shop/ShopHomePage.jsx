@@ -3,6 +3,7 @@ import { useUser } from "../../context/UserContext";
 import ShopBottomNav from "../../components/ShopBottomNav";
 import PageContainer from "../../components/PageContainer";
 import { useNotifications } from "../../hooks/useNotifications";
+import { getCollabStatusInfo } from "../../utils/statusLabels";
 
 export default function ShopHomePage() {
   const navigate = useNavigate();
@@ -159,7 +160,7 @@ export default function ShopHomePage() {
                       )}
 
                       <span className="text-amber-500 text-xs font-medium">
-                        ממתין לאישור
+                        {getCollabStatusInfo("pending").label}
                       </span>
                     </div>
 

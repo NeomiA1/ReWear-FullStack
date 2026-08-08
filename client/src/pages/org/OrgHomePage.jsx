@@ -7,10 +7,8 @@ import { checkAssociationExists } from "../../services/associationService";
 import { getNearbyStores } from "../../services/storeService";
 import { useToast } from "../../hooks/useToast";
 import { useNotifications } from "../../hooks/useNotifications";
+import { getCollabStatusInfo } from "../../utils/statusLabels";
 
-// רשימת גיבוי — משמשת רק אם העמותה טרם רשומה במסד הנתונים האמיתי, או שאין
-// חנויות אמיתיות בקרבתה, או שהקריאה לשרת נכשלה. ברגע שיש תשובה אמיתית
-// מ-Azure, היא מציגה את הרשימה האמיתית במקום זו (ראו loadingStores/storesSource).
 const DEMO_STORES = [
   { id: 1, name: "חנות חמד",      city: "חיפה",    items: "בגדים ונעליים"         },
   { id: 2, name: "יד שנייה בטוב", city: "תל אביב", items: "ציוד תינוקות"          },
@@ -18,45 +16,43 @@ const DEMO_STORES = [
   { id: 4, name: "החנות הירוקה",  city: "נתניה",   items: "בגדי ילדים"            },
 ];
 
-// צרכים דחופים ברירת מחדל
-const DEFAULT_URGENT_NEEDS = [
-  { id: 1, title: "מעילים ובגדי חורף", description: "חסר ברשימת עבור נשים בסיכון (S-L)", icon: "🧥" },
-];
-
 export default function OrgHomePage() {
   const navigate = useNavigate();
-  const { user, logout, collaborations, sendCollaborationRequest, sentDonations } = useUser();
+  const { user, logout, collaborations, sendCollaborationRequest, sentDonations,
+           getUrgentNeeds, updateUrgentNeeds } = useUser();
   const toast = useToast();
   const { unreadCount } = useNotifications();
 
   const [selectedStore, setSelectedStore] = useState(null);
   const [searchQuery,   setSearchQuery]   = useState("");
 
-  // ── עריכת צרכים דחופים ───────────────────────────────────────────────────
-  const [urgentNeeds, setUrgentNeeds] = useState(DEFAULT_URGENT_NEEDS);
+  const savedUser = JSON.parse(localStorage.getItem("rewear_user") || "{}");
+  const orgName   = user?.orgName || savedUser?.orgName || 'עמותת "לב חם"';
+
+  const [urgentNeeds, setUrgentNeedsState] = useState(() => getUrgentNeeds(orgName));
   const [isEditing,   setIsEditing]   = useState(false);
   const [editText,    setEditText]    = useState("");
 
   const handleAddNeed = () => {
     if (!editText.trim()) return;
-    setUrgentNeeds(prev => [...prev, {
+    const next = [...urgentNeeds, {
       id:          Date.now(),
       title:       editText.trim(),
       description: "",
       icon:        "📌",
-    }]);
+    }];
+    setUrgentNeedsState(next);
+    updateUrgentNeeds(orgName, next);
     setEditText("");
     setIsEditing(false);
   };
 
   const handleDeleteNeed = (id) => {
-    setUrgentNeeds(prev => prev.filter(n => n.id !== id));
+    const next = urgentNeeds.filter(n => n.id !== id);
+    setUrgentNeedsState(next);
+    updateUrgentNeeds(orgName, next);
   };
 
-  const savedUser = JSON.parse(localStorage.getItem("rewear_user") || "{}");
-  const orgName   = user?.orgName || savedUser?.orgName || 'עמותת "לב חם"';
-
-  // ── חנויות אמיתיות בקרבת העמותה (Azure) — עם נפילה לרשימת הדגמה ─────────
   const [storeList, setStoreList] = useState(DEMO_STORES);
   const [storesSource, setStoresSource] = useState("demo"); // "demo" | "real"
   const [loadingStores, setLoadingStores] = useState(true);
@@ -70,8 +66,7 @@ export default function OrgHomePage() {
       setStoresError(null);
 
       try {
-        // TODO(server): הסשן לא כולל את ה-associationId האמיתי — מנסים
-        // לאתר אותו לפי שם+מייל, אותו דפוס כמו ב-OrgProfilePage/ProfilePage.
+   
         const realAssociation = await checkAssociationExists(orgName, user?.email || "");
 
         if (!realAssociation) {
@@ -108,7 +103,6 @@ export default function OrgHomePage() {
     return () => { cancelled = true; };
   }, [orgName, user?.email]);
 
-  // ── KPI מחושב מ-Context ───────────────────────────────────────────────────
   const donations     = sentDonations || [];
   const totalReceived = donations.filter(d =>
     ["approved","scheduled","collected"].includes(d.status)
@@ -219,7 +213,10 @@ export default function OrgHomePage() {
           <div className="flex flex-col gap-3 md:grid md:grid-cols-2 xl:grid-cols-3 md:items-start">
             {urgentNeeds.length === 0 ? (
               <div className="bg-rw-card rounded-2xl p-4 text-center shadow-sm">
-                <p className="text-rw-sub text-sm">אין צרכים דחופים כרגע</p>
+                <p className="text-rw-title text-sm font-semibold">עדיין לא הוגדרו צרכים דחופים</p>
+                <p className="text-rw-sub text-xs mt-1">
+                  ניתן להוסיף צרכים כדי לעזור לתורמים לדעת מה הכי נחוץ כרגע
+                </p>
               </div>
             ) : urgentNeeds.map((need) => (
               <div key={need.id}
@@ -340,9 +337,9 @@ export default function OrgHomePage() {
                         <span>💬</span><span>צ׳אט</span>
                       </button>
                     ) : existing?.status === "pending" ? (
-                      <span className="bg-amber-50 text-amber-500 text-[10px]
-                                       font-bold px-2 py-1 rounded-full shrink-0">
-                        ממתין לאישור
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0
+                                       ${getCollabStatusInfo("pending").color}`}>
+                        {getCollabStatusInfo("pending").label}
                       </span>
                     ) : (
                       <button onClick={() => {

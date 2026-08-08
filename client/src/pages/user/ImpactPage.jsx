@@ -1,10 +1,12 @@
 // src/pages/user/ImpactPage.jsx
 // מסך אימפקט אישי – מדדי קיימות מחושבים מהתרומות
 
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import BottomNav from "../../components/BottomNav";
 import PageContainer from "../../components/PageContainer";
+import { getDonationBagsByUserId } from "../../services/donationBagService";
 
 // קבועי חישוב קיימות (ממוצעים מחקריים)
 const KG_PER_BAG        = 3;    // ק"ג ממוצע לשק בגדים
@@ -59,16 +61,43 @@ function LevelBadge({ level, completedCount }) {
 
 export default function ImpactPage() {
   const navigate = useNavigate();
-  const { sentDonations, donations } = useUser();
+  const { user, sentDonations } = useUser();
+
+  // "שקים הועלו" חייב לבוא מהמקור האמיתי (שרת) — אותו מקור בדיוק כמו
+  // ProfilePage/DonationStatusPage — ולא ממערך donations המקומי ב-
+  // UserContext, שמאוכלס רק דרך נתיב-דמו לא נגיש עבור חשבון אמיתי (ולכן
+  // תמיד היה []).
+  const [serverBags, setServerBags] = useState([]);
+  const [loadingBags, setLoadingBags] = useState(false);
+  const [bagsError, setBagsError] = useState(null);
+
+  useEffect(() => {
+    const loadBags = async () => {
+      if (!user?.userId) return;
+      setLoadingBags(true);
+      setBagsError(null);
+      try {
+        const data = await getDonationBagsByUserId(user.userId);
+        setServerBags(data || []);
+      } catch (err) {
+        console.error(err);
+        setBagsError("לא הצלחנו לטעון את מספר השקים שהועלו.");
+      } finally {
+        setLoadingBags(false);
+      }
+    };
+    loadBags();
+  }, [user?.userId]);
 
   // חישובים
   const completedDonations = (sentDonations || []).filter(d => d.status === "collected");
   const totalBags          = completedDonations.length;
-  const totalKg            = totalBags * KG_PER_BAG;
+  const totalKg             = totalBags * KG_PER_BAG;
   const waterSaved         = totalKg * WATER_PER_KG;      // אלף ליטר
   const co2Saved           = totalKg * CO2_PER_KG;        // ק"ג CO2
   const itemsRescued       = totalBags * ITEMS_PER_BAG;
-  const uploadedBags       = (donations || []).length;
+  const uploadedBags       = serverBags.length;
+  const uploadedBagsDisplay = loadingBags ? "…" : bagsError ? "—" : uploadedBags;
   const pendingBags        = (sentDonations || []).filter(
     d => !["collected","rejected"].includes(d.status)
   ).length;
@@ -93,9 +122,9 @@ export default function ImpactPage() {
         {/* סיכום מהיר */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "שקים הועלו",  value: uploadedBags, icon: "⬆️" },
-            { label: "בתהליך",      value: pendingBags,  icon: "⏳" },
-            { label: "הושלמו",      value: totalBags,    icon: "✅" },
+            { label: "שקים הועלו",  value: uploadedBagsDisplay, icon: "⬆️" },
+            { label: "בתהליך",      value: pendingBags,         icon: "⏳" },
+            { label: "הושלמו",      value: totalBags,           icon: "✅" },
           ].map(stat => (
             <div key={stat.label}
               className="bg-rw-card rounded-2xl p-3 shadow-sm text-center">
@@ -105,6 +134,12 @@ export default function ImpactPage() {
             </div>
           ))}
         </div>
+
+        {bagsError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2">
+            <p className="text-red-600 text-xs text-right">{bagsError}</p>
+          </div>
+        )}
 
         {/* כרטיסי אימפקט סביבתי */}
         <h2 className="font-bold text-rw-title text-base text-right">

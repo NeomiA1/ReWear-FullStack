@@ -2,16 +2,6 @@ import { createContext, useEffect, useState } from "react";
 import { useUser } from "./UserContext";
 import { loadInventoryFor } from "../utils/shopInventoryStorage";
 
-// TODO(server): אין endpoint התראות בשרת (Azure) בכלל היום — המערכת הזו
-// כולה client-side בלבד, ומבוססת על אותם collaborations/sentDonations
-// שכבר קיימים ב-UserContext (localStorage). היא לא משותפת בין מכשירים/
-// דפדפנים, בדיוק כמו הצ'אט. כדי שזה יהיה אמיתי (עמותה תדע בזמן אמת שתורם/ת
-// שלחה בקשה, למשל) צריך endpoint אמיתי כמו:
-//   GET /api/Notifications/{userId}  → [{ id, type, title, message,
-//        createdAt, isRead, relatedId, targetRoute }]
-//   PATCH /api/Notifications/{id}/read
-// עד אז, כל התראה כאן נוצרת רק מאירוע אמיתי שהדפדפן הזה עצמו צפה בו.
-
 export const NotificationContext = createContext(null);
 
 const STORAGE_KEY = "rewear_notifications";
@@ -28,7 +18,7 @@ function saveAll(all) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
   } catch {
-    // localStorage לא זמין — נכשל בשקט, אותו דפוס כמו שאר ה-Context הזה
+  
   }
 }
 
@@ -40,28 +30,15 @@ export function NotificationProvider({ children }) {
     saveAll(all);
   }, [all]);
 
-  // ── זהות הבעלים — אותו מפתח בדיוק שכבר משמש לסינון collaborations/
-  // orgSettings/shopSettings, כדי שהתראות אף פעם לא יידלפו בין חשבונות ──
   const orgName  = user?.orgName || 'עמותת "לב חם"';
   const shopName = user?.shopName || user?.fullName || null;
   const ownerKey = user?.type === "org" ? orgName
                  : user?.type === "shop" ? shopName
                  : null;
 
-  // ── מחולל התראות — צופה באירועים אמיתיים בלבד (sentDonations/
-  // collaborations/מלאי אמיתי מה-Context), ויוצר התראה חדשה רק אם עוד לא
-  // נוצרה כזו בעבר (מפתח ייחודי type+relatedId מונע כפילויות בכל רינדור/
-  // רענון). שום התראה כאן אינה נתון בדוי — ראו TODO(server) למעלה לגבי
-  // סוגי התראות שנחסמו כי אין להם נתון אמיתי (זמן איסוף מדויק וכו').
   useEffect(() => {
     if (!ownerKey || (user.type !== "org" && user.type !== "shop")) return;
 
-    // כל הבדיקה-והוספה קורית בתוך ה-updater הפונקציונלי של setAll, על
-    // prev העדכני ביותר — לא על "all" מה-closure. חשוב כי React (בעיקר
-    // StrictMode בפיתוח) יכול להריץ את ה-effect הזה פעמיים ברצף לפני
-    // שהרינדור הראשון מתעדכן; אם הבדיקה "כבר קיים?" הייתה קוראת מ-closure
-    // ישן, שתי ההרצות היו רואות את אותו מצב "עדיין לא קיים" ומוסיפות שתי
-    // התראות כפולות לאותו אירוע בדיוק.
     setAll(prev => {
       const existing = prev[ownerKey] || [];
       const seen = new Set(existing.map(n => `${n.type}|${n.relatedId}`));
@@ -136,10 +113,6 @@ export function NotificationProvider({ children }) {
           });
         });
 
-        // פריטים ממתינים למיון — צופה במלאי האמיתי; כרגע אין דרך אמיתית
-        // להוסיף פריט "pending" לחנות אמיתית (ראו TODO(server) למעלה), אז זה
-        // בפועל לא יירה עדיין, אבל זה לא נתון בדוי — זה יגיב לנתון אמיתי
-        // ברגע שיהיה מנגנון שמוסיף אותו.
         const pendingItems = loadInventoryFor(shopName).filter(i => i.status === "pending");
         pendingItems.forEach(item => {
           add("sorting_pending", `sorting_${item.id}`, "פריטים ממתינים למיון",

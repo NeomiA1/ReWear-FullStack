@@ -3,8 +3,6 @@ import ToastContainer from "../components/ToastContainer";
 
 export const ToastContext = createContext(null);
 
-// משך ברירת מחדל לפי סוג — שגיאות/אזהרות נשארות רגע יותר כדי שיהיה זמן
-// לקרוא, לפני שנעלמות מעצמן.
 const DEFAULT_DURATIONS = {
   success: 4000,
   info:    4000,
@@ -17,9 +15,6 @@ let nextId = 1;
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-  // חתימות של טוסטים פעילים כרגע (type+message+description) — מונע הצגת
-  // אותה הודעה פעמיים אם אותה פעולה נורתה פעמיים (למשל לחיצה כפולה בטעות)
-  // בזמן שההודעה הראשונה עדיין על המסך.
   const activeSignatures = useRef(new Set());
 
   const dismiss = useCallback((id) => {

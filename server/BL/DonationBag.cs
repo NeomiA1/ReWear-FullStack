@@ -66,11 +66,10 @@ namespace RewearApi.BL
         errors.Add("חובה להזין לפחות פריט אחד");
     }
 
-    if (string.IsNullOrWhiteSpace(ShortDescription))
-    {
-        errors.Add("חובה להזין תיאור לתרומה");
-    }
-    else if (ShortDescription.Trim().Length < 5)
+    // תיאור הוא שדה רשות: ריק/null/רווחים בלבד תקין. אם כן הוזן תיאור,
+    // הוא חייב להכיל לפחות 5 תווים.
+    if (!string.IsNullOrWhiteSpace(ShortDescription)
+        && ShortDescription.Trim().Length < 5)
     {
         errors.Add("תיאור התרומה חייב להכיל לפחות 5 תווים");
     }

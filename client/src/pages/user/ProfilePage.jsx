@@ -24,7 +24,6 @@ import { useToast } from "../../hooks/useToast";
 export default function ProfilePage() {
   const navigate = useNavigate();
 
-  // שליפת שקים מהשרת במקום מה- Context/localStorage
   const { user, logout, getOrgSettings } = useUser();
   
   const [selectedBag, setSelectedBag] = useState(null);
@@ -33,7 +32,6 @@ export default function ProfilePage() {
   const [sentAsDemo, setSentAsDemo] = useState(false);
   const [sending, setSending] = useState(false);
   const [serverBags, setServerBags] = useState([]);
-  // שקים שכבר נשלחו לעמותה בסשן הנוכחי — מונע שליחה כפולה של אותו שק
   const [sentBagIds, setSentBagIds] = useState([]);
   const [loadingBags, setLoadingBags] = useState(false);
   const [bagsError, setBagsError] = useState(null);
@@ -71,14 +69,12 @@ export default function ProfilePage() {
     setSending(true);
 
     try {
-      // מנסים לאתר את העמותה האמיתית במסד הנתונים (התאמה מדויקת של שם+מייל —
-      // ראו TODO(server) למעלה, אין endpoint לרשימת עמותות אמיתית).
       let realAssociation = null;
       let sentRequestId = null;
       try {
         realAssociation = await checkAssociationExists(selectedOrg.name, selectedOrg.email);
       } catch {
-        realAssociation = null; // כל כשל בבדיקה → נופלים חזרה למצב הדגמה
+        realAssociation = null; 
       }
 
       if (realAssociation) {
@@ -99,19 +95,6 @@ export default function ProfilePage() {
         const result = await createDonationRequest(request);
         sentRequestId = result.requestId;
 
-        // מעדכנים את סטטוס השק בשרת ל"ממתין לתגובת עמותה" — קריאה אמיתית,
-        // עצמאית, מול Azure. אם זה נכשל, הבקשה עצמה כבר נשלחה בהצלחה, לא
-        // מבטלים את הפעולה בגללו.
-        //
-        // TODO(server): אין עדיין דרך לעמותה לגלות את הבקשה הזו ולהגיב לה
-        // מול השרת — חסר endpoint כמו
-        //   GET /api/DonationRequests/association/{associationId}
-        // שיחזיר לעמותה את רשימת הבקשות שהופנו אליה (requestId, bagId,
-        // פרטי תורם מותרים, סטטוס, הודעת תורם, תגובת עמותה, תאריך יצירה).
-        // בלי זה, אין דרך אמיתית ומשותפת (בין דפדפנים/מכשירים/משתמשים)
-        // לעמותה לדעת שהבקשה הזו קיימת בכלל — ולכן לא הוספנו שום מנגנון
-        // מקומי (localStorage וכד') שמדמה "גילוי" כזה; זה היה נראה כאילו
-        // התהליך שלם בעוד שהוא בפועל חסום בצד השרת.
         try {
           await updateDonationBagStatus(selectedBag.id, "WaitingForAssociation");
           setServerBags(prev => prev.map(b =>
@@ -123,8 +106,7 @@ export default function ProfilePage() {
 
         setSentAsDemo(false);
       } else {
-        // עמותה זו אינה רשומה במסד הנתונים האמיתי (ראו TODO(server) למעלה) —
-        // לא ניתן לשלוח בקשה אמיתית בלי מזהה תקין, ממשיכים במצב הדגמה מקומי.
+
         if (!getOrgSettings(selectedOrg.name).isAvailable) {
           toast.warning("העמותה אינה זמינה לקבלת תרומות כרגע.");
           setSending(false);
@@ -133,20 +115,11 @@ export default function ProfilePage() {
         setSentAsDemo(true);
       }
 
-      // מזינים את מנוע ההמלצות: העמותה שנבחרה בפועל + קטגוריית השק שנשלח —
-      // אותות "היסטוריה" ל-scoreAssociation.js, לא נתון עסקי משותף.
       if (user?.userId != null) {
-        // הנושאים שסוננו בפועל בסשן הנוכחי — לא העדפות ה-onboarding. הפילטר
-        // החי ב-AssociationRecommendationList כבר נכתב ל-lastFilters.causes
-        // (synchronous, ראו saveLastFilters) בכל פעם שהמשתמשת בחרה/ביטלה
-        // נושא, אז קריאה חוזרת שלו כאן משקפת בדיוק את מה שהיה פעיל.
+  
         const activeCauseFilters = getRecoProfile(user.userId).lastFilters.causes || [];
         recordAssociationSelected(user.userId, selectedOrg.id, activeCauseFilters);
         recordDonatedCategory(user.userId, getBagCategory(selectedBag));
-
-        // שונה מהותית מה-TODO(server) למעלה: זו לא סימולציה של "גילוי" ע"י
-        // העמותה — זו רק זכירה של פעולה אמיתית שהדפדפן הזה עצמו ביצע (איזו
-        // עמותה נבחרה ומתי), למסך "מסע התרומה" (DonationStatusPage).
         recordDonationSent(user.userId, selectedBag.id, {
           associationName: selectedOrg.name,
           associationId: realAssociation?.associationId ?? null,
@@ -176,9 +149,6 @@ export default function ProfilePage() {
     }
   };
 
-  // בחירת עמותה חדשה כשכבר יש נבחרת — זו החלפה, לא בחירה ראשונית, אז
-  // מאשרים לפני שמאבדים את הבחירה הקודמת. בחירה ראשונית (אין נבחרת עדיין)
-  // או לחיצה חוזרת על אותה עמותה נשארות מיידיות — אין כאן שום דבר לאבד.
   const handleSelectOrg = (org) => {
     if (selectedOrg && selectedOrg.id !== org.id) {
       confirm({
@@ -210,7 +180,6 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
-  // שליפת שקים מה- API
   const allBags = (serverBags || []).map((bag, index) => ({
     id: bag.bagId,
     size: bag.sizes || "",

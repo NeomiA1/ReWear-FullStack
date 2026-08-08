@@ -1,5 +1,4 @@
-// src/pages/shop/ShopProfilePage.jsx
-// פרופיל חנות יד שנייה עם הגדרות זמינות
+
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -27,10 +26,6 @@ export default function ShopProfilePage() {
 
   const shopName = user?.shopName || user?.fullName || "החנות שלי";
   const shopCity = user?.city || "";
-
-  // הגדרות זמינות — נטענות מ-Context/localStorage (ראו getShopSettings ב-
-  // UserContext.jsx, אותו דפוס בדיוק כמו getOrgSettings). אין endpoint
-  // בשרת לזה (SecondHandStores אין לו עמודות הגדרות/זמינות בכלל).
   const initialSettings = getShopSettings(shopName);
   const [isAvailable,   setIsAvailable]   = useState(initialSettings.isAvailable);
   const [acceptsPickup, setAcceptsPickup] = useState(initialSettings.acceptsPickup);

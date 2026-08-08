@@ -1,20 +1,4 @@
-// hook מרכזי אחד לשימוש ב-ConfirmDialog מכל דף — כדי שכל קריאה לא תצטרך
-// לנהל בעצמה state של פתוח/סגור/טעינה. שימוש:
-//
-//   const { confirm, confirmDialogProps } = useConfirmDialog();
-//   ...
-//   <ConfirmDialog {...confirmDialogProps} />
-//   ...
-//   confirm({
-//     title: "מחיקת שק",
-//     message: "האם למחוק את השק הזה?",
-//     destructive: true,
-//     icon: "🗑️",
-//     onConfirm: () => doTheActualThing(), // יכולה להיות async
-//   });
-//
-// הדיאלוג נשאר פתוח ומציג מצב טעינה כל עוד onConfirm עדיין רץ (כך גם
-// לחיצה כפולה על "אישור" לא גורמת לשליחה כפולה — ראו החסימה ב-handleConfirm).
+
 
 import { useCallback, useState } from "react";
 
