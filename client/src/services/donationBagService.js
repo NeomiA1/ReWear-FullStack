@@ -1,15 +1,27 @@
 import API_BASE_URL from "./api";
 
+function getAuthHeaders() {
+  const savedUser = JSON.parse(
+    localStorage.getItem("rewear_user") || "null"
+  );
+
+  const token = savedUser?.token;
+
+  return {
+    "Content-Type": "application/json",
+    ...(token && {
+      Authorization: `Bearer ${token}`
+    })
+  };
+}
+
 export async function createDonationBag(bag) {
   const response = await fetch(`${API_BASE_URL}/DonationBags`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(bag)
   });
 
-  
   const data = await response.text();
 
   if (!response.ok) {
@@ -17,20 +29,25 @@ export async function createDonationBag(bag) {
   }
 
   return data;
-  
 }
 
 export async function getDonationBagsByUserId(userId) {
-    const response = await fetch(`${API_BASE_URL}/DonationBags/user/${userId}`);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw errorText;
+  const response = await fetch(
+    `${API_BASE_URL}/DonationBags/user/${userId}`,
+    {
+      method: "GET",
+      headers: getAuthHeaders()
     }
+  );
 
-    const data = await response.json();
-    return data;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
   }
+
+  const data = await response.json();
+  return data;
+}
 
 /**
  * Updates a DonationBag's lifecycle status.
@@ -43,11 +60,14 @@ export async function getDonationBagsByUserId(userId) {
  * @throws {string} user-facing error message
  */
 export async function updateDonationBagStatus(bagId, status) {
-  const response = await fetch(`${API_BASE_URL}/DonationBags/${bagId}/status`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/DonationBags/${bagId}/status`,
+    {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status })
+    }
+  );
 
   if (!response.ok) {
     const errorText = await response.text();

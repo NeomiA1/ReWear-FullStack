@@ -11,8 +11,7 @@ import {
   updateDonationBagStatus
 } from "../../services/donationBagService";
 import {
-  createDonationRequest,
-  linkBagToDonationRequest
+  createDonationRequest
 } from "../../services/donationRequestService";
 import { checkAssociationExists } from "../../services/associationService";
 import { getUserDisplayName, getUserInitial } from "../../utils/userDisplay";
@@ -99,7 +98,6 @@ export default function ProfilePage() {
 
         const result = await createDonationRequest(request);
         sentRequestId = result.requestId;
-        await linkBagToDonationRequest(result.requestId, selectedBag.id);
 
         // מעדכנים את סטטוס השק בשרת ל"ממתין לתגובת עמותה" — קריאה אמיתית,
         // עצמאית, מול Azure. אם זה נכשל, הבקשה עצמה כבר נשלחה בהצלחה, לא

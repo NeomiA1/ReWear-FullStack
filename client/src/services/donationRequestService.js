@@ -1,27 +1,27 @@
 import API_BASE_URL from "./api";
 
-export async function createDonationRequest(request) {
-  const response = await fetch(`${API_BASE_URL}/DonationRequests`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(request),
-  });
+function getAuthHeaders() {
+  const savedUser = JSON.parse(
+    localStorage.getItem("rewear_user") || "null"
+  );
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw errorText;
-  }
+  const token = savedUser?.token;
 
-  return await response.json();
+  return {
+    "Content-Type": "application/json",
+    ...(token && {
+      Authorization: `Bearer ${token}`
+    })
+  };
 }
 
-export async function linkBagToDonationRequest(requestId, bagId) {
+export async function createDonationRequest(request) {
   const response = await fetch(
-    `${API_BASE_URL}/DonationRequests/${requestId}/bags/${bagId}`,
+    `${API_BASE_URL}/DonationRequests/submit`,
     {
       method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(request)
     }
   );
 
@@ -30,7 +30,7 @@ export async function linkBagToDonationRequest(requestId, bagId) {
     throw errorText;
   }
 
-  return await response.text();
+  return await response.json();
 }
 
 /**
@@ -42,13 +42,20 @@ export async function linkBagToDonationRequest(requestId, bagId) {
  * @returns {Promise<string>} success message text
  * @throws {string} user-facing error message
  */
-export async function respondToDonationRequest(requestId, newStatus, associationResponse = null) {
+export async function respondToDonationRequest(
+  requestId,
+  newStatus,
+  associationResponse = null
+) {
   const response = await fetch(
     `${API_BASE_URL}/DonationRequests/${requestId}/response`,
     {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ newStatus, associationResponse }),
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        newStatus,
+        associationResponse
+      })
     }
   );
 
