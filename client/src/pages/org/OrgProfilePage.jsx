@@ -41,15 +41,12 @@ export default function OrgProfilePage() {
   const toast = useToast();
 
   const handleSave = async () => {
-    // תמיד שומרים מקומית — זו ההתנהגות הקיימת, וממשיכה לעבוד גם אם העמותה
-    // עדיין לא רשומה במסד הנתונים האמיתי.
+  
     updateOrgSettings(orgName, { isAvailable, acceptsPickup, acceptsDropoff });
 
     setSaving(true);
     try {
-      // TODO(server): הסשן לא כולל את ה-associationId האמיתי (register/login
-      // מחזירים רק שדות של Users) — מנסים לאתר אותו לפי שם+מייל, אותו דפוס
-      // שכבר משמש לשליחת תרומה אמיתית ב-ProfilePage.jsx.
+     
       const real = await checkAssociationExists(orgName, user?.email || "");
       if (real) {
         await updateAssociationAvailability(real.associationId, isAvailable);

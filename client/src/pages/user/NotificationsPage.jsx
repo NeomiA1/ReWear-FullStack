@@ -7,11 +7,7 @@ export default function NotificationsPage() {
 
   const navigate = useNavigate();
   const { sentDonations } = useUser();
-
-  // מפצלים לשני סוגים:
-  // 1. תרומות שנשלחו ועדיין לא תואם איסוף
   const pendingPickup = sentDonations.filter(d => !d.pickupScheduled);
-  // 2. תרומות שיש להן צ'אט
   const withChat = sentDonations.filter(d => d.hasChat);
 
   return (

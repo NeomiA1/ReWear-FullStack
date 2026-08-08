@@ -1,5 +1,4 @@
-// src/pages/org/OrgCollaborationsPage.jsx
-// מסך שיתופי פעולה של העמותה עם חנויות יד שנייה
+
 
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";

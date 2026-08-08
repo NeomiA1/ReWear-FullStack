@@ -1,5 +1,4 @@
-// src/pages/shop/ShopInventoryPage.jsx
-// ניהול מלאי החנות – סימון פריטים שנשארו בחנות או עברו לעמותה
+
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -84,7 +83,7 @@ export default function ShopInventoryPage() {
     setItems(prev => prev.map(item =>
       item.id === id ? { ...item, status } : item
     ));
-    // בעתיד: await api.patch(`/shop/inventory/${id}`, { status })
+   
   };
 
   const visible = filter === "all" ? items : items.filter(i => i.status === filter);

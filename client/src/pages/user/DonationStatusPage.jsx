@@ -1,7 +1,4 @@
-// src/pages/user/DonationStatusPage.jsx
-// מסך "מסע התרומה" — מציג לכל שק תרומה אמיתי (מהשרת) את המסלול המלא שלו,
-// לא רק נקודת סטטוס בודדת. נתונים: bag.status/bag.createdAt מהשרת +
-// רשומת שליחה מקומית אמיתית (donationSendLog.js) לפרטי העמותה/תאריך.
+
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";

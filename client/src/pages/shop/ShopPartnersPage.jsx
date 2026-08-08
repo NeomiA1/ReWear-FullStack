@@ -1,21 +1,4 @@
-// src/pages/shop/ShopPartnersPage.jsx
-//
-// ─── הסבר ───────────────────────────────────────────────────────────────────
-//
-// החנות רואה כאן בקשות שיתוף פעולה שהגיעו מעמותות.
-//
-// איך בקשה מגיעה?
-//   עמותה לחצה "שלחי בקשת שיתוף פעולה" ב-OrgHomePage
-//   → sendCollaborationRequest(org, shop) נקראת ב-Context
-//   → רשומה נוצרת ב-collaborations[] עם status: "pending"
-//
-// אישור/דחייה:
-//   updateCollaboration(id, { status: "approved" / "rejected" })
-//   → הסטטוס מתעדכן ב-Context + localStorage
-//   → אחרי אישור – מופיע כפתור "פתחי צ׳אט"
-//
-// צ׳אט:
-//   לחיצה על "פתחי צ׳אט" → navigate לדף הצ׳אט עם id השיתוף
+
 
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
@@ -85,9 +68,6 @@ function CollabCard({ collab, onApprove, onReject, onChat }) {
 export default function ShopPartnersPage() {
   const navigate = useNavigate();
   const { collaborations, updateCollaboration } = useUser();
-
-  // collaborations שמגיע מה-Context כבר מסונן לחנות המחוברת בלבד
-  // (ראו scopedToCurrentUser / myCollaborations ב-UserContext.jsx)
   const pending  = collaborations.filter(c => c.status === "pending");
   const approved = collaborations.filter(c => c.status === "approved");
   const rejected = collaborations.filter(c => c.status === "rejected");

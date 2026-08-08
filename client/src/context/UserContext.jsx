@@ -32,10 +32,13 @@ export function UserProvider({ children }) {
     } catch { return {}; }
   });
 
-  // מפה { [שם חנות]: settings } — אין endpoint בשרת לזה (SecondHandStores
-  // אין לו עמודות הגדרות/זמינות כלל, בניגוד ל-Associations), אז שומרים
-  // באותו דפוס בדיוק כמו orgSettings, תחת מפתח נפרד כדי שלא יתנגש עם שם
-  // עמותה זהה במקרה.
+  const [orgUrgentNeeds, setOrgUrgentNeedsState] = useState(() => {
+    try {
+      const saved = localStorage.getItem("rewear_org_urgent_needs");
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
   const [shopSettings, setShopSettingsState] = useState(() => {
     try {
       const saved = localStorage.getItem("rewear_shop_settings");
@@ -43,12 +46,6 @@ export function UserProvider({ children }) {
     } catch { return {}; }
   });
 
-  // ─── שיתופי פעולה בין עמותה לחנות ───────────────────────────────────────
-  // כל רשומה: { id, orgName, orgCity, orgTypes, shopName, shopCity,
-  //             shopItems, status, date, messages[]? }
-  // status: "pending" | "approved" | "rejected"
-  // messages קיים רק לאחר אישור (הצ'אט "נוצר" באותו רגע) — ראו
-  // updateCollaboration ו-sendCollaborationRequest למטה.
   const [collaborations, setCollaborationsState] = useState(() => {
     try {
       const saved = localStorage.getItem("rewear_collaborations");
@@ -72,6 +69,10 @@ export function UserProvider({ children }) {
   useEffect(() => {
     localStorage.setItem("rewear_org_settings", JSON.stringify(orgSettings));
   }, [orgSettings]);
+
+  useEffect(() => {
+    localStorage.setItem("rewear_org_urgent_needs", JSON.stringify(orgUrgentNeeds));
+  }, [orgUrgentNeeds]);
 
   useEffect(() => {
     localStorage.setItem("rewear_shop_settings", JSON.stringify(shopSettings));
@@ -113,21 +114,12 @@ export function UserProvider({ children }) {
     setSentDonationsState(prev => [...prev, newSent]);
   };
 
-  // ─── סינון לפי המשתמש המחובר ─────────────────────────────────────────────
-  // donations/sentDonations/collaborations נשמרים תחת מפתחות localStorage
-  // גלובליים (לא לפי משתמש), אז בלי הסינון הזה כל חשבון חדש "יורש" נתונים
-  // של חשבונות קודמים באותו דפדפן. donations (טיוטות דמו) רלוונטי רק
-  // למשתמש פרטי. sentDonations/collaborations מסוננים גם לפי עמותה מחוברת.
-  // הצד של החנות ממשיך להשתמש ברשימה המלאה כרגע (Step הבא בתוכנית).
   const myDonations = (() => {
     if (user?.type !== "private") return donations;
     if (user.userId == null) return [];
     return donations.filter(item => item.userId === user.userId);
   })();
 
-  // user.orgName נקבע רק בהרשמה (RegisterOrgPage) — לאחר login רגיל הוא
-  // חסר. אותה נפילת-ברירת-מחדל בדיוק כמו ב-OrgHomePage/OrgProfilePage, כדי
-  // שעמותה תמשיך לראות את מה שהיא עצמה יצרה תחת אותו שם.
   const effectiveOrgName = user?.orgName || 'עמותת "לב חם"';
 
   const mySentDonations = (() => {
@@ -146,13 +138,7 @@ export function UserProvider({ children }) {
       return collaborations.filter(c => c.orgName === effectiveOrgName);
     }
     if (user?.type === "shop") {
-      // TODO(server): shops are matched by display name only — OrgHomePage
-      // still picks from a hardcoded store list (AVAILABLE_STORES), not real
-      // registered shops, since there's no endpoint to browse real ones tied
-      // to an org's real associationId (same class of gap as the missing
-      // associations list — see associationService.js). A real shop account
-      // whose name never appears in that hardcoded list will correctly see
-      // no requests, rather than someone else's.
+  
       const effectiveShopName = user?.shopName || user?.fullName || null;
       if (!effectiveShopName) return [];
       return collaborations.filter(c => c.shopName === effectiveShopName);
@@ -181,6 +167,14 @@ export function UserProvider({ children }) {
     };
   };
 
+  const updateUrgentNeeds = (orgName, needs) => {
+    setOrgUrgentNeedsState(prev => ({ ...prev, [orgName]: needs }));
+  };
+
+  const getUrgentNeeds = (orgName) => {
+    return orgUrgentNeeds[orgName] || [];
+  };
+
   const updateShopSettings = (shopName, settings) => {
     setShopSettingsState(prev => ({
       ...prev,
@@ -202,12 +196,8 @@ export function UserProvider({ children }) {
     };
   };
 
-  // ─── פונקציות שיתוף פעולה ────────────────────────────────────────────────
-
-  // עמותה שולחת בקשת שיתוף פעולה לחנות
-  // נקראת מ-OrgHomePage כשלוחצים "שלחי בקשת שיתוף פעולה"
+ 
   const sendCollaborationRequest = (org, shop) => {
-    // בדיקה שלא שלחו כבר בקשה לאותה חנות
     const alreadySent = collaborations.some(
       c => c.orgName === org.name && c.shopName === shop.name &&
            c.status !== "rejected"
@@ -224,22 +214,19 @@ export function UserProvider({ children }) {
       shopItems:shop.items,
       status:   "pending",
       date:     new Date().toLocaleDateString("he-IL"),
-      // אין messages כאן בכוונה — הצ'אט "נוצר" רק כשהבקשה מאושרת, ראו
-      // updateCollaboration למטה. אם הבקשה תידחה, לא ייווצר צ'אט בכלל.
+    
     };
     setCollaborationsState(prev => [...prev, newCollab]);
     return true;
   };
 
-  // חנות מאשרת או דוחה בקשה
-  // נקראת מ-ShopPartnersPage
+ 
   const updateCollaboration = (id, updates) => {
     setCollaborationsState(prev =>
       prev.map(c => {
         if (c.id !== id) return c;
         const next = { ...c, ...updates };
-        // הצ'אט נוצר בפועל (מערך הודעות מאותחל) רק ברגע שהבקשה מאושרת —
-        // לא לפני, ולא אם היא נדחית.
+      
         if (updates.status === "approved" && !next.messages) {
           next.messages = [];
         }
@@ -248,7 +235,7 @@ export function UserProvider({ children }) {
     );
   };
 
-  // הוספת הודעה בצ'אט של שיתוף פעולה — message: { sender: "org"|"shop", senderName, text, date }
+ 
   const addCollaborationMessage = (collabId, message) => {
     const newMsg = { id: Date.now(), ...message };
     setCollaborationsState(prev =>
@@ -268,6 +255,7 @@ export function UserProvider({ children }) {
       sentDonations: mySentDonations, sendDonationToOrg, updateSentDonation,
       unreadCount,
       orgSettings, updateOrgSettings, getOrgSettings,
+      updateUrgentNeeds, getUrgentNeeds,
       shopSettings, updateShopSettings, getShopSettings,
       collaborations: myCollaborations,
       sendCollaborationRequest,

@@ -9,7 +9,6 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { user, unreadCount, sentDonations } = useUser();
 
-  // ── חישוב רמת אימפקט לפי מספר תרומות שהושלמו ──────────────────────────
   const completedDonations = (sentDonations || []).filter(d => d.status === "collected").length;
   const impactLevel = completedDonations >= 10 ? "פלטינה" :
                       completedDonations >= 5  ? "זהב"    :
@@ -17,11 +16,10 @@ export default function HomePage() {
 
   if (!user) return null;
 
-  // ── A2: בקשות פעילות מה-Context ──────────────────────────────────────────
-  // מציגים רק שלא נסגרו (לא נאספו ולא נדחו)
+ 
   const activeDonations = (sentDonations || []).filter(
     d => d.status !== "collected" && d.status !== "rejected"
-  ).slice(0, 3); // מקסימום 3 בדף הבית
+  ).slice(0, 3); 
 
   return (
     <PageContainer className="pb-24" wide>

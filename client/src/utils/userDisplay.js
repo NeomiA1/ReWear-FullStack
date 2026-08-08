@@ -1,7 +1,3 @@
-// Normalizes the logged-in user's display name across account types.
-// Real user objects only ever carry one of these name fields depending on
-// account type (private → fullName, org → orgName, shop → shopName/fullName);
-// this picks whichever is actually present instead of assuming one.
 export function getUserDisplayName(user) {
   const name = user?.fullName || user?.orgName || user?.shopName || user?.email;
   if (!name) {

@@ -1,23 +1,3 @@
-// מנוע המלצות עמותות — מרכזי, צד-לקוח בלבד, מבוסס-חוקים ושקוף.
-// משמש את כל מסכי בחירת העמותה (ProfilePage אחרי העלאת שק, MapPage) כדי
-// שכולם יחזירו בדיוק אותו סדר עבור אותו משתמש/שק/עמותות/היסטוריה.
-//
-// עקרון מפתח: הניקוד וה-*סינון* הם שני שלבים נפרדים לגמרי.
-//   rankAssociations()  → מנקד וממיין לפי onboarding + היסטוריה + השק
-//                          הנוכחי + זמינות. לא מושפע מהפילטר החי של המסך.
-//   applyFilters()       → מצמצם את הרשימה המדורגת (חיפוש/נושאים/קטגוריה/
-//                          זמינות-בלבד) בלי לשנות את הניקוד של אף עמותה.
-//   applyDisplaySort()   → מיון תצוגה חלופי ("קרוב אליי"/"חדש במערכת"),
-//                          גם הוא לא משנה את הניקוד, רק את סדר ההצגה.
-//
-// חלוקת הניקוד (סה"כ 100, שקוף ומבוסס-חוקים):
-//   התאמת קטגוריית השק הנוכחי   — עד 35
-//   התאמת נושאים מועדפים        — עד 30
-//   מרחק                        — עד 20
-//   בחירות/תרומות קודמות קשורות — עד 10
-//   בוסט "עמותה חדשה"           — עד 5
-// זמינות אינה חלק מ-100 הנקודות — היא ממד מיון/סינון נפרד (עמותות זמינות
-// תמיד מקובצות מעל לא-זמינות במיון "מומלץ", ראו rankAssociations).
 
 const AGE_TO_CATEGORY = {
   "תינוקות": "baby",
@@ -31,15 +11,12 @@ function normalizeText(value) {
   return (value ?? "").toString().trim();
 }
 
-// שק בלי גיל מוגדר (או בלי שק בכלל) → אין קטגוריה, לא נענש ולא מקבל בונוס.
 export function getBagCategory(bag) {
   if (!bag) return null;
   return AGE_TO_CATEGORY[normalizeText(bag.age)] || null;
 }
-
-// ממלא ברירות מחדל בטוחות לשדות המלצה חסרים, כך שנתוני עמותה חלקיים
-// (או עתידיים, מ-API אמיתי) לא יגרמו לקריסה או ל-NaN.
 export function normalizeAssociation(raw) {
+
   return {
     id: raw?.id,
     name: normalizeText(raw?.name),
@@ -68,9 +45,6 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// עד 20 נקודות. אם יש קואורדינטות אמיתיות משני הצדדים — מרחק אמיתי.
-// אחרת (המצב היום, אין geocoding) נופל חזרה לעיר/אזור. אם המיקום לא ידוע
-// באחד הצדדים — ניקוד ניטרלי (לא עונשי), כדי לא להעניש משתמש בלי מיקום.
 function distanceScore(user, org) {
   const userLat = typeof user?.latitude === "number" ? user.latitude : null;
   const userLon = typeof user?.longitude === "number" ? user.longitude : null;
@@ -85,7 +59,7 @@ function distanceScore(user, org) {
 
   const userCity = normalizeText(user?.city || user?.location);
   if (!userCity || !org.city) {
-    return { points: 5, reason: null }; // מיקום לא ידוע — ניטרלי, לא עונשי
+    return { points: 5, reason: null }; 
   }
   if (userCity === org.city) {
     return { points: 20, reason: "קרובה למיקום שלך" };
@@ -96,9 +70,6 @@ function distanceScore(user, org) {
   return { points: 0, reason: null };
 }
 
-// עד 35 נקודות. "צרכים נוכחיים" (currentNeeds) הוא אות חזק יותר מ"מקבלת
-// באופן כללי" (acceptedCategories) — עמותה שזקוקה *כרגע* בדיוק לקטגוריה של
-// השק תדורג מעל עמותה שרק "מקבלת" אותה, גם אם היא קרובה יותר גיאוגרפית.
 function categoryScore(bagCategory, org) {
   if (!bagCategory) return { points: 0, reason: null };
 
@@ -114,8 +85,6 @@ function categoryScore(bagCategory, org) {
   return { points: 0, reason: null };
 }
 
-// עד 30 נקודות. preferredCauses = איחוד onboardingCauses + selectedCauses
-// (ראו getPreferredCauses ב-recommendationHistory.js) — *לא* הפילטר החי.
 function causeScore(org, preferredCauses) {
   if (!preferredCauses || preferredCauses.length === 0) {
     return { points: 0, matched: [] };
@@ -124,8 +93,6 @@ function causeScore(org, preferredCauses) {
   return { points: Math.min(30, matched.length * 15), matched };
 }
 
-// עד 10 נקודות: עמותה שכבר נבחרה בעבר (+6), עמותה שמקבלת קטגוריה שכבר
-// נתרמה בעבר (+4).
 function historyScore(org, profile) {
   let points = 0;
   const reasons = [];
@@ -141,7 +108,6 @@ function historyScore(org, profile) {
   return { points: Math.min(10, points), reasons };
 }
 
-// עד 5 נקודות: עמותה שהצטרפה למערכת לאחרונה.
 function newAssociationBoost(org, now = new Date()) {
   if (!org.joinedAt) return { points: 0 };
   const joined = new Date(org.joinedAt);
@@ -152,9 +118,6 @@ function newAssociationBoost(org, now = new Date()) {
   return { points: 0 };
 }
 
-// זמינות אמיתית: מכבדת override אמיתי של עמותה (orgSettings לפי שם, אותו
-// מנגנון ש-OrgProfilePage כבר כותב אליו) ורק כשאין כזה נופלת לברירת המחדל
-// שמוגדרת בנתוני הדמו של העמותה עצמה.
 export function getIsAssociationAvailable(org, orgSettings) {
   const override = orgSettings?.[org.name];
   if (override && typeof override.isAvailable === "boolean") {
@@ -170,17 +133,10 @@ const CATEGORY_LABELS_BY_ID = {
   adult: "המבוגרים",
   elderly: "הקשישים",
 };
-
-// הופך ניקוד 0–100 לאחוז תצוגה — קלאם הגנתי בלבד, לא נוסחה נפרדת: score
-// כבר בנוי כך שסכום המשקלים המקסימלי הוא 100 בדיוק (ראו פירוט המשקלים
-// למעלה), אז האחוז הוא פשוט הניקוד עצמו.
 export function getRecommendationPercent(score) {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
-// מנקדת עמותה בודדת ומחזירה גם רשימת "סיבות" — רק ממדים שבאמת תרמו נקודות
-// (או, עבור זמינות, שבאמת התקיימו). אין הגבלה מלאכותית על הכמות: עמותה עם
-// ניקוד נמוך תציג פחות סיבות באופן טבעי, כי פחות ממדים בכלל תרמו לה נקודות.
 export function scoreAssociation(org, { user, bag, preferredCauses, profile, isAvailable, causeLabelsById = {} }) {
   const bagCategory = getBagCategory(bag);
 
@@ -248,8 +204,6 @@ export function scoreAssociation(org, { user, bag, preferredCauses, profile, isA
   return { score, percent: getRecommendationPercent(score), reasons, bagCategory };
 }
 
-// שלב 1: ניקוד ומיון. מבוסס על onboarding + היסטוריה + השק הנוכחי + זמינות
-// בלבד — *לא* מושפע מהפילטר החי של המסך (ראו applyFilters למטה).
 export function rankAssociations(associations, { user, bag, profile, orgSettings, now, causeLabelsById = {} } = {}) {
   const preferredCauses = [
     ...new Set([...(profile?.onboardingCauses || []), ...(profile?.selectedCauses || [])]),
@@ -267,9 +221,7 @@ export function rankAssociations(associations, { user, bag, profile, orgSettings
         isAvailable,
         causeLabelsById,
       });
-      // מקדימים כאן חישוב מרחק/תאריך-הצטרפות גולמיים כדי ש-applyDisplaySort
-      // (מיון "קרוב אליי"/"חדש במערכת") לא יצטרך לדעת שום דבר על user/now —
-      // רק למיין לפי ערכים שכבר חושבו, בלי לגעת בניקוד עצמו.
+    
       const joinedAtTime = org.joinedAt ? new Date(org.joinedAt).getTime() : null;
       return {
         association: org,
@@ -289,7 +241,6 @@ export function rankAssociations(associations, { user, bag, profile, orgSettings
     });
 }
 
-// שלב 2: סינון בלבד — מצמצם רשימה שכבר דורגה, לא נוגע בניקוד/בסדר היחסי.
 export function applyFilters(ranked, { search, causesFilter, categoryFilter, availableOnly } = {}) {
   const q = normalizeText(search).toLowerCase();
   const causes = causesFilter && causesFilter.length > 0 ? causesFilter : null;
@@ -307,9 +258,6 @@ export function applyFilters(ranked, { search, causesFilter, categoryFilter, ava
   });
 }
 
-// שלב 3 (רשות): מיון תצוגה חלופי — "קרוב אליי" / "חדש במערכת". גם הוא לא
-// נוגע בניקוד או ברשימת ה-reasons של אף עמותה, רק בסדר ההצגה. sortBy
-// "recommended" (ברירת המחדל) משאיר את הסדר המדורג-לפי-ניקוד כמות שהוא.
 export function applyDisplaySort(filtered, sortBy) {
   if (sortBy === "nearest") {
     return [...filtered].sort((a, b) => b.distancePoints - a.distancePoints);
