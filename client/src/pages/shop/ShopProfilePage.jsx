@@ -95,10 +95,10 @@ export default function ShopProfilePage() {
               <Toggle value={isAvailable} onChange={() => setIsAvailable(p => !p)} />
               <div className="flex flex-col items-end">
                 <span className="font-semibold text-rw-title text-sm">
-                  זמינה לקבלת תרומות
+                  פנויה לאיסוף מבתי תורמים
                 </span>
                 <span className="text-rw-sub text-xs">
-                  {isAvailable ? "החנות מקבלת תרומות כרגע" : "החנות לא מקבלת כרגע"}
+                  מאפשר לעמותות לבחור בחנות לביצוע איסוף מהתורם.
                 </span>
               </div>
             </div>
@@ -109,10 +109,10 @@ export default function ShopProfilePage() {
               <Toggle value={acceptsPickup} onChange={() => setAcceptsPickup(p => !p)} />
               <div className="flex flex-col items-end">
                 <span className="font-semibold text-rw-title text-sm">
-                  קבלת תרומות מאיסוף מהבית
+                  איסוף מבית התורם
                 </span>
                 <span className="text-rw-sub text-xs">
-                  {acceptsPickup ? "מגיעים לאסוף מהתורם" : "רק הגעה עצמית"}
+                  {acceptsPickup ? "מגיעים לאסוף מהתורם עבור העמותה" : "רק הגעה עצמית"}
                 </span>
               </div>
             </div>
@@ -122,7 +122,7 @@ export default function ShopProfilePage() {
         {/* סוגי פריטים */}
         <div className="bg-rw-card rounded-2xl shadow-sm p-5">
           <h2 className="font-bold text-rw-title text-base mb-4 text-right">
-            סוגי פריטים שהחנות מקבלת
+            סוגי פריטים שהחנות מטפלת בהם
           </h2>
           <div className="flex flex-col gap-4">
             {Object.entries(ITEM_TYPE_LABELS).map(([key, label]) => (

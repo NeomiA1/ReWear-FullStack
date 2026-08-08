@@ -4,6 +4,7 @@ import OrgBottomNav from "../../components/OrgBottomNav";
 import PageContainer from "../../components/PageContainer";
 import { useState } from "react";
 import { getDonationStatusInfo } from "../../utils/statusLabels";
+import { useNotifications } from "../../hooks/useNotifications";
 
 const FILTERS = [
   { id: "all",       label: "הכל"     },
@@ -94,6 +95,7 @@ function PickupCard({ pickup, onCollect, onCancel }) {
 export default function OrgPickupsPage() {
   const navigate = useNavigate();
   const { sentDonations, updateSentDonation } = useUser();
+  const { unreadCount } = useNotifications();
   const [activeFilter, setActiveFilter] = useState("all");
 
   // מציגים רק בקשות שעברו אישור
@@ -124,9 +126,16 @@ export default function OrgPickupsPage() {
           </p>
         </div>
         <div onClick={() => navigate("/org/notifications")}
-          className="w-10 h-10 bg-rw-input rounded-xl
+          className="relative w-10 h-10 bg-rw-input rounded-xl
                      flex items-center justify-center cursor-pointer">
           <span className="text-lg">🔔</span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500
+                             text-white text-[10px] font-bold rounded-full
+                             flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
         </div>
       </div>
 

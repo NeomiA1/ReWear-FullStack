@@ -4,6 +4,7 @@ import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
 import PageContainer from "../../components/PageContainer";
 import { useToast } from "../../hooks/useToast";
+import { useNotifications } from "../../hooks/useNotifications";
 
 // TODO(server): this whole screen is demo-only local data (sentDonations in
 // UserContext, not the real DonationRequests). A real org→approve/reject
@@ -140,6 +141,7 @@ function RequestCard({ req, onApprove, onReject }) {
 export default function OrgRequestsPage() {
   const navigate = useNavigate();
   const { sentDonations, updateSentDonation } = useUser();
+  const { unreadCount } = useNotifications();
 
   const pendingRequests = sentDonations.filter(d => d.status === "pending");
   const approvedCount   = sentDonations.filter(d => d.status === "approved").length;
@@ -168,9 +170,16 @@ export default function OrgRequestsPage() {
           </p>
         </div>
         <div onClick={() => navigate("/org/notifications")}
-          className="w-10 h-10 bg-rw-input rounded-xl
+          className="relative w-10 h-10 bg-rw-input rounded-xl
                      flex items-center justify-center cursor-pointer">
           <span className="text-lg">🔔</span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500
+                             text-white text-[10px] font-bold rounded-full
+                             flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
         </div>
       </div>
 

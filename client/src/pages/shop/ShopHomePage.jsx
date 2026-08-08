@@ -2,10 +2,12 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import ShopBottomNav from "../../components/ShopBottomNav";
 import PageContainer from "../../components/PageContainer";
+import { useNotifications } from "../../hooks/useNotifications";
 
 export default function ShopHomePage() {
   const navigate = useNavigate();
   const { user, logout, collaborations } = useUser();
+  const { unreadCount } = useNotifications();
 
   const savedUser = JSON.parse(localStorage.getItem("rewear_user") || "{}");
   const shopName = user?.shopName || savedUser?.shopName || "חנות יד שנייה";
@@ -48,10 +50,17 @@ export default function ShopHomePage() {
 
         <div
           onClick={() => navigate("/shop/notifications")}
-          className="w-10 h-10 bg-rw-input rounded-xl
+          className="relative w-10 h-10 bg-rw-input rounded-xl
                      flex items-center justify-center cursor-pointer shrink-0"
         >
           <span className="text-lg">🔔</span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500
+                             text-white text-[10px] font-bold rounded-full
+                             flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
         </div>
       </div>
 

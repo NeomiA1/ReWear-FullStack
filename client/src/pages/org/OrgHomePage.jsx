@@ -6,6 +6,7 @@ import PageContainer from "../../components/PageContainer";
 import { checkAssociationExists } from "../../services/associationService";
 import { getNearbyStores } from "../../services/storeService";
 import { useToast } from "../../hooks/useToast";
+import { useNotifications } from "../../hooks/useNotifications";
 
 // רשימת גיבוי — משמשת רק אם העמותה טרם רשומה במסד הנתונים האמיתי, או שאין
 // חנויות אמיתיות בקרבתה, או שהקריאה לשרת נכשלה. ברגע שיש תשובה אמיתית
@@ -26,6 +27,7 @@ export default function OrgHomePage() {
   const navigate = useNavigate();
   const { user, logout, collaborations, sendCollaborationRequest, sentDonations } = useUser();
   const toast = useToast();
+  const { unreadCount } = useNotifications();
 
   const [selectedStore, setSelectedStore] = useState(null);
   const [searchQuery,   setSearchQuery]   = useState("");
@@ -148,9 +150,16 @@ export default function OrgHomePage() {
           <p className="text-rw-sub text-xs mt-0.5">סיוע לנשים במצבי סיכון</p>
         </div>
         <div onClick={() => navigate("/org/notifications")}
-          className="w-10 h-10 bg-rw-input rounded-xl
+          className="relative w-10 h-10 bg-rw-input rounded-xl
                      flex items-center justify-center cursor-pointer shrink-0">
           <span className="text-lg">🔔</span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500
+                             text-white text-[10px] font-bold rounded-full
+                             flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
         </div>
       </div>
 

@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import PageContainer from "../../components/PageContainer";
 import NotificationCard from "../../components/NotificationCard";
+import ShopBottomNav from "../../components/ShopBottomNav";
 import { useNotifications } from "../../hooks/useNotifications";
 
-export default function OrgNotificationsPage() {
+export default function ShopNotificationsPage() {
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
@@ -13,13 +14,13 @@ export default function OrgNotificationsPage() {
   };
 
   return (
-    <PageContainer className="pb-10 overflow-y-auto" wide>
+    <PageContainer className="pb-24 overflow-y-auto" wide>
 
       {/* כותרת */}
       <div className="sticky top-0 bg-rw-bg z-10
                       flex items-center justify-between
                       px-5 py-4 border-b border-rw-border">
-        <button onClick={() => navigate("/org/home")} className="text-rw-sub text-2xl">
+        <button onClick={() => navigate("/shop/home")} className="text-rw-sub text-2xl">
           →
         </button>
         <h1 className="font-bold text-rw-title text-base">התראות</h1>
@@ -57,6 +58,8 @@ export default function OrgNotificationsPage() {
         )}
 
       </div>
+
+      <ShopBottomNav active="home" />
     </PageContainer>
   );
 }

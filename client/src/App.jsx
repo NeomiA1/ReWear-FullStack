@@ -32,6 +32,7 @@ import ShopHomePage         from "./pages/shop/ShopHomePage";
 import ShopPartnersPage     from "./pages/shop/ShopPartnersPage";
 import ShopProfilePage      from "./pages/shop/ShopProfilePage";
 import ShopInventoryPage    from "./pages/shop/ShopInventoryPage";
+import ShopNotificationsPage from "./pages/shop/ShopNotificationsPage";
 
 // Chat
 import CollaborationChatPage from "./pages/CollaborationChatPage";
@@ -71,6 +72,7 @@ function App() {
         <Route path="/shop/partners"     element={<RequireAuth allowedRoles="shop"><ShopPartnersPage /></RequireAuth>} />
         <Route path="/shop/profile"      element={<RequireAuth allowedRoles="shop"><ShopProfilePage /></RequireAuth>} />
         <Route path="/shop/inventory"    element={<RequireAuth allowedRoles="shop"><ShopInventoryPage /></RequireAuth>} />
+        <Route path="/shop/notifications" element={<RequireAuth allowedRoles="shop"><ShopNotificationsPage /></RequireAuth>} />
 
         {/* Chat */}
         <Route path="/org/chat/:id"      element={<RequireAuth allowedRoles="org"><CollaborationChatPage /></RequireAuth>} />

@@ -248,15 +248,9 @@ export function UserProvider({ children }) {
     );
   };
 
-  // שליחת הודעה בצ'אט של שיתוף פעולה
-  // sender: "org" | "shop"
-  const sendCollabMessage = (collabId, text, sender) => {
-    const newMsg = {
-      id:     Date.now(),
-      text,
-      sender,
-      time:   new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
-    };
+  // הוספת הודעה בצ'אט של שיתוף פעולה — message: { sender: "org"|"shop", senderName, text, date }
+  const addCollaborationMessage = (collabId, message) => {
+    const newMsg = { id: Date.now(), ...message };
     setCollaborationsState(prev =>
       prev.map(c => c.id === collabId
         ? { ...c, messages: [...(c.messages || []), newMsg] }
@@ -278,7 +272,7 @@ export function UserProvider({ children }) {
       collaborations: myCollaborations,
       sendCollaborationRequest,
       updateCollaboration,
-      sendCollabMessage,
+      addCollaborationMessage,
     }}>
       {children}
     </UserContext.Provider>
