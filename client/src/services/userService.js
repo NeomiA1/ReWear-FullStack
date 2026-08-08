@@ -33,5 +33,9 @@ export async function loginUser(loginData) {
   }
 
   const data = await response.json();
-  return data;
+
+  return {
+    ...data.user,
+    token: data.token
+  };
 }
