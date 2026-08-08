@@ -53,7 +53,7 @@ export default function MapPage() {
         {/* כפתורי מפה */}
         <div className="bg-rw-card rounded-2xl shadow-sm p-5 flex flex-col gap-3">
           <p className="text-rw-title font-semibold text-sm text-right">
-            חפשי עמותות על המפה
+            חפש/י עמותות על המפה
           </p>
 
           {/* כפתור מיקום שלי */}
@@ -64,7 +64,7 @@ export default function MapPage() {
                        active:bg-rw-btn-hover"
           >
             <span>📍</span>
-            <span>עמותות קרוב אליי</span>
+            <span>עמותות קרובות אליי</span>
           </button>
 
           {/* כפתור חיפוש כללי */}
