@@ -12,8 +12,6 @@ namespace RewearApi.BL
         public string? CreatorName { get; set; }
 
         public string? ShortDescription { get; set; }
-       
-        public int ItemCount { get; set; }
 
         public string? Sizes { get; set; }
 
@@ -61,16 +59,10 @@ namespace RewearApi.BL
         errors.Add("חובה לבחור משתמש תקין");
     }
 
-    if (ItemCount <= 0)
-    {
-        errors.Add("חובה להזין לפחות פריט אחד");
-    }
-
-    if (string.IsNullOrWhiteSpace(ShortDescription))
-    {
-        errors.Add("חובה להזין תיאור לתרומה");
-    }
-    else if (ShortDescription.Trim().Length < 5)
+    // תיאור הוא שדה רשות: ריק/null/רווחים בלבד תקין. אם כן הוזן תיאור,
+    // הוא חייב להכיל לפחות 5 תווים.
+    if (!string.IsNullOrWhiteSpace(ShortDescription)
+        && ShortDescription.Trim().Length < 5)
     {
         errors.Add("תיאור התרומה חייב להכיל לפחות 5 תווים");
     }

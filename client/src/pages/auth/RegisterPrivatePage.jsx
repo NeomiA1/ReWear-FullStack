@@ -70,9 +70,10 @@ export default function RegisterPrivatePage() {
     }
   };
 
-  const handleFacebook  = () => console.log("פייסבוק");
-  const handleInstagram = () => console.log("אינסטגרם");
-  const handleGoogle    = () => console.log("גוגל");
+  // התחברות חברתית טרם ממומשת בצד השרת — כפתורים ללא פעולה בינתיים.
+  const handleFacebook  = () => {};
+  const handleInstagram = () => {};
+  const handleGoogle    = () => {};
 
   return (
     <AuthLayout>

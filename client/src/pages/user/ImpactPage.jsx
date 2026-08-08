@@ -27,7 +27,7 @@ function ImpactCard({ icon, value, unit, label, color }) {
   );
 }
 
-function LevelBadge({ level, completedCount }) {
+function LevelBadge({ completedCount }) {
   const levels = [
     { name: "ברונזה",  min: 0,  max: 1,  emoji: "🥉", color: "bg-amber-100 text-amber-700"   },
     { name: "כסף",     min: 2,  max: 4,  emoji: "🥈", color: "bg-gray-100 text-gray-600"     },
@@ -117,7 +117,7 @@ export default function ImpactPage() {
       <div className="px-5 pt-5 flex flex-col gap-5">
 
         {/* תג רמה */}
-        <LevelBadge level="זהב" completedCount={totalBags} />
+        <LevelBadge completedCount={totalBags} />
 
         {/* סיכום מהיר */}
         <div className="grid grid-cols-3 gap-3">

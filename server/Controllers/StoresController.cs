@@ -12,6 +12,50 @@ namespace RewearApi.Controllers
     {
         private readonly StoreDAL _storeDal = new StoreDAL();
 
+        // ── New endpoint ─────────────────────────────────────────────────
+
+        [HttpPost("register")]
+        public ActionResult<User> RegisterStore([FromBody] RegisterStoreDto dto)
+        {
+            if (dto == null)
+                return BadRequest("Request body is null");
+
+            var errors = dto.Validate();
+            if (errors.Any())
+                return BadRequest(errors);
+
+            try
+            {
+                User createdUser = _storeDal.RegisterStore(dto);
+                return Ok(createdUser);
+            }
+
+            catch (Exception ex)
+            {
+                return BadRequest(TranslateRegistrationError(ex.Message));
+            }
+        }
+
+        private static string TranslateRegistrationError(string exceptionMessage)
+        {
+            if (exceptionMessage.Contains("An account with this email already exists"))
+                return "כתובת האימייל כבר קיימת במערכת";
+
+            if (exceptionMessage.Contains("An account with this username already exists"))
+                return "שם המשתמש כבר קיים במערכת";
+
+            if (exceptionMessage.Contains("A store with this email already exists"))
+                return "כבר קיימת חנות עם כתובת אימייל זו";
+
+            if (exceptionMessage.Contains("A store with this name already exists"))
+                return "כבר קיימת חנות עם שם זה";
+
+            // Fallback — safe generic message, no raw SQL exposed to client.
+            return "אירעה שגיאה בתהליך ההרשמה. אנא נסי שוב מאוחר יותר.";
+        }
+
+        // ── Existing endpoints — unchanged ───────────────────────────────
+
         [HttpGet("check")]
         public ActionResult<Store> CheckStoreExists([FromQuery] string storeName, [FromQuery] string email)
         {

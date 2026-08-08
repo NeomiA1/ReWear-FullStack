@@ -12,6 +12,78 @@ namespace RewearApi.DAL
         private const string SP_CHECK_STORE_EXISTS = "sp_CheckStoreExists";
         private const string SP_CREATE_STORE = "sp_CreateStore";
         private const string SP_GET_NEARBY_STORES_FOR_ASSOCIATION = "sp_GetNearbyStoresForAssociation";
+        private const string SP_REGISTER_STORE = "sp_RegisterStore";
+
+        // ── New method ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Calls sp_RegisterStore which:
+        ///   1. Inserts a Users row (user_type = 'Store')
+        ///   2. Inserts a SecondHandStores row linked via user_id
+        ///   3. Returns the new Users row (same shape as sp_LoginUser)
+        /// If either insert fails the SP rolls back both and re-raises
+        /// the error, which surfaces here as a SqlException.
+        /// </summary>
+        /// <returns>
+        /// A User object populated with the new user_id and fields —
+        /// ready to be stored in UserContext on the React side.
+        /// </returns>
+        public User RegisterStore(RegisterStoreDto dto)
+        {
+            try
+            {
+                using (SqlConnection con = Connect(CON_STR_NAME))
+                {
+                    var paramDic = new Dictionary<string, object>
+                    {
+                        { "@full_name",     dto.FullName                 },
+                        { "@email",         dto.Email                    },
+                        { "@user_password", dto.Password                 },
+                        { "@phone",         (object?)dto.Phone        ?? DBNull.Value },
+                        { "@location",      (object?)dto.City         ?? DBNull.Value },
+                        { "@store_name",    dto.StoreName                },
+                        { "@address",       dto.Address                  },
+                        { "@city",          (object?)dto.City         ?? DBNull.Value },
+                        { "@area",          (object?)dto.Area         ?? DBNull.Value },
+                        { "@description",   (object?)dto.Description  ?? DBNull.Value },
+                    };
+
+                    SqlCommand cmd = CreateCommand(SP_REGISTER_STORE, con, paramDic);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            // Map the returned Users row — identical column list
+                            // to sp_LoginUser so no mapper duplication.
+                            return new User
+                            {
+                                UserId             = Convert.ToInt32(reader["user_id"]),
+                                FullName           = reader["full_name"].ToString()!,
+                                Username           = reader["username"].ToString()!,
+                                Email              = reader["email"].ToString()!,
+                                Phone              = reader["phone"]    == DBNull.Value
+                                                         ? null : reader["phone"].ToString(),
+                                City               = reader["location"] == DBNull.Value
+                                                         ? null : reader["location"].ToString(),
+                                RegistrationMethod = reader["signup_method"].ToString()!,
+                                UserType           = reader["user_type"].ToString()!,
+                            };
+                        }
+                    }
+                }
+
+                // The SP committed but returned no row — should not happen
+                // unless the SP is altered to omit the final SELECT.
+                throw new Exception("sp_RegisterStore committed but returned no user row.");
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        // ── Existing methods — unchanged ─────────────────────────────────
 
         public Store? CheckStoreExists(string storeName, string email)
         {
