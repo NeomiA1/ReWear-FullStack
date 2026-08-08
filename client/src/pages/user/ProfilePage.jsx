@@ -52,7 +52,7 @@ export default function ProfilePage() {
         setServerBags(bagsFromServer);
       } catch (error) {
         console.error(error);
-        setBagsError("לא הצלחנו לטעון את השקים שלך. בדק/י את החיבור ונסה/י שוב.");
+        setBagsError("לא הצלחנו לטעון את השקים שלך. בדוק/י את החיבור ונסה/י שוב.");
       } finally {
         setLoadingBags(false);
       }
@@ -186,7 +186,7 @@ export default function ProfilePage() {
       confirm({
         title: "החלפת עמותה",
         message: `העמותה שנבחרה תוחלף מ${selectedOrg.name} ל${org.name}.`,
-        confirmText: "החליף עמותה",
+        confirmText: "החלף/י עמותה",
         cancelText: "ביטול",
         icon: "🔁",
         onConfirm: () => {
@@ -203,7 +203,7 @@ export default function ProfilePage() {
     confirm({
       title: "שליחת תרומה",
       message: `לשלוח את השק ל${selectedOrg.name}?`,
-      confirmText: "כן, שלחי",
+      confirmText: "כן, שלח/י",
       cancelText: "ביטול",
       icon: "📦",
       onConfirm: handleSendToOrg,
@@ -279,7 +279,7 @@ export default function ProfilePage() {
           {loadingBags ? (
             <div className="bg-rw-card rounded-2xl p-5 text-center shadow-sm">
               <p className="text-3xl mb-2">⏳</p>
-              <p className="text-rw-sub text-sm">טוענת את השקים שלך...</p>
+              <p className="text-rw-sub text-sm">השקים שלך נטענים...</p>
               <p className="text-rw-sub text-[11px] mt-1">
                 אם זו הפעם הראשונה היום, זה עשוי לקחת עד 30 שניות
               </p>
@@ -296,7 +296,7 @@ export default function ProfilePage() {
               <button onClick={() => navigate("/upload")}
                 className="mt-3 bg-rw-btn text-white rounded-xl px-4 py-2
                            text-sm font-semibold">
-                העלי שק
+                העלה/י שק
               </button>
             </div>
           ) : (

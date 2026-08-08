@@ -76,7 +76,7 @@ export default function MapPage() {
                        active:bg-rw-input"
           >
             <span>🗺️</span>
-            <span>פתחי Google Maps</span>
+            <span>פתח/י Google Maps</span>
           </button>
 
         </div>

@@ -19,7 +19,7 @@ export default function PickupSchedulingPage() {
 
   const handleSubmit = () => {
     if (!selectedDay || !selectedTime || !address.trim()) {
-      toast.warning("אנא מלאי את כל השדות");
+      toast.warning("אנא מלא/י את כל השדות");
       return;
     }
     updateSentDonation(Number(id), {
@@ -145,7 +145,7 @@ export default function PickupSchedulingPage() {
                   </div>
                 ) : (
                   <p className="text-rw-sub text-xs text-right">
-                    העמותה לא הגדירה ימים – תיצרי קשר ישירות.
+                    העמותה לא הגדירה ימים – צור/י קשר ישירות.
                   </p>
                 )}
               </div>
@@ -169,7 +169,7 @@ export default function PickupSchedulingPage() {
                   </div>
                 ) : (
                   <p className="text-rw-sub text-xs text-right">
-                    העמותה לא הגדירה שעות – תיצרי קשר ישירות.
+                    העמותה לא הגדירה שעות – צור/י קשר ישירות.
                   </p>
                 )}
               </div>
@@ -204,7 +204,7 @@ export default function PickupSchedulingPage() {
                            text-sm font-semibold flex items-center justify-center gap-2
                            active:bg-rw-btn-hover">
                 <span>📅</span>
-                <span>שלחי הצעה לתיאום</span>
+                <span>שלח/י הצעה לתיאום</span>
               </button>
 
             </div>

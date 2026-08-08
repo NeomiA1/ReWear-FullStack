@@ -19,7 +19,7 @@ export default function RegisterPrivatePage() {
 
   const handleRegister = async () => {
     if (!fullName || !email || !phone || !password) {
-      toast.warning("אנא מלאי את כל השדות");
+      toast.warning("אנא מלא/י את כל השדות");
       return;
     }
     if (password.length < 6) {
@@ -58,7 +58,7 @@ export default function RegisterPrivatePage() {
     } catch (error) {
 
       console.error(error);
-      toast.error(typeof error === "string" ? error : "שגיאה בהרשמה. אנא נסי שוב.");
+      toast.error(typeof error === "string" ? error : "שגיאה בהרשמה. אנא נסה/י שוב.");
 
     }
   };
@@ -142,7 +142,7 @@ export default function RegisterPrivatePage() {
       {/* מפריד */}
       <div className="flex items-center gap-3 my-5">
         <div className="flex-1 h-px bg-rw-border"></div>
-        <span className="text-rw-sub text-sm">או הירשמי עם</span>
+        <span className="text-rw-sub text-sm">או הירשם/י עם</span>
         <div className="flex-1 h-px bg-rw-border"></div>
       </div>
 

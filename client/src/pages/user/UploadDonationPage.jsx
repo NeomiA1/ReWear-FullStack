@@ -80,7 +80,7 @@ export default function UploadDonationPage() {
     confirm({
       title: "הסרת תמונה",
       message: "להסיר את התמונה שנבחרה לשק הזה?",
-      confirmText: "הסירי תמונה",
+      confirmText: "הסר/י תמונה",
       cancelText: "ביטול",
       destructive: true,
       icon: "🖼️",
@@ -106,7 +106,7 @@ export default function UploadDonationPage() {
     confirm({
       title: "מחיקת שק",
       message: "האם למחוק את השק הזה? הפעולה אינה הפיכה.",
-      confirmText: "מחקי שק",
+      confirmText: "מחק/י שק",
       cancelText: "ביטול",
       destructive: true,
       icon: "🗑️",
@@ -125,9 +125,9 @@ export default function UploadDonationPage() {
     }
     confirm({
       title: "לצאת בלי לשמור?",
-      message: "מילאת פרטי תרומה שעדיין לא נשמרו. אם תצאי עכשיו הם יימחקו.",
-      confirmText: "צאי בלי לשמור",
-      cancelText: "המשיכי למלא",
+      message: "מילאת פרטי תרומה שעדיין לא נשמרו. אם תצא/י עכשיו הם יימחקו.",
+      confirmText: "צא/י בלי לשמור",
+      cancelText: "המשך/י למלא",
       destructive: true,
       icon: "⚠️",
       onConfirm: () => navigate("/home"),
@@ -206,7 +206,7 @@ export default function UploadDonationPage() {
         <span className="text-6xl">✅</span>
         <h2 className="text-xl font-bold text-rw-title">שק הועלה בהצלחה!</h2>
         <p className="text-rw-sub text-sm text-center">
-          השק נשמר בפרופיל שלך. עכשיו תוכלי לשלוח אותו לעמותה מתוך הפרופיל.
+          השק נשמר בפרופיל שלך. עכשיו תוכל/י לשלוח אותו לעמותה מתוך הפרופיל.
         </p>
         <div className="flex flex-col gap-3 w-full">
           <button onClick={() => navigate("/profile")}
@@ -337,7 +337,7 @@ export default function UploadDonationPage() {
                      text-sm font-semibold flex items-center justify-center gap-2
                      active:bg-rw-btn-hover mb-4 disabled:opacity-60">
           <span>{loading ? "⏳" : "⬆️"}</span>
-          <span>{loading ? "מעלה..." : "העלה שק"}</span>
+          <span>{loading ? "מעלה..." : "העלה/י שק"}</span>
         </button>
 
       </div>

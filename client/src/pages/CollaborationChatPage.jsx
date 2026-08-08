@@ -1,182 +1,251 @@
-
-
 import { useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import PageContainer from "../components/PageContainer";
 import { useToast } from "../hooks/useToast";
 
 export default function CollaborationChatPage() {
-  const navigate   = useNavigate();
-  const { id }     = useParams();
-  const location   = useLocation();
-  const { collaborations, sendCollabMessage, sentDonations } = useUser();
+  const navigate = useNavigate();
+  const { id } = useParams();
 
- 
-  const isOrg   = location.pathname.startsWith("/org/chat");
-  const sender  = isOrg ? "org" : "shop";
-  const senderLabel = isOrg ? "העמותה" : "החנות";
+  const {
+    user,
+    collaborations,
+    addCollaborationMessage,
+    updateCollaboration,
+  } = useUser();
 
-  const collab  = collaborations.find(c => c.id === Number(id));
-  const [text, setText] = useState("");
   const toast = useToast();
 
-  const handleSend = () => {
-    if (!text.trim()) return;
-    sendCollabMessage(Number(id), text.trim(), sender);
-    setText("");
+  const collaboration = collaborations.find(
+    (c) => c.id === Number(id)
+  );
+
+  const [message, setMessage] = useState("");
+  const [pickupDetails, setPickupDetails] = useState("");
+
+  if (!collaboration) {
+    return (
+      <div className="min-h-screen bg-rw-bg flex items-center justify-center px-6">
+        <div className="bg-rw-card rounded-2xl p-6 shadow-sm text-center">
+          <p className="text-3xl mb-2">⚠️</p>
+
+          <p className="font-semibold text-rw-title">
+            שיתוף הפעולה לא נמצא
+          </p>
+
+          <button
+            onClick={() => navigate(-1)}
+            className="mt-4 bg-rw-btn text-white rounded-xl px-5 py-2.5 text-sm font-semibold"
+          >
+            חזרה
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isOrg = user?.type === "org";
+
+  const partnerName = isOrg
+    ? collaboration.shopName
+    : collaboration.orgName;
+
+  const messages = collaboration.messages || [];
+
+  const handleSendMessage = () => {
+    if (!message.trim()) return;
+
+    addCollaborationMessage(collaboration.id, {
+      sender: isOrg ? "org" : "shop",
+      senderName: isOrg
+        ? collaboration.orgName
+        : collaboration.shopName,
+      text: message.trim(),
+      date: new Date().toLocaleString("he-IL"),
+    });
+
+    setMessage("");
   };
 
-  
   const handleSendPickupDetails = () => {
-    const approved = sentDonations.filter(d =>
-      d.status === "approved" || d.status === "scheduled"
-    );
-    if (approved.length === 0) {
-      toast.warning("אין תיאומי איסוף פעילים כרגע");
+    if (!pickupDetails.trim()) {
+      toast.warning("יש להזין פרטי איסוף");
       return;
     }
-    const latest = approved[approved.length - 1];
-    const msg = `📦 פרטי איסוף מלקוח:
-שק: ${[latest.bag?.size, latest.bag?.gender, latest.bag?.condition].filter(Boolean).join(" · ") || "שק תרומה"}
-יום ושעה: ${latest.pickupTime || "טרם תואם"}
-כתובת: ${latest.pickupAddress || "טרם נקבע"}`;
-    sendCollabMessage(Number(id), msg, "org");
+
+    addCollaborationMessage(collaboration.id, {
+      sender: "org",
+      senderName: collaboration.orgName,
+      text: `📦 פרטי איסוף: ${pickupDetails.trim()}`,
+      date: new Date().toLocaleString("he-IL"),
+    });
+
+    updateCollaboration(collaboration.id, {
+      pickupDetails: pickupDetails.trim(),
+    });
+
+    setPickupDetails("");
+
+    toast.success("פרטי האיסוף נשלחו לחנות");
   };
 
-  if (!collab) {
-    return (
-      <div className="min-h-screen bg-rw-bg flex items-center justify-center px-6">
-        <div className="bg-rw-card rounded-2xl p-6 text-center shadow-sm">
-          <p className="text-3xl mb-2">⚠️</p>
-          <p className="text-rw-title font-semibold mb-1">שיתוף פעולה לא נמצא</p>
-          <button onClick={() => navigate(-1)}
-            className="mt-4 bg-rw-btn text-white rounded-xl px-4 py-2 text-sm">
-            חזרה
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // הצ'אט נגיש רק אחרי אישור שיתוף הפעולה — גם אם ניגשים ישירות ל-URL
-  // (למשל בקשה ממתינה או שנדחתה), לא נפתח כאן שום צ'אט.
-  if (collab.status !== "approved") {
-    const isRejected = collab.status === "rejected";
-    return (
-      <div className="min-h-screen bg-rw-bg flex items-center justify-center px-6">
-        <div className="bg-rw-card rounded-2xl p-6 text-center shadow-sm">
-          <p className="text-3xl mb-2">{isRejected ? "🚫" : "⏳"}</p>
-          <p className="text-rw-title font-semibold mb-1">
-            {isRejected
-              ? "בקשת שיתוף הפעולה נדחתה"
-              : "הצ׳אט ייפתח לאחר אישור שיתוף הפעולה"}
-          </p>
-          <button onClick={() => navigate(-1)}
-            className="mt-4 bg-rw-btn text-white rounded-xl px-4 py-2 text-sm">
-            חזרה
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const messages = collab.messages || [];
-
-  // עמוד עם צורה מיוחדת (צ'אט במסך מלא, בלי ניווט תחתון/סיידבר) — לא עובר
-  // דרך PageContainer (שבנוי בהנחת "תוכן גליל + ניווט נפרד") אלא מיישם את
-  // אותה סקאלת רוחב רספונסיבית ישירות, עם lg:mx-auto כדי למרכז את השיחה
-  // כטור אחד גם במסכים רחבים, במקום להימתח על פני כל הרוחב.
   return (
-    <div className="min-h-screen bg-rw-bg flex flex-col
-                    lg:max-w-[760px] lg:mx-auto lg:border-x lg:border-rw-border">
+    <PageContainer className="min-h-screen flex flex-col">
 
-    
-      <div className="bg-rw-card px-5 pt-6 pb-4 shadow-sm
-                      flex items-center gap-3 sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="text-rw-sub text-2xl shrink-0">
+      {/* Header */}
+      <div
+        className="sticky top-0 z-10 bg-rw-card border-b border-rw-border
+                   px-5 py-4 flex items-center justify-between"
+      >
+        <button
+          onClick={() => navigate(-1)}
+          className="text-rw-sub text-2xl"
+        >
           →
         </button>
-        <div className="flex-1 text-right">
+
+        <div className="flex flex-col items-center">
           <h1 className="font-bold text-rw-title text-base">
-            {isOrg ? collab.shopName : collab.orgName}
+            {partnerName}
           </h1>
-          <p className="text-rw-sub text-xs">
-            {isOrg ? collab.shopCity : collab.orgCity}
-          </p>
-        </div>
-        <div className="w-10 h-10 rounded-full bg-rw-logo
-                        flex items-center justify-center shrink-0">
-          <span className="text-white font-bold text-sm">
-            {isOrg ? collab.shopName?.charAt(0) : collab.orgName?.charAt(0)}
+
+          <span className="text-rw-green text-xs">
+            שיתוף פעולה פעיל
           </span>
         </div>
+
+        <div className="w-6" />
       </div>
 
-      <div className="flex-1 px-4 py-4 flex flex-col gap-3 overflow-y-auto pb-32">
+      {/* Chat */}
+      <div className="flex-1 px-4 py-5 overflow-y-auto">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center pt-20 gap-2">
+            <span className="text-5xl">💬</span>
 
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center gap-2 pt-16 opacity-50">
-            <span className="text-4xl">💬</span>
-            <p className="text-rw-sub text-sm">עדיין אין הודעות. התחילי את השיחה!</p>
+            <p className="font-bold text-rw-title text-base">
+              התחל/י את השיחה!
+            </p>
+
+            <p className="text-rw-sub text-sm text-center">
+              זה המקום לתאם פרטים ולדבר על שיתוף הפעולה
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {messages.map((msg, index) => {
+              const isMine =
+                (isOrg && msg.sender === "org") ||
+                (!isOrg && msg.sender === "shop");
+
+              return (
+                <div
+                  key={index}
+                  className={`flex ${
+                    isMine ? "justify-start" : "justify-end"
+                  }`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                      isMine
+                        ? "bg-rw-btn text-white"
+                        : "bg-rw-card border border-rw-border text-rw-title"
+                    }`}
+                  >
+                    <p className="text-xs font-semibold mb-1">
+                      {msg.senderName}
+                    </p>
+
+                    <p className="text-sm whitespace-pre-wrap">
+                      {msg.text}
+                    </p>
+
+                    <p
+                      className={`text-[10px] mt-1 ${
+                        isMine
+                          ? "text-white/70"
+                          : "text-rw-sub"
+                      }`}
+                    >
+                      {msg.date}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
-
-        {messages.map(msg => {
-          const isMine = msg.sender === sender;
-          return (
-            <div key={msg.id}
-              className={`flex ${isMine ? "justify-start" : "justify-end"}`}>
-              <div className={`max-w-[75%] rounded-2xl px-4 py-2.5
-                              ${isMine
-                                ? "bg-rw-btn text-white rounded-tl-sm"
-                                : "bg-rw-card text-rw-title rounded-tr-sm shadow-sm"}`}>
-                <p className="text-sm whitespace-pre-line">{msg.text}</p>
-                <p className={`text-[10px] mt-1 ${isMine ? "text-white/70" : "text-rw-sub"}`}>
-                  {msg.time}
-                </p>
-              </div>
-            </div>
-          );
-        })}
       </div>
 
-    
-      {/* max-width זהה לזה של העמוד עצמו (lg:max-w-[760px] למעלה) — אחרת
-          ב-fixed הוא ממורכז מול כל רוחב ה-viewport ולא מתיישר עם עמודת
-          הצ'אט שמעליו במסכים רחבים. */}
-      <div className="fixed bottom-0 left-0 right-0
-                      max-w-[480px] md:max-w-[640px] lg:max-w-[760px] mx-auto
-                      bg-rw-card border-t border-rw-border px-4 py-3 flex flex-col gap-2">
+      {/* Pickup details – org only */}
+      {isOrg && (
+        <div className="px-4 pb-3">
+          <div className="bg-rw-card border border-rw-border rounded-2xl p-4">
+            <p className="font-semibold text-rw-title text-sm text-right mb-2">
+              פרטי איסוף
+            </p>
 
-    
-        {isOrg && (
-          <button onClick={handleSendPickupDetails}
-            className="w-full bg-rw-input text-rw-title rounded-xl py-2
-                       text-xs font-semibold border border-rw-border
-                       flex items-center justify-center gap-2 active:opacity-70">
-            <span>📦</span>
-            <span>שלחי פרטי איסוף לחנות</span>
-          </button>
-        )}
+            <textarea
+              value={pickupDetails}
+              onChange={(e) =>
+                setPickupDetails(e.target.value)
+              }
+              placeholder="לדוגמה: ניתן לאסוף ביום שלישי בין 10:00–14:00"
+              rows={2}
+              className="w-full border border-rw-border rounded-xl px-3 py-2
+                         bg-rw-input text-sm text-right outline-none
+                         focus:border-rw-btn resize-none"
+            />
 
-        <div className="flex gap-2 items-end">
-          <button onClick={handleSend}
-            className="bg-rw-btn text-white rounded-xl px-4 py-3
-                       text-sm font-semibold active:bg-rw-btn-hover shrink-0">
-            שלח
+            <button
+              onClick={handleSendPickupDetails}
+              className="w-full mt-2 bg-rw-btn/10 text-rw-btn
+                         border border-rw-btn/30 rounded-xl py-2.5
+                         text-xs font-semibold active:bg-rw-btn/20"
+            >
+              שלח/י פרטי איסוף לחנות
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Message input */}
+      <div className="sticky bottom-0 bg-rw-card border-t border-rw-border px-4 py-3">
+        <div className="flex items-end gap-2">
+
+          <button
+            onClick={handleSendMessage}
+            disabled={!message.trim()}
+            className="w-11 h-11 bg-rw-btn text-white rounded-xl
+                       flex items-center justify-center text-lg
+                       disabled:opacity-40 shrink-0"
+          >
+            ➤
           </button>
-          <input
-            type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder={`כתבי הודעה ל${isOrg ? collab.shopName : collab.orgName}...`}
-            dir="rtl"
+
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (
+                e.key === "Enter" &&
+                !e.shiftKey
+              ) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            placeholder={`כתוב/י הודעה ל${partnerName}...`}
+            rows={1}
             className="flex-1 border border-rw-border rounded-xl px-4 py-3
-                       text-sm outline-none bg-rw-input focus:border-rw-btn" />
+                       bg-rw-input text-sm text-right outline-none
+                       focus:border-rw-btn resize-none"
+          />
+
         </div>
       </div>
 
-    </div>
+    </PageContainer>
   );
 }

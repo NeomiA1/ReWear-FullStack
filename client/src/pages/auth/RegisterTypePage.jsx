@@ -11,7 +11,7 @@ export default function RegisterTypePage() {
 
   const handleContinue = () => {
     if (!userType) {
-      toast.warning("אנא בחרי סוג משתמש");
+      toast.warning("אנא בחר/י סוג משתמש");
       return;
     }
     if (userType === "private") navigate("/register/private");

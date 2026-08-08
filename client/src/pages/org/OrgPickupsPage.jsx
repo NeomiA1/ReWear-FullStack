@@ -157,7 +157,7 @@ export default function OrgPickupsPage() {
             <span className="text-5xl">📭</span>
             <p className="font-bold text-rw-title text-base">אין איסופים להצגה</p>
             <p className="text-rw-sub text-sm text-center">
-              אשרי בקשות תרומה כדי שיופיעו כאן.
+              אשר/י בקשות תרומה כדי שיופיעו כאן.
             </p>
             <button onClick={() => navigate("/org/requests")}
               className="mt-2 bg-rw-btn text-white rounded-xl

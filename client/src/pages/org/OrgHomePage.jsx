@@ -194,12 +194,12 @@ export default function OrgHomePage() {
               <button onClick={handleAddNeed}
                 className="bg-rw-btn text-white rounded-xl px-4 py-2
                            text-xs font-semibold shrink-0 active:bg-rw-btn-hover">
-                הוסיפי
+                הוסף/י
               </button>
               <input type="text" value={editText}
                 onChange={(e) => setEditText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddNeed()}
-                placeholder="הוסיפי צורך דחוף חדש..."
+                placeholder="הוסף/י צורך דחוף חדש..."
                 dir="rtl"
                 className="flex-1 border border-rw-border rounded-xl px-4 py-2
                            text-sm text-right outline-none bg-rw-input
@@ -216,7 +216,6 @@ export default function OrgHomePage() {
               <div key={need.id}
                 className="bg-rw-card rounded-2xl shadow-sm p-4
                            flex items-center justify-between">
-                {/* כפתור מחיקה במצב עריכה */}
                 {isEditing && (
                   <button onClick={() => handleDeleteNeed(need.id)}
                     className="text-red-400 text-xl shrink-0">
@@ -273,7 +272,7 @@ export default function OrgHomePage() {
               {loadingStores && (
                 <div className="bg-rw-card rounded-2xl p-4 text-center shadow-sm">
                   <p className="text-2xl mb-1">⏳</p>
-                  <p className="text-rw-sub text-xs">מחפשת חנויות אמיתיות בקרבתך...</p>
+                  <p className="text-rw-sub text-xs">מחפש/ת חנויות אמיתיות בקרבתך...</p>
                   <p className="text-rw-sub text-[10px] mt-1">
                     אם זו הפעם הראשונה היום, זה עשוי לקחת עד 30 שניות
                   </p>
@@ -345,7 +344,7 @@ export default function OrgHomePage() {
                         className="bg-rw-btn text-white rounded-xl px-3 py-2
                                    text-xs font-semibold active:bg-rw-btn-hover
                                    whitespace-nowrap shrink-0">
-                        שלחי בקשת שיתוף
+                        שלח/י בקשת שיתוף
                       </button>
                     )}
                     <div className="flex items-center gap-3">

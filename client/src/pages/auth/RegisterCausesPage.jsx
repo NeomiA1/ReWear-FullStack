@@ -72,7 +72,7 @@ export default function RegisterCausesPage() {
         מה חשוב לך לתרום?
       </h1>
       <p className="text-sm text-rw-sub text-center mb-6">
-        בחרי את הנושאים שקרובים לליבך כדי שנוכל להמליץ לך על עמותות מתאימות
+        בחר/י את הנושאים שקרובים לליבך כדי שנוכל להמליץ לך על עמותות מתאימות
       </p>
 
       <div className="bg-rw-card rounded-2xl shadow-sm p-6">

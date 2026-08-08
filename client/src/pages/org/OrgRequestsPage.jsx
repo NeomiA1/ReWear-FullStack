@@ -40,7 +40,7 @@ function RequestCard({ req, onApprove, onReject }) {
 
   const handleApprove = () => {
     if (!selectedDays.length || !selectedTimes.length) {
-      toast.warning("אנא בחרי לפחות יום ושעה אחד");
+      toast.warning("אנא בחר/י לפחות יום ושעה אחד");
       return;
     }
     onApprove(req.id, selectedDays, selectedTimes);

@@ -75,7 +75,7 @@ export default function RegisterOrgPage() {
   const handleRegister = async () => {
     if (!orgName || !orgNumber || !contact || !phone ||
         !email || !password || !address || !workMode || !deliveryMode) {
-      toast.warning("אנא מלאי את כל השדות");
+      toast.warning("אנא מלא/י את כל השדות");
       return;
     }
     if (password.length < 6) {
@@ -101,19 +101,18 @@ export default function RegisterOrgPage() {
         acceptedCategoryIds: acceptedCategoryIds,
       });
 
-   
       const { userType, ...userWithoutServerType } = createdUser;
 
       setUser({
         ...userWithoutServerType,
-        orgName,        // display field — not in Users table
-        type: "org",    // client-side routing alias
+        orgName,
+        type: "org",
       });
 
       navigate("/org/home");
 
     } catch (err) {
-      toast.error(typeof err === "string" ? err : "שגיאה בהרשמה. אנא נסי שוב.");
+      toast.error(typeof err === "string" ? err : "שגיאה בהרשמה. אנא נסה/י שוב.");
     } finally {
       setLoading(false);
     }
@@ -122,14 +121,12 @@ export default function RegisterOrgPage() {
   return (
     <AuthLayout wide showBranding={false}>
 
-      {/* Back arrow */}
       <div className="flex justify-end mb-6">
         <button onClick={() => navigate("/register")} className="text-rw-sub text-2xl">
           →
         </button>
       </div>
 
-      {/* Logo upload */}
       <div className="flex flex-col items-center mb-6">
         <div className="relative w-24 h-24 rounded-full bg-rw-input
                         border-2 border-dashed border-rw-border
@@ -146,10 +143,8 @@ export default function RegisterOrgPage() {
         <p className="text-rw-green text-sm mt-2">העלאת לוגו העמותה</p>
       </div>
 
-      {/* Form card */}
       <div className="bg-rw-card rounded-2xl shadow-sm p-6 flex flex-col gap-5">
 
-        {/* Org name */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">שם העמותה</label>
           <input type="text" placeholder="שם העמותה" value={orgName}
@@ -158,7 +153,6 @@ export default function RegisterOrgPage() {
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
-        {/* Org number */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">מספר עמותה (ח.פ)</label>
           <input type="text" placeholder="מספר עמותה (ח.פ)" value={orgNumber}
@@ -167,7 +161,6 @@ export default function RegisterOrgPage() {
                        text-sm text-left outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
-        {/* Contact + phone */}
         <div className="flex flex-row gap-3">
           <div className="flex flex-col gap-1 flex-1">
             <label className="text-sm text-rw-sub text-right">איש קשר</label>
@@ -185,7 +178,6 @@ export default function RegisterOrgPage() {
           </div>
         </div>
 
-        {/* Email */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">אימייל</label>
           <input type="email" placeholder="אימייל" value={email}
@@ -194,7 +186,6 @@ export default function RegisterOrgPage() {
                        text-sm text-left outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
-        {/* Password */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">סיסמה</label>
           <input type="password" placeholder="מינימום 6 תווים" value={password}
@@ -203,7 +194,6 @@ export default function RegisterOrgPage() {
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
-        {/* Address */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">כתובת</label>
           <input type="text" placeholder="עיר / כתובת" value={address}
@@ -212,35 +202,32 @@ export default function RegisterOrgPage() {
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
 
-        {/* Work mode */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">אופן פעילות העמותה</label>
           <select value={workMode} onChange={(e) => setWorkMode(e.target.value)}
             className="border border-rw-border rounded-xl px-4 py-3
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn
                        appearance-none cursor-pointer">
-            <option value="">בחרי אופן פעילות</option>
+            <option value="">בחר/י אופן פעילות</option>
             {WORK_MODE_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
 
-        {/* Delivery mode */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">אופן קבלת תרומות</label>
           <select value={deliveryMode} onChange={(e) => setDeliveryMode(e.target.value)}
             className="border border-rw-border rounded-xl px-4 py-3
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn
                        appearance-none cursor-pointer">
-            <option value="">בחרי אופן קבלה</option>
+            <option value="">בחר/י אופן קבלה</option>
             {DELIVERY_MODE_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
 
-        {/* Causes */}
         {causes.length > 0 && (
           <div className="flex flex-col gap-1">
             <label className="text-sm text-rw-sub text-right">תחומי פעילות (אופציונלי)</label>
@@ -262,7 +249,6 @@ export default function RegisterOrgPage() {
           </div>
         )}
 
-        {/* Accepted categories */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-rw-sub text-right">גילי יעד שהעמותה מקבלת (אופציונלי)</label>
           <div className="flex flex-wrap gap-2 justify-end">
@@ -282,7 +268,6 @@ export default function RegisterOrgPage() {
           </div>
         </div>
 
-        {/* Submit */}
         <button onClick={handleRegister} disabled={loading}
           className="w-full bg-rw-btn text-white rounded-xl py-3
                      text-sm font-semibold mt-2 active:bg-rw-btn-hover

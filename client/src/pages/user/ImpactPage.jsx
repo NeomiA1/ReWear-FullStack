@@ -155,12 +155,12 @@ export default function ImpactPage() {
         {totalBags === 0 && (
           <div className="bg-rw-btn/10 rounded-2xl p-5 text-center">
             <p className="text-rw-btn font-semibold text-sm mb-2">
-              התחילי לתרום כדי לראות את האימפקט שלך!
+              התחל/י לתרום כדי לראות את האימפקט שלך!
             </p>
             <button onClick={() => navigate("/upload")}
               className="bg-rw-btn text-white rounded-xl px-5 py-2.5
                          text-sm font-semibold active:bg-rw-btn-hover">
-              העלי שק ראשון
+              העלה/י שק ראשון
             </button>
           </div>
         )}

@@ -34,7 +34,7 @@ export default function RegisterShopPage() {
 
   const handleRegister = async () => {
     if (!shopName || !bizNumber || !contact || !phone || !email || !password || !address) {
-      toast.warning("אנא מלאי את כל השדות");
+      toast.warning("אנא מלא/י את כל השדות");
       return;
     }
     if (password.length < 6) {
@@ -72,7 +72,7 @@ export default function RegisterShopPage() {
       navigate("/shop/home");
 
     } catch (err) {
-      toast.error(typeof err === "string" ? err : "שגיאה בהרשמה. אנא נסי שוב.");
+      toast.error(typeof err === "string" ? err : "שגיאה בהרשמה. אנא נסה/י שוב.");
     } finally {
       setLoading(false);
     }

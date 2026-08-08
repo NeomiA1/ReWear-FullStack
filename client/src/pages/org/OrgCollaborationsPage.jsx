@@ -42,7 +42,7 @@ function CollabCard({ collab, onChat }) {
                      rounded-xl py-2.5 text-xs font-semibold active:bg-rw-btn/20
                      flex items-center justify-center gap-2">
           <span>💬</span>
-          <span>פתחי צ׳אט עם {collab.shopName}</span>
+          <span>פתח/י צ׳אט עם {collab.shopName}</span>
         </button>
       )}
     </div>
@@ -114,7 +114,7 @@ export default function OrgCollaborationsPage() {
             <span className="text-5xl">🤝</span>
             <p className="font-bold text-rw-title text-base">אין שיתופי פעולה עדיין</p>
             <p className="text-rw-sub text-sm text-center">
-              שלחי בקשת שיתוף לחנות מדף הבית
+              שלח/י בקשת שיתוף לחנות מדף הבית
             </p>
             <button onClick={() => navigate("/org/home")}
               className="mt-2 bg-rw-btn text-white rounded-xl

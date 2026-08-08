@@ -42,7 +42,7 @@ export function buildDonationJourney(bag, sendRecord) {
       id: "association_selected",
       icon: "🤝",
       title: "בחירת עמותה",
-      description: "בחרי עמותה ושלחי אליה את השק כדי להתחיל את המסע",
+      description: "בחר/י עמותה ושלח/י אליה את השק כדי להתחיל את המסע",
       timestamp: null,
       state: "current",
     });

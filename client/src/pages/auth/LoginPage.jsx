@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      toast.warning("אנא מלאי אימייל וסיסמה");
+      toast.warning("אנא מלא/י אימייל וסיסמה");
       return;
     }
 

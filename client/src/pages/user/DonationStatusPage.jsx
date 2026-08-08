@@ -31,7 +31,7 @@ export default function DonationStatusPage() {
         setBags(data || []);
       } catch (err) {
         console.error(err);
-        setError("לא הצלחנו לטעון את השקים שלך. בדקי את החיבור ונסי שוב.");
+        setError("לא הצלחנו לטעון את השקים שלך. בדוק/י את החיבור ונסה/י שוב.");
       } finally {
         setLoading(false);
       }
@@ -60,7 +60,7 @@ export default function DonationStatusPage() {
         {loading && (
           <div className="bg-rw-card rounded-2xl p-5 text-center shadow-sm">
             <p className="text-3xl mb-2">⏳</p>
-            <p className="text-rw-sub text-sm">טוענת את השקים שלך...</p>
+            <p className="text-rw-sub text-sm">השקים שלך נטענים...</p>
             <p className="text-rw-sub text-[11px] mt-1">
               אם זו הפעם הראשונה היום, זה עשוי לקחת עד 30 שניות
             </p>
@@ -79,11 +79,11 @@ export default function DonationStatusPage() {
             <span className="text-5xl">📦</span>
             <p className="font-bold text-rw-title text-base">אין תרומות עדיין</p>
             <p className="text-rw-sub text-sm text-center">
-              העלי שק תרומה ושלחי אותו לעמותה כדי להתחיל את המסע
+              העלה/י שק תרומה ושלח/י אותו לעמותה כדי להתחיל את המסע
             </p>
             <button onClick={() => navigate("/upload")}
               className="bg-rw-btn text-white rounded-xl px-6 py-3 text-sm font-semibold">
-              העלי שק ראשון
+              העלה/י שק ראשון
             </button>
           </div>
         )}

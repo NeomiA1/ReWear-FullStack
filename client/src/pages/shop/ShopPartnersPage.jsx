@@ -74,7 +74,7 @@ function CollabCard({ collab, onApprove, onReject, onChat }) {
                      rounded-xl py-2 text-xs font-semibold active:bg-rw-btn/20
                      flex items-center justify-center gap-2">
           <span>💬</span>
-          <span>פתחי צ׳אט עם {collab.orgName}</span>
+          <span>פתח/י צ׳אט עם {collab.orgName}</span>
         </button>
       ) : null}
 
