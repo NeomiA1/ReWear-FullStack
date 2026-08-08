@@ -1,42 +1,44 @@
 import API_BASE_URL from "./api";
 
 /**
- * Creates a Store record on the server.
- *
- * NOTE: unlike /api/associations/register, this endpoint only creates a
- * standalone Store row — the SecondHandStores table has no password/login
- * column, so this does NOT create a Users row or any login credentials.
- * TODO(server): add a combined register endpoint (Users + SecondHandStores,
- * the way /api/associations/register does for orgs) so a shop can log back
- * in with its own account. Until then the client keeps the shop session
- * local-only after registering (see RegisterShopPage.jsx).
+ * Registers a new store in one server round-trip.
+ * The server creates both a Users row (user_type = 'Store') and a
+ * SecondHandStores row inside a single transaction and returns the
+ * created user object — the same pattern registerOrganization() uses
+ * for associations (see associationService.js).
  *
  * @param {object} data
- * @param {string} data.storeName
- * @param {string} data.address
- * @param {string} data.email
- * @param {string} [data.city]
- * @param {string} [data.area]
- * @param {string} [data.phone]
- * @param {string} [data.description]
+ * @param {string} data.fullName   - contact person name
+ * @param {string} data.email      - login email (also used as username)
+ * @param {string} data.password   - plain text password
+ * @param {string} [data.phone]    - optional
+ * @param {string} [data.city]     - optional
+ * @param {string} data.storeName  - shop display name
+ * @param {string} data.address    - street address
+ * @param {string} [data.area]     - optional
+ * @param {string} [data.description] - optional
  *
- * @returns {Promise<string>} success message text
- * @throws {string} user-facing error message
+ * @returns {Promise<object>} The created user object:
+ *   { userId, fullName, username, email, phone, city,
+ *     registrationMethod, userType }
+ *
+ * @throws {string} User-facing error message (Hebrew). Always a string,
+ *   never a raw SQL exception or JSON blob.
  */
 export async function registerStore(data) {
-  const response = await fetch(`${API_BASE_URL}/Stores`, {
+  const response = await fetch(`${API_BASE_URL}/Stores/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
 
-  const text = await response.text();
-
   if (!response.ok) {
-    let userFacingMessage = text;
+    const errorText = await response.text();
+
+    let userFacingMessage = errorText;
 
     try {
-      const parsed = JSON.parse(text);
+      const parsed = JSON.parse(errorText);
       if (Array.isArray(parsed) && parsed.length > 0) {
         userFacingMessage = parsed.join("\n");
       }
@@ -47,7 +49,7 @@ export async function registerStore(data) {
     throw userFacingMessage;
   }
 
-  return text;
+  return response.json();
 }
 
 /**

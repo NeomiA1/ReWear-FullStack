@@ -45,28 +45,22 @@ export default function RegisterShopPage() {
     setLoading(true);
 
     try {
-      // TODO(server): /api/stores only creates a standalone Store row — the
-      // SecondHandStores table has no password/login column, so this can't
-      // create real login credentials (bizNumber/contact aren't stored
-      // either — Store has no matching columns). Needs a combined register
-      // endpoint like /api/associations/register before a shop can log back
-      // in on its own; until then the session below is client-only and is
-      // lost on refresh/logout.
-      await registerStore({
-        storeName: shopName,
-        address,
-        email,
-        phone,
-        city: null,
-      });
-
-      setUser({
-        shopName,
+      const createdUser = await registerStore({
         fullName: contact,
         email,
+        password,
         phone,
-        city: address,
-        type: "shop",
+        city: null,
+        storeName: shopName,
+        address,
+      });
+
+      const { userType, ...userWithoutServerType } = createdUser;
+
+      setUser({
+        ...userWithoutServerType,
+        shopName,       // display field — not in Users table
+        type: "shop",   // client-side routing alias
       });
 
       navigate("/shop/home");
