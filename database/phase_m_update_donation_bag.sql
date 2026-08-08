@@ -7,7 +7,6 @@ CREATE OR ALTER PROCEDURE dbo.sp_UpdateDonationBag
     @bag_id INT,
     @user_id INT,
     @short_description NVARCHAR(500),
-    @item_count INT,
     @sizes NVARCHAR(100),
     @target_ages NVARCHAR(100) = NULL,
     @target_gender NVARCHAR(50),
@@ -52,16 +51,6 @@ BEGIN
     BEGIN
         THROW 50501,
               'Donation bag cannot be edited in its current status.',
-              1;
-    END;
-
-
-    /* כמות פריטים */
-    IF @item_count IS NULL
-       OR @item_count <= 0
-    BEGIN
-        THROW 50502,
-              'Item count must be greater than zero.',
               1;
     END;
 
@@ -117,9 +106,6 @@ BEGIN
     SET
         short_description =
             LTRIM(RTRIM(@short_description)),
-
-        item_count =
-            @item_count,
 
         sizes =
             LTRIM(RTRIM(@sizes)),

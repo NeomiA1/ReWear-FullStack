@@ -46,10 +46,6 @@ namespace RewearApi.DAL
                             ?? DBNull.Value
                         },
                         {
-                            "@item_count",
-                            bag.ItemCount
-                        },
-                        {
                             "@sizes",
                             (object?)bag.Sizes
                             ?? DBNull.Value
@@ -156,11 +152,6 @@ namespace RewearApi.DAL
                                         ? null
                                         : reader["short_description"]
                                             .ToString(),
-
-                                ItemCount =
-                                    Convert.ToInt32(
-                                        reader["item_count"]
-                                    ),
 
                                 Sizes =
                                     reader["sizes"]
@@ -295,10 +286,6 @@ namespace RewearApi.DAL
                             "@short_description",
                             (object?)bag.ShortDescription
                             ?? DBNull.Value
-                        },
-                        {
-                            "@item_count",
-                            bag.ItemCount
                         },
                         {
                             "@sizes",

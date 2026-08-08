@@ -12,8 +12,6 @@ namespace RewearApi.BL
         public string? CreatorName { get; set; }
 
         public string? ShortDescription { get; set; }
-       
-        public int ItemCount { get; set; }
 
         public string? Sizes { get; set; }
 
@@ -59,11 +57,6 @@ namespace RewearApi.BL
     if (UserId <= 0)
     {
         errors.Add("חובה לבחור משתמש תקין");
-    }
-
-    if (ItemCount <= 0)
-    {
-        errors.Add("חובה להזין לפחות פריט אחד");
     }
 
     // תיאור הוא שדה רשות: ריק/null/רווחים בלבד תקין. אם כן הוזן תיאור,

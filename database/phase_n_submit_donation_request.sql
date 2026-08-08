@@ -30,7 +30,6 @@ BEGIN
         DECLARE @current_association_id INT;
         DECLARE @current_status NVARCHAR(50);
 
-        DECLARE @item_count INT;
         DECLARE @short_description NVARCHAR(500);
         DECLARE @sizes NVARCHAR(100);
         DECLARE @target_gender NVARCHAR(50);
@@ -137,9 +136,6 @@ BEGIN
             @current_status =
                 donation_status,
 
-            @item_count =
-                item_count,
-
             @short_description =
                 short_description,
 
@@ -178,10 +174,7 @@ BEGIN
            5. Validation עסקי של השק
            ================================================ */
 
-        IF @item_count IS NULL
-           OR @item_count <= 0
-
-           OR @short_description IS NULL
+        IF @short_description IS NULL
            OR LEN(
                 LTRIM(
                     RTRIM(@short_description)

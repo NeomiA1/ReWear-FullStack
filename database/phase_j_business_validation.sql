@@ -1,71 +1,13 @@
 /* =========================================================
    PHASE J - DONATION BAG BUSINESS VALIDATION
+
+   NOTE: item_count was removed from this feature by business
+   decision (treated as an abandoned field, never shipped to
+   Azure). The schema-migration section that used to add
+   DonationBags.item_count here has been deleted rather than
+   fixed forward -- there is nothing to add, and no item_count
+   column exists or should exist on Azure.
    ========================================================= */
-
-
-/* =========================================================
-   1. Add item_count to DonationBags
-   ========================================================= */
-
-IF COL_LENGTH(
-    N'dbo.DonationBags',
-    N'item_count'
-) IS NULL
-BEGIN
-    ALTER TABLE dbo.DonationBags
-    ADD item_count INT NULL;
-END
-GO
-
-
-/* נותן לשקיות קיימות ערך זמני כדי שנוכל להפוך את השדה לחובה */
-UPDATE dbo.DonationBags
-SET item_count = 1
-WHERE item_count IS NULL;
-GO
-
-
-ALTER TABLE dbo.DonationBags
-ALTER COLUMN item_count INT NOT NULL;
-GO
-
-
-/* ערך ברירת מחדל */
-IF NOT EXISTS
-(
-    SELECT 1
-    FROM sys.default_constraints dc
-
-    INNER JOIN sys.columns c
-        ON dc.parent_object_id = c.object_id
-       AND dc.parent_column_id = c.column_id
-
-    WHERE dc.parent_object_id =
-          OBJECT_ID(N'dbo.DonationBags')
-
-      AND c.name = N'item_count'
-)
-BEGIN
-    ALTER TABLE dbo.DonationBags
-    ADD CONSTRAINT DF_DonationBags_ItemCount
-        DEFAULT 1 FOR item_count;
-END
-GO
-
-
-/* לא מאפשר כמות פריטים של 0 או מספר שלילי */
-IF NOT EXISTS
-(
-    SELECT 1
-    FROM sys.check_constraints
-    WHERE name = N'CK_DonationBags_ItemCount'
-)
-BEGIN
-    ALTER TABLE dbo.DonationBags
-    ADD CONSTRAINT CK_DonationBags_ItemCount
-        CHECK (item_count > 0);
-END
-GO
 
 
 /* =========================================================
@@ -75,7 +17,6 @@ GO
 CREATE OR ALTER PROCEDURE dbo.sp_CreateDonationBag
     @user_id INT,
     @short_description NVARCHAR(500),
-    @item_count INT,
     @sizes NVARCHAR(100),
     @target_ages NVARCHAR(100) = NULL,
     @target_gender NVARCHAR(50) = NULL,
@@ -95,16 +36,6 @@ BEGIN
     BEGIN
         THROW 50001,
               'User does not exist.',
-              1;
-    END;
-
-
-    /* חייב לפחות פריט אחד */
-    IF @item_count IS NULL
-       OR @item_count <= 0
-    BEGIN
-        THROW 50200,
-              'Item count must be greater than zero.',
               1;
     END;
 
@@ -149,7 +80,6 @@ BEGIN
     (
         user_id,
         short_description,
-        item_count,
         sizes,
         target_ages,
         target_gender,
@@ -161,7 +91,6 @@ BEGIN
     (
         @user_id,
         LTRIM(RTRIM(@short_description)),
-        @item_count,
         LTRIM(RTRIM(@sizes)),
 
         NULLIF(
@@ -183,7 +112,8 @@ GO
 
 
 /* =========================================================
-   3. Return item_count when getting user bags
+   3. Get donation bags for a user (with optional size/status
+      filters)
    ========================================================= */
 
 CREATE OR ALTER PROCEDURE dbo.sp_GetDonationBagsByUserId
@@ -199,7 +129,6 @@ BEGIN
         db.user_id,
         u.full_name AS creator_name,
         db.short_description,
-        db.item_count,
         db.sizes,
         db.target_ages,
         db.target_gender,
@@ -257,7 +186,6 @@ BEGIN
         DECLARE @current_association_id INT;
         DECLARE @current_status NVARCHAR(50);
 
-        DECLARE @item_count INT;
         DECLARE @short_description NVARCHAR(500);
         DECLARE @sizes NVARCHAR(100);
         DECLARE @clothes_condition NVARCHAR(100);
@@ -288,9 +216,6 @@ BEGIN
             @current_status =
                 donation_status,
 
-            @item_count =
-                item_count,
-
             @short_description =
                 short_description,
 
@@ -316,12 +241,9 @@ BEGIN
 
         /*
         בדיקות חובה לפני שליחת השקית לעמותה:
-        כמות, תיאור, מידה, מצב בגדים ותמונה.
+        תיאור, מידה, מצב בגדים ותמונה.
         */
-        IF @item_count IS NULL
-           OR @item_count <= 0
-
-           OR @short_description IS NULL
+        IF @short_description IS NULL
            OR LEN(
                 LTRIM(
                     RTRIM(@short_description)
