@@ -74,12 +74,10 @@ export async function registerOrganization(data) {
 /**
  * Looks up a real Association by exact name + email match.
  *
- * NOTE: this is the only association "lookup" endpoint the server exposes
- * today — there is no list/search endpoint (e.g. GET /api/associations),
- * so the client cannot browse real organizations from the database.
- * TODO(server): add a GET /api/associations (with optional city/area
- * filters) so donors can pick from real, live organizations instead of
- * this exact-match check against a name the client already guessed.
+ * Used where the client already has a specific org's name+email and needs
+ * to resolve its real `associationId` (e.g. an org confirming its own
+ * account, or a donor's send-to-org flow) — distinct from `getAllAssociations`
+ * above, which lists/browses every real association.
  *
  * @param {string} name  - Association's exact display name
  * @param {string} email - Association's exact registered email
