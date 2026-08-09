@@ -48,12 +48,12 @@ function RequestCard({ req, activeStores, onApproveSelf, onApproveAssistance, on
 
   const needsAssistance = req.collectionMode === "AssistanceNeeded";
   const readyToSchedule =
-    req.requestStatus === "Accepted" &&
+    req.requestStatus === "Approved" &&
     (req.collectionMode === "Self" || req.assignmentStatus === "Accepted");
   const waitingOnStore =
-    req.requestStatus === "Accepted" && needsAssistance && req.assignmentStatus === "Offered";
+    req.requestStatus === "Approved" && needsAssistance && req.assignmentStatus === "Offered";
   const needsStorePick =
-    req.requestStatus === "Accepted" && needsAssistance &&
+    req.requestStatus === "Approved" && needsAssistance &&
     (!req.assignmentStatus || req.assignmentStatus === "Declined");
 
   const statusKey = req.requestStatus === "Pending" ? "pending" : "approved";
@@ -256,7 +256,7 @@ export default function OrgRequestsPage() {
   }, [user?.userId]);
 
   const pendingRequests    = requests.filter(r => r.requestStatus === "Pending");
-  const inProgressRequests = requests.filter(r => r.requestStatus === "Accepted");
+  const inProgressRequests = requests.filter(r => r.requestStatus === "Approved");
   const approvedCount      = inProgressRequests.length;
 
   const handleApproveSelf = async (requestId) => {

@@ -110,7 +110,7 @@ BEGIN
 
         IF UPPER(@normalized_status) IN (N'ACCEPTED', N'APPROVED')
         BEGIN
-            SET @normalized_status = N'Accepted';
+            SET @normalized_status = N'Approved';
             SET @bag_status = N'Accepted';
             SET @notification_message = N'העמותה ' + ISNULL(@association_name, N'') + N' אישרה את בקשת התרומה שלך.';
         END
@@ -258,7 +258,7 @@ BEGIN
             THROW 50421, 'Donation request does not belong to this association.', 1;
         END;
 
-        IF @request_status <> N'Accepted'
+        IF @request_status <> N'Approved'
         BEGIN
             THROW 50422, 'Donation request must be accepted before offering collection.', 1;
         END;
