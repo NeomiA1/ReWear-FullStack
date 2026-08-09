@@ -109,23 +109,18 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-
-app.UseCors("AllowReact");
-
 app.UseSwagger();
-
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 
-
+app.UseCors("AllowReact");
 
 app.UseAuthentication();
 
 app.UseAuthorization();
-
 
 app.MapControllers();
 
