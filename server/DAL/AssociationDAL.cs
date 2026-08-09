@@ -223,7 +223,7 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
-                            return MapAssociation(reader);
+                            return MapAssociationBasic(reader);
                     }
                 }
 
@@ -324,29 +324,24 @@ private const string SP_REGISTER_ORGANIZATION = "dbo.sp_RegisterOrganization";
             }
         }
 
-        private Association MapAssociation(SqlDataReader reader)
+        /// <summary>
+        /// Lightweight mapper for CheckAssociationExists only — reads exactly
+        /// the columns sp_CheckAssociationExists selects (association_id,
+        /// association_name, email, is_available). Mirrors
+        /// StoreDAL.MapStoreBasic(). Do not widen this to read columns the
+        /// stored procedure doesn't select — a full-object mapper reading
+        /// columns this SP never returned was the root cause of this
+        /// endpoint's 500s. If a future caller needs more fields, add them
+        /// to both the SP's SELECT and this mapper together.
+        /// </summary>
+        private Association MapAssociationBasic(SqlDataReader reader)
         {
             var a = new Association();
 
             a.AssociationId   = Convert.ToInt32(reader["association_id"]);
             a.AssociationName = reader["association_name"].ToString()!;
-            a.AssociationType = reader["association_type"] == DBNull.Value
-                                    ? null : reader["association_type"].ToString();
-            a.Address         = reader["address"].ToString()!;
-            a.City            = reader["city"]   == DBNull.Value ? null : reader["city"].ToString();
-            a.Area            = reader["area"]   == DBNull.Value ? null : reader["area"].ToString();
             a.Email           = reader["email"].ToString()!;
-            a.Phone           = reader["phone"]  == DBNull.Value ? null : reader["phone"].ToString();
-            a.Description     = reader["description"] == DBNull.Value
-                                    ? null : reader["description"].ToString();
-            a.DonationDestination = reader["donation_destination"] == DBNull.Value
-                                    ? null : reader["donation_destination"].ToString();
-            a.ReceivingHours  = reader["receiving_hours"] == DBNull.Value
-                                    ? null : reader["receiving_hours"].ToString();
-            a.WorkMode        = reader["work_mode"].ToString()!;
-            a.DeliveryMode    = reader["delivery_mode"].ToString()!;
             a.IsAvailable     = Convert.ToBoolean(reader["is_available"]);
-            a.CreatedAt       = Convert.ToDateTime(reader["created_at"]);
 
             return a;
         }
