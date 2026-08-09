@@ -856,11 +856,17 @@ export default function ProfilePage() {
 
                   <div
                     key={bag.id}
-                    onClick={() =>
+                    onClick={() => {
+                      // REWEAR_DEBUG_SELECT: temporary, remove after selection trace is done
+                      console.log("REWEAR_DEBUG_SELECT", {
+                        clickedBagId: bag.id,
+                        previousSelectedBagId: selectedBag?.id ?? null,
+                        newSelectedBagId: bag.id
+                      });
                       setSelectedBag(
                         bag
-                      )
-                    }
+                      );
+                    }}
                     className={`
                       bg-rw-card
                       rounded-2xl
