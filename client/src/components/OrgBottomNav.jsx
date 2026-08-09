@@ -35,8 +35,6 @@ export default function OrgBottomNav({ active }) {
     return () => { cancelled = true; };
   }, [user?.userId]);
 
-  console.log("REWEAR_DEBUG_BADGE activeCollabs=", activeCollabs, "userId=", user?.userId);
-
   return (
     <>
       {/* מובייל/טאבלט */}

@@ -1,10 +1,12 @@
 
 
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
 import PageContainer from "../../components/PageContainer";
 import { getCollabStatusInfo } from "../../utils/statusLabels";
+import { getAssociationCollaborationRequests } from "../../services/collaborationService";
 
 function CollabCard({ collab, onChat }) {
   const statusInfo = getCollabStatusInfo(collab.status);
@@ -48,9 +50,36 @@ function CollabCard({ collab, onChat }) {
   );
 }
 
+// DB status word is "Accepted" (CHK_AssociationStoreRequests_request_status
+// doesn't allow "Approved") -- translated here to match this page's
+// existing "approved" terminology, same as OrgHomePage.jsx/ShopPartnersPage.jsx.
+function mapCollabRequest(r) {
+  const rawStatus = (r.requestStatus || "").toLowerCase();
+  return {
+    id: r.collaborationRequestId,
+    shopName: r.storeName,
+    shopCity: r.storeCity || "",
+    shopItems: r.storeArea || "",
+    status: rawStatus === "accepted" ? "approved" : rawStatus,
+    date: new Date(r.requestDate).toLocaleDateString("he-IL")
+  };
+}
+
 export default function OrgCollaborationsPage() {
-  const navigate      = useNavigate();
-  const { collaborations } = useUser();
+  const navigate = useNavigate();
+  const { user } = useUser();
+  const [collaborations, setCollaborations] = useState([]);
+
+  useEffect(() => {
+    if (!user?.userId) return;
+    let cancelled = false;
+    getAssociationCollaborationRequests(user.userId)
+      .then((requests) => {
+        if (!cancelled) setCollaborations(requests.map(mapCollabRequest));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user?.userId]);
 
   const all      = collaborations || [];
   const pending  = all.filter(c => c.status === "pending");
