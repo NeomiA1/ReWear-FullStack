@@ -15,12 +15,19 @@ function getAuthHeaders() {
   };
 }
 
+
+/*
+ * יצירת שק חדש
+ */
 export async function createDonationBag(bag) {
-  const response = await fetch(`${API_BASE_URL}/DonationBags`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(bag)
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/DonationBags`,
+    {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(bag)
+    }
+  );
 
   const data = await response.text();
 
@@ -28,9 +35,17 @@ export async function createDonationBag(bag) {
     throw data;
   }
 
-  return data;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return data;
+  }
 }
 
+
+/*
+ * קבלת כל השקים של המשתמש
+ */
 export async function getDonationBagsByUserId(userId) {
   const response = await fetch(
     `${API_BASE_URL}/DonationBags/user/${userId}`,
@@ -45,34 +60,112 @@ export async function getDonationBagsByUserId(userId) {
     throw errorText;
   }
 
-  const data = await response.json();
-  return data;
+  return response.json();
 }
 
-/**
- * Updates a DonationBag's lifecycle status.
- *
- * @param {number} bagId
- * @param {string} status - one of DonationBag.AllowedStatuses server-side:
- *   "Draft" | "Published" | "WaitingForAssociation" | "Accepted" |
- *   "Rejected" | "PickupScheduled" | "Completed"
- * @returns {Promise<{bagId: number, status: string, message: string}>}
- * @throws {string} user-facing error message
+
+/*
+ * עריכת פרטי שק קיים
  */
-export async function updateDonationBagStatus(bagId, status) {
+export async function updateDonationBag(bagId, bag) {
+  const response = await fetch(
+    `${API_BASE_URL}/DonationBags/${bagId}`,
+    {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        shortDescription: bag.shortDescription ?? "",
+        sizes: bag.sizes ?? "",
+        targetAges: bag.targetAges ?? "",
+        targetGender: bag.targetGender ?? "",
+        clothesCondition: bag.clothesCondition ?? "",
+
+        /*
+         * ה-Controller לא משנה את הסטטוס דרך PUT,
+         * אבל אנחנו שולחים אותו כדי שהמודל יהיה תקין.
+         */
+        donationStatus:
+          bag.donationStatus ||
+          bag.status ||
+          "Draft"
+      })
+    }
+  );
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    try {
+      const parsed = JSON.parse(responseText);
+
+      if (parsed?.message) {
+        throw parsed.message;
+      }
+
+      if (Array.isArray(parsed)) {
+        throw parsed.join("\n");
+      }
+    } catch (error) {
+      if (typeof error === "string") {
+        throw error;
+      }
+    }
+
+    throw responseText || "שגיאה בעדכון השק";
+  }
+
+  try {
+    return JSON.parse(responseText);
+  } catch {
+    return responseText;
+  }
+}
+
+
+/*
+ * שינוי סטטוס של שק
+ */
+export async function updateDonationBagStatus(
+  bagId,
+  status
+) {
   const response = await fetch(
     `${API_BASE_URL}/DonationBags/${bagId}/status`,
     {
       method: "PATCH",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ status })
+
+      /*
+       * חשוב:
+       * DonationStatus מה-C# מגיע כ-donationStatus
+       */
+      body: JSON.stringify({
+        donationStatus: status
+      })
     }
   );
 
+  const responseText = await response.text();
+
   if (!response.ok) {
-    const errorText = await response.text();
-    throw errorText;
+    try {
+      const parsed = JSON.parse(responseText);
+
+      if (parsed?.message) {
+        throw parsed.message;
+      }
+    } catch (error) {
+      if (typeof error === "string") {
+        throw error;
+      }
+    }
+
+    throw responseText || "שגיאה בעדכון סטטוס השק";
   }
 
-  return response.json();
+  try {
+    return JSON.parse(responseText);
+  } catch {
+    return responseText;
+  }
 }
