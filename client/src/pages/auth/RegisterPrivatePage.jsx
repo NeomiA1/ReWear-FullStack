@@ -4,6 +4,7 @@ import { useUser } from "../../context/UserContext";
 import { registerUser, loginUser } from "../../services/userService";
 import AuthLayout from "../../components/AuthLayout";
 import { useToast } from "../../hooks/useToast";
+import CityCombobox from "../../components/CityCombobox";
 
 export default function RegisterPrivatePage() {
 
@@ -166,20 +167,7 @@ export default function RegisterPrivatePage() {
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-rw-sub text-right">
-            מיקום (רשות)
-          </label>
-
-          <input
-            type="text"
-            placeholder="עיר / כתובת"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="border border-rw-border rounded-xl px-4 py-3
-                       text-sm text-right outline-none bg-rw-input focus:border-rw-btn"
-          />
-        </div>
+        <CityCombobox value={location} onChange={setLocation} />
 
         <button
           onClick={handleRegister}
