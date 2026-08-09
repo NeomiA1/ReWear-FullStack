@@ -543,10 +543,10 @@ export default function ProfilePage() {
         "שליחת תרומה",
 
       message:
-        `לשלוח את השק ל${selectedOrg.name}?`,
+        `להעביר את ${selectedBag.displayName} לעמותת ${selectedOrg.name}?`,
 
       confirmText:
-        "כן, שלח/י",
+        "שלחי תרומה",
 
       cancelText:
         "ביטול",
@@ -665,9 +665,20 @@ export default function ProfilePage() {
     );
 
 
+  /*
+   * כששק ועמותה נבחרו, בר הפעולה הצף (ראו למטה) תופס מקום בתחתית
+   * המסך — נותנים לתוכן ריפוד תחתון גדול יותר כדי שהוא לא יוצג מתחתיו.
+   */
+  const showStickyActionBar =
+    Boolean(selectedBag) &&
+    Boolean(selectedOrg) &&
+    !sent;
+
   return (
     <PageContainer
-      className="pb-24 overflow-y-auto"
+      className={`overflow-y-auto ${
+        showStickyActionBar ? "pb-56" : "pb-24"
+      }`}
       wide
     >
 
@@ -1043,14 +1054,16 @@ export default function ProfilePage() {
         </div>
 
 
-        {/* כפתור שליחה */}
-        {selectedBag &&
-          selectedOrg &&
-          !sent && (
+        {/*
+          סיכום הבחירה — נשאר כהקשר ליד אזור הבחירה. הכפתור הראשי
+          לשליחה עבר לבר הפעולה הצף בתחתית המסך (למטה), כדי שלא יהיו
+          שני כפתורי שליחה ראשיים באותו מסך בו-זמנית.
+        */}
+        {showStickyActionBar && (
 
           <div className="bg-rw-card rounded-2xl shadow-sm p-4">
 
-            <div className="flex flex-col gap-1 mb-4 items-end">
+            <div className="flex flex-col gap-1 items-end">
 
               <p className="text-sm text-rw-title font-semibold">
                 סיכום:
@@ -1078,50 +1091,60 @@ export default function ProfilePage() {
 
             </div>
 
-
-            <button
-              onClick={
-                handleSendClick
-              }
-              disabled={
-                sending
-              }
-              className="
-                w-full
-                bg-rw-btn
-                text-white
-                rounded-xl
-                py-3
-                text-sm
-                font-semibold
-                flex
-                items-center
-                justify-center
-                gap-2
-                active:bg-rw-btn-hover
-                disabled:opacity-50
-              "
-            >
-
-              <span>
-                {sending
-                  ? "⏳"
-                  : "📦"}
-              </span>
-
-              <span>
-                {sending
-                  ? "שולח/ת..."
-                  : `שלח/י תרומה ל${selectedOrg.name}`}
-              </span>
-
-            </button>
-
           </div>
 
         )}
 
       </div>
+
+
+      {/*
+        בר פעולה צף — מוצג רק כששק ועמותה נבחרו, כדי שלא יהיה צריך
+        לגלול עד סוף העמוד בשביל לשלוח. lg:right-56/xl:right-64 משאיר
+        מקום לסיידבר הדסקטופ (DesktopSidebar); bottom-24 במובייל משאיר
+        מקום לניווט התחתון (BottomNav, lg:hidden, sticky bottom-0).
+      */}
+      {showStickyActionBar && (
+        <div
+          className="
+            fixed inset-x-0 bottom-24 lg:bottom-0
+            lg:right-56 xl:right-64
+            z-50
+            bg-rw-card border-t border-rw-border shadow-lg
+            px-4 py-3
+          "
+        >
+          <div
+            className="
+              mx-auto w-full
+              max-w-[480px] md:max-w-[760px] lg:max-w-[1120px] xl:max-w-[1280px]
+              flex flex-col sm:flex-row sm:items-center sm:justify-between
+              gap-2
+            "
+          >
+            <p className="text-sm text-rw-title font-medium text-right truncate">
+              {selectedBag.displayName}
+              {" → "}
+              {selectedOrg.name}
+            </p>
+
+            <button
+              onClick={handleSendClick}
+              disabled={sending}
+              className="
+                w-full sm:w-auto shrink-0
+                bg-rw-btn text-white rounded-xl px-5 py-2.5
+                text-sm font-semibold whitespace-nowrap
+                flex items-center justify-center gap-2
+                active:bg-rw-btn-hover disabled:opacity-50
+              "
+            >
+              <span>{sending ? "⏳" : "📦"}</span>
+              <span>{sending ? "שולח/ת..." : "שלחי תרומה"}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
 
       <ConfirmDialog
