@@ -4,5 +4,6 @@
     {
         public string NewStatus { get; set; } = "";
         public string? AssociationResponse { get; set; }
+        public string? CollectionMode { get; set; }
     }
 }

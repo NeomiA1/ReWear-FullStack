@@ -293,7 +293,8 @@ namespace RewearApi.Controllers
                         requestId,
                         currentAssociationUserId,
                         dto.NewStatus,
-                        dto.AssociationResponse
+                        dto.AssociationResponse,
+                        dto.CollectionMode
                     );
 
                 return Ok(new
@@ -341,6 +342,158 @@ namespace RewearApi.Controllers
                 {
                     message = ex.Message
                 });
+            }
+        }
+
+
+        [HttpPost("{requestId}/offer-collection")]
+        public ActionResult OfferCollectionToStore(
+            int requestId,
+            [FromBody] CreateCollaborationRequestDto dto
+        )
+        {
+            if (requestId <= 0)
+            {
+                return BadRequest(new
+                {
+                    message = "requestId must be greater than 0"
+                });
+            }
+
+            if (dto == null || dto.StoreId <= 0)
+            {
+                return BadRequest(new
+                {
+                    message = "storeId must be greater than 0"
+                });
+            }
+
+            int currentAssociationUserId = User.GetCurrentUserId();
+
+            try
+            {
+                _donationRequestDal.OfferCollectionToStore(
+                    requestId,
+                    currentAssociationUserId,
+                    dto.StoreId
+                );
+
+                return Ok(new
+                {
+                    message = "ההצעה נשלחה לחנות"
+                });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("does not exist", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new { message = "בקשת התרומה לא נמצאה." });
+                }
+
+                if (ex.Message.Contains("does not belong", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new { message = "בקשת התרומה לא נמצאה." });
+                }
+
+                if (ex.Message.Contains("not an active partner", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new { message = "החנות שנבחרה אינה שותפה פעילה." });
+                }
+
+                if (ex.Message.Contains("already accepted", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Conflict(new { message = "חנות כבר אישרה את האיסוף הזה." });
+                }
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+
+        [HttpPut("{requestId}/collection-response")]
+        public ActionResult RespondToCollectionOffer(
+            int requestId,
+            [FromBody] CollaborationRequestResponseDto dto
+        )
+        {
+            if (requestId <= 0)
+            {
+                return BadRequest(new
+                {
+                    message = "requestId must be greater than 0"
+                });
+            }
+
+            if (dto == null || string.IsNullOrWhiteSpace(dto.NewStatus))
+            {
+                return BadRequest(new
+                {
+                    message = "newStatus is required"
+                });
+            }
+
+            int currentStoreUserId = User.GetCurrentUserId();
+
+            try
+            {
+                _donationRequestDal.RespondToCollectionOffer(
+                    requestId,
+                    currentStoreUserId,
+                    dto.NewStatus
+                );
+
+                return Ok(new
+                {
+                    message = "התגובה נשמרה בהצלחה"
+                });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("does not exist", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new { message = "הצעת האיסוף לא נמצאה." });
+                }
+
+                if (ex.Message.Contains("does not belong", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new { message = "הצעת האיסוף לא נמצאה." });
+                }
+
+                if (ex.Message.Contains("already been answered", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Conflict(new { message = "הצעת האיסוף כבר קיבלה תשובה." });
+                }
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+
+        [HttpGet("store/user/{userId}")]
+        public ActionResult<List<StoreCollectionOfferDto>> GetCollectionOffersByStore(int userId)
+        {
+            if (userId <= 0)
+            {
+                return BadRequest(new { message = "userId must be greater than 0" });
+            }
+
+            int currentUserId = User.GetCurrentUserId();
+
+            if (userId != currentUserId)
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                List<StoreCollectionOfferDto> offers =
+                    _donationRequestDal.GetCollectionOffersByStoreUserId(currentUserId);
+
+                return Ok(offers);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

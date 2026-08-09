@@ -45,7 +45,8 @@ export async function createDonationRequest(request) {
 export async function respondToDonationRequest(
   requestId,
   newStatus,
-  associationResponse = null
+  associationResponse = null,
+  collectionMode = null
 ) {
   const response = await fetch(
     `${API_BASE_URL}/DonationRequests/${requestId}/response`,
@@ -54,7 +55,8 @@ export async function respondToDonationRequest(
       headers: getAuthHeaders(),
       body: JSON.stringify({
         newStatus,
-        associationResponse
+        associationResponse,
+        collectionMode
       })
     }
   );
@@ -65,4 +67,103 @@ export async function respondToDonationRequest(
   }
 
   return await response.text();
+}
+
+/**
+ * Association's own incoming donation requests.
+ *
+ * @param {number} userId
+ * @returns {Promise<object[]>}
+ * @throws {string} user-facing error message
+ */
+export async function getAssociationDonationRequests(userId) {
+  const response = await fetch(
+    `${API_BASE_URL}/DonationRequests/association/user/${userId}`,
+    {
+      method: "GET",
+      headers: getAuthHeaders()
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return await response.json();
+}
+
+/**
+ * Association offers collection assistance for an already-accepted
+ * request to one active partner Store.
+ *
+ * @param {number} requestId
+ * @param {number} storeId
+ * @throws {string} user-facing error message
+ */
+export async function offerCollectionToStore(requestId, storeId) {
+  const response = await fetch(
+    `${API_BASE_URL}/DonationRequests/${requestId}/offer-collection`,
+    {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ storeId })
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return await response.text();
+}
+
+/**
+ * Store accepts/declines a collection offer currently addressed to it.
+ *
+ * @param {number} requestId
+ * @param {string} newStatus - "approved" | "rejected"
+ * @throws {string} user-facing error message
+ */
+export async function respondToCollectionOffer(requestId, newStatus) {
+  const response = await fetch(
+    `${API_BASE_URL}/DonationRequests/${requestId}/collection-response`,
+    {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ newStatus })
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return await response.text();
+}
+
+/**
+ * Store's list of collection-assistance requests offered/assigned to it.
+ *
+ * @param {number} userId
+ * @returns {Promise<object[]>}
+ * @throws {string} user-facing error message
+ */
+export async function getStoreCollectionOffers(userId) {
+  const response = await fetch(
+    `${API_BASE_URL}/DonationRequests/store/user/${userId}`,
+    {
+      method: "GET",
+      headers: getAuthHeaders()
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return await response.json();
 }

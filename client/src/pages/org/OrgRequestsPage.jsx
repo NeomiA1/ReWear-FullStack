@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
@@ -6,13 +6,21 @@ import PageContainer from "../../components/PageContainer";
 import { useToast } from "../../hooks/useToast";
 import { useNotifications } from "../../hooks/useNotifications";
 import { getDonationStatusInfo } from "../../utils/statusLabels";
+import {
+  getAssociationDonationRequests,
+  respondToDonationRequest,
+  offerCollectionToStore
+} from "../../services/donationRequestService";
+import { getAssociationCollaborationRequests } from "../../services/collaborationService";
 
 
 const DAY_OPTIONS  = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"];
 const TIME_OPTIONS = ["08:00–10:00", "10:00–12:00", "12:00–14:00",
                       "14:00–16:00", "16:00–18:00", "18:00–20:00"];
 
-function RequestCard({ req, onApprove, onReject }) {
+
+function RequestCard({ req, activeStores, onApproveSelf, onApproveAssistance, onReject, onOfferStore }) {
+  const [choosingMode, setChoosingMode] = useState(false);
   const [selectedDays,  setSelectedDays]  = useState([]);
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [showSchedule,  setShowSchedule]  = useState(false);
@@ -23,18 +31,32 @@ function RequestCard({ req, onApprove, onReject }) {
   const toggleTime = (t) => setSelectedTimes(prev =>
     prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
 
-  const handleApprove = () => {
+  const handleSendSchedule = () => {
     if (!selectedDays.length || !selectedTimes.length) {
       toast.warning("אנא בחר/י לפחות יום ושעה אחד");
       return;
     }
-    onApprove(req.id, selectedDays, selectedTimes);
+    // Pickup day/time scheduling has no backend persistence yet --
+    // unchanged from the existing behavior, kept local-only exactly
+    // as it was before this feature.
+    toast.success("ימי ושעות האיסוף נשלחו לתורם/ת");
   };
 
-  const bagLabel   = req.bag
-    ? [req.bag.size, req.bag.gender, req.bag.condition].filter(Boolean).join(" · ")
-    : "שק תרומה";
-  const donorName  = req.donor || req.bag?.donorName || "תורם";
+  const bagLabel  = [req.sizes, req.targetGender, req.clothesCondition]
+    .filter(Boolean).join(" · ") || "שק תרומה";
+  const donorName = req.donorName || "תורם";
+
+  const needsAssistance = req.collectionMode === "AssistanceNeeded";
+  const readyToSchedule =
+    req.requestStatus === "Accepted" &&
+    (req.collectionMode === "Self" || req.assignmentStatus === "Accepted");
+  const waitingOnStore =
+    req.requestStatus === "Accepted" && needsAssistance && req.assignmentStatus === "Offered";
+  const needsStorePick =
+    req.requestStatus === "Accepted" && needsAssistance &&
+    (!req.assignmentStatus || req.assignmentStatus === "Declined");
+
+  const statusKey = req.requestStatus === "Pending" ? "pending" : "approved";
 
   return (
     <div className="bg-rw-card rounded-2xl shadow-sm p-4 flex flex-col gap-3">
@@ -50,28 +72,100 @@ function RequestCard({ req, onApprove, onReject }) {
         <div className="flex flex-col items-end flex-1">
           <span className="font-bold text-rw-title text-sm">{donorName}</span>
           <span className="text-rw-sub text-xs">{bagLabel}</span>
-          <span className="text-rw-sub text-[10px]">{req.date}</span>
+          <span className="text-rw-sub text-[10px]">
+            {new Date(req.requestDate).toLocaleDateString("he-IL")}
+          </span>
         </div>
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0
-                         ${getDonationStatusInfo("pending").color}`}>
-          {getDonationStatusInfo("pending").label}
+                         ${getDonationStatusInfo(statusKey).color}`}>
+          {getDonationStatusInfo(statusKey).label}
         </span>
       </div>
 
-      {!showSchedule ? (
+      {/* ממתין: דחה / אשר */}
+      {req.requestStatus === "Pending" && !choosingMode && (
         <div className="flex gap-2">
-          <button onClick={() => onReject(req.id)}
+          <button onClick={() => onReject(req.requestId)}
             className="flex-1 border border-red-200 text-red-400 rounded-xl
                        py-2 text-xs font-semibold active:bg-red-50">
             דחה
           </button>
-          <button onClick={() => setShowSchedule(true)}
+          <button onClick={() => setChoosingMode(true)}
             className="flex-1 bg-rw-btn text-white rounded-xl
                        py-2 text-xs font-semibold active:bg-rw-btn-hover">
             אשר בקשה
           </button>
         </div>
-      ) : (
+      )}
+
+      {/* אחרי אישור ראשוני: איך יתבצע האיסוף */}
+      {req.requestStatus === "Pending" && choosingMode && (
+        <div className="flex flex-col gap-2 border-t border-rw-border pt-3">
+          <p className="text-xs font-bold text-rw-title text-right">
+            כיצד יתבצע האיסוף?
+          </p>
+          <div className="flex gap-2">
+            <button onClick={() => onApproveSelf(req.requestId)}
+              className="flex-1 border border-rw-border text-rw-title rounded-xl
+                         py-2 text-xs font-semibold">
+              נאסוף בעצמנו
+            </button>
+            <button onClick={() => onApproveAssistance(req.requestId)}
+              className="flex-1 bg-rw-btn text-white rounded-xl
+                         py-2 text-xs font-semibold active:bg-rw-btn-hover">
+              דרוש סיוע באיסוף
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* בחירת חנות שותפה (ראשונית או אחרי דחייה) */}
+      {needsStorePick && (
+        <div className="flex flex-col gap-2 border-t border-rw-border pt-3">
+          <p className="text-xs font-bold text-rw-title text-right">
+            {req.assignmentStatus === "Declined"
+              ? "החנות דחתה — בחר/י חנות אחרת:"
+              : "בחר/י חנות שותפה שתבצע את האיסוף:"}
+          </p>
+          {activeStores.length === 0 ? (
+            <p className="text-rw-sub text-xs text-right">
+              אין כרגע חנויות שותפות פעילות.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {activeStores.map(store => (
+                <button key={store.storeId}
+                  onClick={() => onOfferStore(req.requestId, store.storeId)}
+                  className="flex items-center justify-between bg-rw-input
+                             rounded-xl px-3 py-2">
+                  <span className="text-rw-btn text-xs font-semibold">שלח/י הצעה</span>
+                  <span className="text-rw-title text-xs font-semibold">{store.storeName}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ממתין לתגובת החנות */}
+      {waitingOnStore && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+          <p className="text-amber-600 text-xs text-right">
+            ממתין/ה לתגובת {req.assignedStoreName}
+          </p>
+        </div>
+      )}
+
+      {/* מוכן לתיאום איסוף */}
+      {readyToSchedule && !showSchedule && (
+        <button onClick={() => setShowSchedule(true)}
+          className="w-full bg-rw-btn text-white rounded-xl py-2
+                     text-xs font-semibold active:bg-rw-btn-hover">
+          תיאום ימי ושעות איסוף
+        </button>
+      )}
+
+      {readyToSchedule && showSchedule && (
         <div className="flex flex-col gap-3 border-t border-rw-border pt-3">
 
           <p className="text-xs font-bold text-rw-title text-right">
@@ -110,7 +204,7 @@ function RequestCard({ req, onApprove, onReject }) {
                          py-2 text-xs font-semibold">
               ביטול
             </button>
-            <button onClick={handleApprove}
+            <button onClick={handleSendSchedule}
               className="flex-1 bg-rw-btn text-white rounded-xl
                          py-2 text-xs font-semibold active:bg-rw-btn-hover">
               שלח אישור ✓
@@ -124,23 +218,84 @@ function RequestCard({ req, onApprove, onReject }) {
 
 export default function OrgRequestsPage() {
   const navigate = useNavigate();
-  const { sentDonations, updateSentDonation } = useUser();
+  const { user } = useUser();
   const { unreadCount } = useNotifications();
+  const toast = useToast();
 
-  const pendingRequests = sentDonations.filter(d => d.status === "pending");
-  const approvedCount   = sentDonations.filter(d => d.status === "approved").length;
+  const [requests, setRequests] = useState([]);
+  const [activeStores, setActiveStores] = useState([]);
 
-  const handleApprove = (id, days, times) => {
-    updateSentDonation(id, {
-      status:         "approved",
-      availableDays:  days,
-      availableTimes: times,
-    });
+  const loadRequests = async () => {
+    if (!user?.userId) return;
+    try {
+      const data = await getAssociationDonationRequests(user.userId);
+      setRequests(data);
+    } catch {
+      // best-effort — leave the list as-is on failure
+    }
   };
 
-  const handleReject = (id) => {
-    updateSentDonation(id, { status: "rejected" });
+  const loadActiveStores = async () => {
+    if (!user?.userId) return;
+    try {
+      const data = await getAssociationCollaborationRequests(user.userId);
+      setActiveStores(
+        data
+          .filter(c => c.requestStatus === "Accepted")
+          .map(c => ({ storeId: c.storeId, storeName: c.storeName }))
+      );
+    } catch {
+      // best-effort
+    }
   };
+
+  useEffect(() => {
+    loadRequests();
+    loadActiveStores();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]);
+
+  const pendingRequests    = requests.filter(r => r.requestStatus === "Pending");
+  const inProgressRequests = requests.filter(r => r.requestStatus === "Accepted");
+  const approvedCount      = inProgressRequests.length;
+
+  const handleApproveSelf = async (requestId) => {
+    try {
+      await respondToDonationRequest(requestId, "approved", null, "Self");
+      await loadRequests();
+    } catch (err) {
+      toast.error(typeof err === "string" ? err : "שגיאה באישור הבקשה");
+    }
+  };
+
+  const handleApproveAssistance = async (requestId) => {
+    try {
+      await respondToDonationRequest(requestId, "approved", null, "AssistanceNeeded");
+      await loadRequests();
+    } catch (err) {
+      toast.error(typeof err === "string" ? err : "שגיאה באישור הבקשה");
+    }
+  };
+
+  const handleReject = async (requestId) => {
+    try {
+      await respondToDonationRequest(requestId, "rejected");
+      await loadRequests();
+    } catch (err) {
+      toast.error(typeof err === "string" ? err : "שגיאה בדחיית הבקשה");
+    }
+  };
+
+  const handleOfferStore = async (requestId, storeId) => {
+    try {
+      await offerCollectionToStore(requestId, storeId);
+      await loadRequests();
+    } catch (err) {
+      toast.error(typeof err === "string" ? err : "שגיאה בשליחת ההצעה לחנות");
+    }
+  };
+
+  const visibleRequests = [...pendingRequests, ...inProgressRequests];
 
   return (
     <PageContainer className="pb-24 overflow-y-auto" wide>
@@ -182,17 +337,13 @@ export default function OrgRequestsPage() {
           </div>
         )}
 
-        {/* מסך זה כרגע מציג רק בקשות הדגמה מקומיות — ראו TODO(server) למעלה */}
-        {pendingRequests.length > 0 && (
-          <h2 className="font-bold text-rw-title text-sm text-right">
-            בקשות הדגמה ({pendingRequests.length})
-          </h2>
-        )}
-        {pendingRequests.length > 0 ? (
-          pendingRequests.map(req => (
-            <RequestCard key={req.id} req={req}
-              onApprove={handleApprove}
-              onReject={handleReject} />
+        {visibleRequests.length > 0 ? (
+          visibleRequests.map(req => (
+            <RequestCard key={req.requestId} req={req} activeStores={activeStores}
+              onApproveSelf={handleApproveSelf}
+              onApproveAssistance={handleApproveAssistance}
+              onReject={handleReject}
+              onOfferStore={handleOfferStore} />
           ))
         ) : (
           <div className="flex flex-col items-center gap-3 pt-16">

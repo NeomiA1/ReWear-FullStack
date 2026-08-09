@@ -28,5 +28,10 @@ namespace RewearApi.BL
 
         public string? ContactPhone { get; set; }
         public string? PickupAddress { get; set; }
+
+        public string? CollectionMode { get; set; }
+        public int? AssignedStoreId { get; set; }
+        public string? AssignedStoreName { get; set; }
+        public string? AssignmentStatus { get; set; }
     }
 }

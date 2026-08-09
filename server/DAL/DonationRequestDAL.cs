@@ -19,6 +19,15 @@ namespace RewearApi.DAL
         private const string SP_GET_BY_ASSOCIATION =
             "sp_GetDonationRequestsByAssociation";
 
+        private const string SP_OFFER_COLLECTION_TO_STORE =
+            "sp_OfferCollectionToStore";
+
+        private const string SP_RESPOND_TO_COLLECTION_OFFER =
+            "sp_RespondToCollectionOffer";
+
+        private const string SP_GET_COLLECTION_OFFERS_BY_STORE =
+            "sp_GetCollectionOffersByStore";
+
 
         public List<UserDonationRequestDto> GetByUserId(
             int userId
@@ -410,6 +419,35 @@ namespace RewearApi.DAL
                                         == DBNull.Value
                                         ? null
                                         : reader["donor_phone"]
+                                            .ToString(),
+
+                                CollectionMode =
+                                    reader["collection_mode"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["collection_mode"]
+                                            .ToString(),
+
+                                AssignedStoreId =
+                                    reader["assigned_store_id"]
+                                        == DBNull.Value
+                                        ? null
+                                        : Convert.ToInt32(
+                                            reader["assigned_store_id"]
+                                          ),
+
+                                AssignedStoreName =
+                                    reader["assigned_store_name"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["assigned_store_name"]
+                                            .ToString(),
+
+                                AssignmentStatus =
+                                    reader["assignment_status"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["assignment_status"]
                                             .ToString()
                             };
 
@@ -426,7 +464,8 @@ namespace RewearApi.DAL
             int requestId,
             int associationUserId,
             string newStatus,
-            string? associationResponse
+            string? associationResponse,
+            string? collectionMode
         )
         {
             using (
@@ -453,6 +492,11 @@ namespace RewearApi.DAL
                             "@association_response",
                             (object?)associationResponse
                             ?? DBNull.Value
+                        },
+                        {
+                            "@collection_mode",
+                            (object?)collectionMode
+                            ?? DBNull.Value
                         }
                     };
 
@@ -464,6 +508,127 @@ namespace RewearApi.DAL
 
                 cmd.ExecuteNonQuery();
             }
+        }
+
+
+        public void OfferCollectionToStore(
+            int requestId,
+            int associationUserId,
+            int storeId
+        )
+        {
+            using (SqlConnection con = Connect(CON_STR_NAME))
+            {
+                Dictionary<string, object> paramDic =
+                    new Dictionary<string, object>
+                    {
+                        { "@request_id", requestId },
+                        { "@association_user_id", associationUserId },
+                        { "@store_id", storeId }
+                    };
+
+                SqlCommand cmd = CreateCommand(
+                    SP_OFFER_COLLECTION_TO_STORE,
+                    con,
+                    paramDic
+                );
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
+        public void RespondToCollectionOffer(
+            int requestId,
+            int storeUserId,
+            string newStatus
+        )
+        {
+            using (SqlConnection con = Connect(CON_STR_NAME))
+            {
+                Dictionary<string, object> paramDic =
+                    new Dictionary<string, object>
+                    {
+                        { "@request_id", requestId },
+                        { "@store_user_id", storeUserId },
+                        { "@new_status", newStatus }
+                    };
+
+                SqlCommand cmd = CreateCommand(
+                    SP_RESPOND_TO_COLLECTION_OFFER,
+                    con,
+                    paramDic
+                );
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
+        public List<StoreCollectionOfferDto> GetCollectionOffersByStoreUserId(int userId)
+        {
+            List<StoreCollectionOfferDto> results = new List<StoreCollectionOfferDto>();
+
+            using (SqlConnection con = Connect(CON_STR_NAME))
+            {
+                int storeId;
+
+                const string storeLookup = @"
+                    SELECT store_id
+                    FROM dbo.SecondHandStores
+                    WHERE user_id = @user_id;";
+
+                using (SqlCommand lookup = new SqlCommand(storeLookup, con))
+                {
+                    lookup.Parameters.AddWithValue("@user_id", userId);
+
+                    object? raw = lookup.ExecuteScalar();
+
+                    if (raw == null || raw == DBNull.Value)
+                    {
+                        return results;
+                    }
+
+                    storeId = Convert.ToInt32(raw);
+                }
+
+                Dictionary<string, object> paramDic =
+                    new Dictionary<string, object>
+                    {
+                        { "@store_id", storeId }
+                    };
+
+                SqlCommand cmd = CreateCommand(
+                    SP_GET_COLLECTION_OFFERS_BY_STORE,
+                    con,
+                    paramDic
+                );
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        results.Add(new StoreCollectionOfferDto
+                        {
+                            RequestId = Convert.ToInt32(reader["request_id"]),
+
+                            AssociationName = reader["association_name"].ToString()!,
+
+                            AssociationCity = reader["association_city"] == DBNull.Value
+                                ? null : reader["association_city"].ToString(),
+
+                            AssociationType = reader["association_type"] == DBNull.Value
+                                ? null : reader["association_type"].ToString(),
+
+                            AssignmentStatus = reader["assignment_status"].ToString()!,
+
+                            RequestDate = Convert.ToDateTime(reader["request_date"])
+                        });
+                    }
+                }
+            }
+
+            return results;
         }
     }
 }
