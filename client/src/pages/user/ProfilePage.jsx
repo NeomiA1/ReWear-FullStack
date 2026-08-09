@@ -58,6 +58,12 @@ import {
 } from "../../utils/donationSendLog";
 
 import {
+  getOrCreateLocalCreatedAt,
+  formatLocalCreatedAt,
+  getBagDisplayName
+} from "../../utils/bagDisplay";
+
+import {
   useToast
 } from "../../hooks/useToast";
 
@@ -597,14 +603,20 @@ export default function ProfilePage() {
         imagePreview:
           null,
 
-        donationDate:
-          bag.createdAt
-            ? new Date(
-                bag.createdAt
-              ).toLocaleDateString(
-                "he-IL"
-              )
-            : "",
+        /*
+         * שם תצוגה + תאריך יצירה מקומי — לתצוגה בלבד (ראו utils/bagDisplay.js).
+         * לא משנים ולא ממציאים מזהה חדש לשק; bag.id (=bagId) נשאר ה-id האמיתי.
+         */
+        displayName:
+          getBagDisplayName(bag),
+
+        createdAtLabel:
+          formatLocalCreatedAt(
+            getOrCreateLocalCreatedAt(
+              user.userId,
+              bag.bagId
+            )
+          ),
 
         index:
           index + 1
@@ -931,7 +943,7 @@ export default function ProfilePage() {
 
 
                             <span className="font-semibold text-rw-title text-sm">
-                              שק {bag.index}
+                              {bag.displayName}
                             </span>
 
                           </div>
@@ -950,7 +962,7 @@ export default function ProfilePage() {
 
                           <span className="text-xs text-rw-sub">
                             {
-                              bag.donationDate
+                              bag.createdAtLabel
                             }
                           </span>
 
@@ -1046,6 +1058,8 @@ export default function ProfilePage() {
 
               <p className="text-xs text-rw-sub">
                 שק:{" "}
+                {selectedBag.displayName}
+                {" — "}
                 {[
                   selectedBag.size,
                   selectedBag.gender,

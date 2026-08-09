@@ -13,8 +13,19 @@ import { useToast } from "../../hooks/useToast";
 
 const EMPTY_BAG = () => ({
   size: "", age: "", gender: "", condition: "", description: "",
-  imagePreview: null, imageFile: null, imageError: null,
+  imagePreview: null, imageFile: null, imageError: null, descriptionError: null,
 });
+
+const MIN_DESCRIPTION_LENGTH = 5;
+
+// בדיקה של שדה התיאור בלבד — טרימינג לפני הבדיקה, ומחזירה הודעה בעברית
+// אם יש פחות מ-5 תווים שאינם רווחים, או null אם תקין.
+const getDescriptionError = (description) => {
+  const trimmed = (description || "").trim();
+  return trimmed.length < MIN_DESCRIPTION_LENGTH
+    ? "יש להזין תיאור של לפחות 5 תווים"
+    : null;
+};
 
 export default function UploadDonationPage() {
   const navigate = useNavigate();
@@ -35,8 +46,22 @@ export default function UploadDonationPage() {
   }, []);
 
   const updateBag = (bagId, field, value) => {
-    setBags(bags.map(bag =>
-      bag.id === bagId ? { ...bag, [field]: value } : bag
+    setBags(bags.map(bag => {
+      if (bag.id !== bagId) return bag;
+      const next = { ...bag, [field]: value };
+      // אם כבר מוצגת שגיאת תיאור, מעדכנים אותה באופן חי בזמן הקלדה
+      // כדי שהיא תיעלם ברגע שהתיאור הופך תקין — לא מציגים שגיאה חדשה
+      // באופן פרואקטיבי על שדה שעדיין לא נבדק.
+      if (field === "description" && bag.descriptionError) {
+        next.descriptionError = getDescriptionError(value);
+      }
+      return next;
+    }));
+  };
+
+  const handleDescriptionBlur = (bagId, description) => {
+    setBags((prev) => prev.map((b) =>
+      b.id === bagId ? { ...b, descriptionError: getDescriptionError(description) } : b
     ));
   };
 
@@ -144,6 +169,14 @@ export default function UploadDonationPage() {
   };
 
   const handleUpload = async () => {
+    // בדיקת תיאור — מוצגת מוטבעת בשדה, לא ב-Toast, ולא ניתן לשלוח
+    // את הבקשה לשרת כל עוד יש שק עם תיאור לא תקין.
+    const descriptionErrors = bags.map((bag) => getDescriptionError(bag.description));
+    if (descriptionErrors.some(Boolean)) {
+      setBags((prev) => prev.map((bag, i) => ({ ...bag, descriptionError: descriptionErrors[i] })));
+      return;
+    }
+
     const validationError = validateBags();
     if (validationError) {
       toast.warning(validationError);
@@ -313,11 +346,16 @@ export default function UploadDonationPage() {
 
             <textarea value={bag.description}
               onChange={(e) => updateBag(bag.id, "description", e.target.value)}
-              placeholder="תיאור קצר של הפריטים בשק (רשות)"
+              onBlur={(e) => handleDescriptionBlur(bag.id, e.target.value)}
+              placeholder="תיאור קצר של הפריטים בשק"
               rows={3}
-              className="w-full mt-3 border border-rw-border rounded-xl px-4 py-3
+              className={`w-full mt-3 border rounded-xl px-4 py-3
                          text-sm text-right outline-none bg-rw-input
-                         focus:border-rw-btn resize-none" />
+                         focus:border-rw-btn resize-none
+                         ${bag.descriptionError ? "border-red-400" : "border-rw-border"}`} />
+            {bag.descriptionError && (
+              <p className="text-red-500 text-xs text-right mt-1.5">{bag.descriptionError}</p>
+            )}
           </div>
         ))}
 

@@ -9,6 +9,11 @@ import DonationJourneyTimeline from "../../components/DonationJourneyTimeline";
 import { getDonationBagsByUserId } from "../../services/donationBagService";
 import { buildDonationJourney } from "../../utils/donationJourney";
 import { getDonationSendRecord } from "../../utils/donationSendLog";
+import {
+  getOrCreateLocalCreatedAt,
+  formatLocalCreatedAt,
+  getBagDisplayName,
+} from "../../utils/bagDisplay";
 
 export default function DonationStatusPage() {
   const navigate = useNavigate();
@@ -90,13 +95,19 @@ export default function DonationStatusPage() {
           const { steps, progressPercent } = buildDonationJourney(bag, sendRecord);
           const bagLabel = [bag.sizes, bag.targetGender, bag.clothesCondition]
             .filter(Boolean).join(" · ") || "שק תרומה";
+          const displayName = getBagDisplayName(bag);
+          const createdAtLabel = formatLocalCreatedAt(
+            getOrCreateLocalCreatedAt(user?.userId, bag.bagId)
+          );
 
           return (
             <div key={bag.bagId} className="bg-rw-card rounded-2xl shadow-sm p-4">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-rw-border">
                 <span className="text-2xl">🛍️</span>
                 <div className="text-right">
-                  <p className="font-semibold text-rw-title text-sm">{bagLabel}</p>
+                  <p className="font-semibold text-rw-title text-sm">{displayName}</p>
+                  <p className="text-rw-sub text-[11px] mt-0.5">{bagLabel}</p>
+                  <p className="text-rw-sub text-xs mt-0.5">{createdAtLabel}</p>
                   {sendRecord?.associationName && (
                     <p className="text-rw-sub text-xs mt-0.5">אל {sendRecord.associationName}</p>
                   )}
