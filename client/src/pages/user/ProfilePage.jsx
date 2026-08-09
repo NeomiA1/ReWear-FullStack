@@ -279,6 +279,14 @@ export default function ProfilePage() {
           };
 
 
+          // REWEAR_DEBUG_SUBMIT: temporary, remove after bagId trace is done
+          console.log("REWEAR_DEBUG_SUBMIT", {
+            selectedBagId: selectedBag.id,
+            requestBagId: request.bagId,
+            request
+          });
+
+
           /*
            * יצירת בקשת התרומה
            */

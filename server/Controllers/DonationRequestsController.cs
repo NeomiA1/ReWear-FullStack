@@ -162,6 +162,11 @@ namespace RewearApi.Controllers
             }
             catch (Exception ex)
             {
+                // REWEAR_DEBUG_SUBMIT: bagId added to every error branch
+                // below (temporary) so the Network tab response shows
+                // exactly which bagId the controller received, remove
+                // after the bagId trace is done.
+
                 if (
                     ex.Message.Contains(
                         "Association does not exist",
@@ -171,6 +176,7 @@ namespace RewearApi.Controllers
                 {
                     return NotFound(new
                     {
+                        bagId = request.BagId,
                         message =
                             "העמותה שנבחרה אינה קיימת."
                     });
@@ -185,6 +191,7 @@ namespace RewearApi.Controllers
                 {
                     return Conflict(new
                     {
+                        bagId = request.BagId,
                         message =
                             "העמותה אינה זמינה כרגע לקבלת תרומות."
                     });
@@ -204,6 +211,7 @@ namespace RewearApi.Controllers
                 {
                     return NotFound(new
                     {
+                        bagId = request.BagId,
                         message =
                             "השק לא נמצא או שאינו שייך למשתמש המחובר."
                     });
@@ -218,6 +226,7 @@ namespace RewearApi.Controllers
                 {
                     return BadRequest(new
                     {
+                        bagId = request.BagId,
                         message =
                             "לא ניתן לשלוח את התרומה. חובה למלא כמות פריטים, תיאור, מידה, קהל יעד, מצב בגדים ולהעלות לפחות תמונה אחת."
                     });
@@ -232,6 +241,7 @@ namespace RewearApi.Controllers
                 {
                     return Conflict(new
                     {
+                        bagId = request.BagId,
                         message =
                             "השק כבר נשלח לעמותה."
                     });
@@ -246,6 +256,7 @@ namespace RewearApi.Controllers
                 {
                     return BadRequest(new
                     {
+                        bagId = request.BagId,
                         message =
                             "חובה לבחור צורת מסירה."
                     });
@@ -253,6 +264,7 @@ namespace RewearApi.Controllers
 
                 return BadRequest(new
                 {
+                    bagId = request.BagId,
                     message = ex.Message
                 });
             }
