@@ -42,7 +42,7 @@ function RequestCard({ req, activeStores, onApproveSelf, onApproveAssistance, on
     toast.success("ימי ושעות האיסוף נשלחו לתורם/ת");
   };
 
-  const bagLabel  = [req.sizes, req.targetGender, req.clothesCondition]
+  const bagLabel  = [req.shortDescription, req.sizes, req.targetGender, req.clothesCondition]
     .filter(Boolean).join(" · ") || "שק תרומה";
   const donorName = req.donorName || "תורם";
 

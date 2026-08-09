@@ -622,7 +622,19 @@ namespace RewearApi.DAL
 
                             AssignmentStatus = reader["assignment_status"].ToString()!,
 
-                            RequestDate = Convert.ToDateTime(reader["request_date"])
+                            RequestDate = Convert.ToDateTime(reader["request_date"]),
+
+                            ShortDescription = reader["short_description"] == DBNull.Value
+                                ? null : reader["short_description"].ToString(),
+
+                            Sizes = reader["sizes"] == DBNull.Value
+                                ? null : reader["sizes"].ToString(),
+
+                            TargetGender = reader["target_gender"] == DBNull.Value
+                                ? null : reader["target_gender"].ToString(),
+
+                            ClothesCondition = reader["clothes_condition"] == DBNull.Value
+                                ? null : reader["clothes_condition"].ToString()
                         });
                     }
                 }
