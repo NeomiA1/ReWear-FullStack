@@ -283,7 +283,11 @@ export default function ProfilePage() {
           console.log("REWEAR_DEBUG_SUBMIT", {
             selectedBagId: selectedBag.id,
             requestBagId: request.bagId,
-            request
+            request,
+            availableBagIds: availableBags.map((b) => b.id),
+            allBagIds: allBags.map((b) => b.id),
+            serverBagsCount: serverBags.length,
+            serverBagIds: (serverBags || []).map((b) => b.bagId)
           });
 
 
