@@ -4,6 +4,7 @@ import { useUser } from "../../context/UserContext";
 import { registerStore } from "../../services/storeService";
 import AuthLayout from "../../components/AuthLayout";
 import { useToast } from "../../hooks/useToast";
+import CityCombobox from "../../components/CityCombobox";
 
 // המסך זהה לעמותה, רק עם שינויים קטנים:
 // - כותרת שונה
@@ -19,6 +20,7 @@ export default function RegisterShopPage() {
   const [email, setEmail]             = useState(""); // אימייל
   const [password, setPassword]       = useState(""); // סיסמה
   const [address, setAddress]         = useState(""); // כתובת
+  const [city, setCity]               = useState(""); // עיר
   const [logoPreview, setLogoPreview] = useState(null); // תצוגה מקדימה של לוגו
   const [loading, setLoading]         = useState(false);
 
@@ -33,7 +35,7 @@ export default function RegisterShopPage() {
   };
 
   const handleRegister = async () => {
-    if (!shopName || !bizNumber || !contact || !phone || !email || !password || !address) {
+    if (!shopName || !bizNumber || !contact || !phone || !email || !password || !address || !city) {
       toast.warning("אנא מלא/י את כל השדות");
       return;
     }
@@ -50,7 +52,7 @@ export default function RegisterShopPage() {
         email,
         password,
         phone,
-        city: null,
+        city,
         storeName: shopName,
         address,
       });
@@ -154,6 +156,8 @@ export default function RegisterShopPage() {
             className="border border-rw-border rounded-xl px-4 py-3
                        text-sm text-right outline-none bg-rw-input focus:border-rw-btn" />
         </div>
+
+        <CityCombobox value={city} onChange={setCity} />
 
         {/* כתובת */}
         <div className="flex flex-col gap-1">

@@ -5,6 +5,10 @@ import OrgBottomNav from "../../components/OrgBottomNav";
 import PageContainer from "../../components/PageContainer";
 import { checkAssociationExists } from "../../services/associationService";
 import { getNearbyStores } from "../../services/storeService";
+import {
+  sendCollaborationRequest,
+  getAssociationCollaborationRequests
+} from "../../services/collaborationService";
 import { useToast } from "../../hooks/useToast";
 import { useNotifications } from "../../hooks/useNotifications";
 import { getCollabStatusInfo } from "../../utils/statusLabels";
@@ -18,7 +22,7 @@ const DEMO_STORES = [
 
 export default function OrgHomePage() {
   const navigate = useNavigate();
-  const { user, logout, collaborations, sendCollaborationRequest, sentDonations,
+  const { user, logout, sentDonations,
            getUrgentNeeds, updateUrgentNeeds } = useUser();
   const toast = useToast();
   const { unreadCount } = useNotifications();
@@ -53,10 +57,41 @@ export default function OrgHomePage() {
     updateUrgentNeeds(orgName, next);
   };
 
+  const handleSendCollabRequest = async (store) => {
+    try {
+      await sendCollaborationRequest(store.id);
+      await refreshCollabRequests();
+    } catch (err) {
+      let message = "כבר נשלחה בקשה לחנות זו";
+      try {
+        message = JSON.parse(err)?.message || message;
+      } catch {
+        // err wasn't JSON — keep the default message
+      }
+      toast.warning(message);
+    }
+  };
+
   const [storeList, setStoreList] = useState(DEMO_STORES);
   const [storesSource, setStoresSource] = useState("demo"); // "demo" | "real"
   const [loadingStores, setLoadingStores] = useState(true);
   const [storesError, setStoresError] = useState(null);
+  const [myCollabRequests, setMyCollabRequests] = useState([]);
+
+  const refreshCollabRequests = async () => {
+    if (!user?.userId) return;
+    try {
+      const requests = await getAssociationCollaborationRequests(user.userId);
+      setMyCollabRequests(requests);
+    } catch {
+      // best-effort — leave the list as-is on failure
+    }
+  };
+
+  useEffect(() => {
+    refreshCollabRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,7 +101,7 @@ export default function OrgHomePage() {
       setStoresError(null);
 
       try {
-   
+
         const realAssociation = await checkAssociationExists(orgName, user?.email || "");
 
         if (!realAssociation) {
@@ -322,31 +357,28 @@ export default function OrgHomePage() {
                        store.city.toLowerCase().includes(q) ||
                        store.items.toLowerCase().includes(q);
               }).map((store) => {
-                const existing = collaborations.find(
-                  c => c.shopName === store.name && c.status !== "rejected"
+                const existing = myCollabRequests.find(
+                  c => c.storeId === store.id && c.requestStatus !== "Rejected"
                 );
+                const existingStatus = existing?.requestStatus?.toLowerCase();
                 return (
                   <div key={store.id}
                     className="bg-rw-card rounded-2xl shadow-sm p-4
                                flex items-center justify-between">
-                    {existing?.status === "approved" ? (
-                      <button onClick={() => navigate(`/org/chat/${existing.id}`)}
+                    {existingStatus === "approved" ? (
+                      <button onClick={() => navigate(`/org/chat/${existing.collaborationRequestId}`)}
                         className="bg-rw-btn/10 text-rw-btn border border-rw-btn/30
                                    rounded-xl px-3 py-2 text-xs font-semibold
                                    whitespace-nowrap shrink-0 flex items-center gap-1">
                         <span>💬</span><span>צ׳אט</span>
                       </button>
-                    ) : existing?.status === "pending" ? (
+                    ) : existingStatus === "pending" ? (
                       <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0
                                        ${getCollabStatusInfo("pending").color}`}>
                         {getCollabStatusInfo("pending").label}
                       </span>
                     ) : (
-                      <button onClick={() => {
-                          const org = { name: orgName, city: "", types: "" };
-                          const sent = sendCollaborationRequest(org, store);
-                          if (!sent) toast.warning("כבר נשלחה בקשה לחנות זו");
-                        }}
+                      <button onClick={() => handleSendCollabRequest(store)}
                         className="bg-rw-btn text-white rounded-xl px-3 py-2
                                    text-xs font-semibold active:bg-rw-btn-hover
                                    whitespace-nowrap shrink-0">

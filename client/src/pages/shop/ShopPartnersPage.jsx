@@ -1,10 +1,15 @@
 
 
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import ShopBottomNav from "../../components/ShopBottomNav";
 import PageContainer from "../../components/PageContainer";
 import { getCollabStatusInfo } from "../../utils/statusLabels";
+import {
+  getStoreCollaborationRequests,
+  respondToCollaborationRequest
+} from "../../services/collaborationService";
 
 function CollabCard({ collab, onApprove, onReject, onChat }) {
   const statusInfo = getCollabStatusInfo(collab.status);
@@ -65,15 +70,49 @@ function CollabCard({ collab, onApprove, onReject, onChat }) {
   );
 }
 
+function mapCollabRequest(r) {
+  return {
+    id: r.collaborationRequestId,
+    orgName: r.associationName,
+    orgCity: r.associationCity || "",
+    orgTypes: r.associationType || "",
+    status: (r.requestStatus || "").toLowerCase(),
+    date: new Date(r.requestDate).toLocaleDateString("he-IL")
+  };
+}
+
 export default function ShopPartnersPage() {
   const navigate = useNavigate();
-  const { collaborations, updateCollaboration } = useUser();
+  const { user } = useUser();
+  const [collaborations, setCollaborations] = useState([]);
+
+  const loadCollaborations = async () => {
+    if (!user?.userId) return;
+    try {
+      const requests = await getStoreCollaborationRequests(user.userId);
+      setCollaborations(requests.map(mapCollabRequest));
+    } catch {
+      // best-effort — leave the list as-is on failure
+    }
+  };
+
+  useEffect(() => {
+    loadCollaborations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]);
+
   const pending  = collaborations.filter(c => c.status === "pending");
   const approved = collaborations.filter(c => c.status === "approved");
   const rejected = collaborations.filter(c => c.status === "rejected");
 
-  const handleApprove = (id) => updateCollaboration(id, { status: "approved" });
-  const handleReject  = (id) => updateCollaboration(id, { status: "rejected" });
+  const handleApprove = async (id) => {
+    await respondToCollaborationRequest(id, "approved");
+    await loadCollaborations();
+  };
+  const handleReject = async (id) => {
+    await respondToCollaborationRequest(id, "rejected");
+    await loadCollaborations();
+  };
   const handleChat    = (id) => navigate(`/shop/chat/${id}`);
 
   return (
