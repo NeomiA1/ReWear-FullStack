@@ -1,8 +1,10 @@
 // src/components/OrgBottomNav.jsx
 // הוספנו "שיתופים" עם גישה לצ'אט עם חנויות
 
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { getAssociationCollaborationRequests } from "../services/collaborationService";
 import DesktopSidebar from "./DesktopSidebar";
 
 const NAV_ITEMS = [
@@ -15,10 +17,23 @@ const NAV_ITEMS = [
 
 export default function OrgBottomNav({ active }) {
   const navigate = useNavigate();
-  const { collaborations } = useUser();
+  const { user } = useUser();
 
-  // מספר שיתופים פעילים לתג
-  const activeCollabs = (collaborations || []).filter(c => c.status === "approved").length;
+  // מספר שיתופים פעילים לתג — מהשרת (AssociationStoreRequests), לא מ-localStorage
+  const [activeCollabs, setActiveCollabs] = useState(0);
+
+  useEffect(() => {
+    if (!user?.userId) return;
+    let cancelled = false;
+    getAssociationCollaborationRequests(user.userId)
+      .then((requests) => {
+        if (!cancelled) {
+          setActiveCollabs(requests.filter(r => r.requestStatus === "Accepted").length);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user?.userId]);
 
   return (
     <>
