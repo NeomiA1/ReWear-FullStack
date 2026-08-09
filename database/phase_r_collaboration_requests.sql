@@ -194,7 +194,9 @@ BEGIN
 
         IF UPPER(LTRIM(RTRIM(@new_status))) IN (N'APPROVED', N'ACCEPTED')
         BEGIN
-            SET @normalized_status = N'Approved';
+            -- CHK_AssociationStoreRequests_request_status only allows
+            -- 'Pending' / 'Accepted' / 'Rejected' / 'Expired' -- not 'Approved'.
+            SET @normalized_status = N'Accepted';
         END
         ELSE IF UPPER(LTRIM(RTRIM(@new_status))) = N'REJECTED'
         BEGIN

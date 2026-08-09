@@ -360,7 +360,12 @@ export default function OrgHomePage() {
                 const existing = myCollabRequests.find(
                   c => c.storeId === store.id && c.requestStatus !== "Rejected"
                 );
-                const existingStatus = existing?.requestStatus?.toLowerCase();
+                // DB status word is "Accepted" (CHK_AssociationStoreRequests_request_status
+                // doesn't allow "Approved") -- translated here to match this page's
+                // existing "approved" terminology.
+                const rawExistingStatus = existing?.requestStatus?.toLowerCase();
+                const existingStatus =
+                  rawExistingStatus === "accepted" ? "approved" : rawExistingStatus;
                 return (
                   <div key={store.id}
                     className="bg-rw-card rounded-2xl shadow-sm p-4

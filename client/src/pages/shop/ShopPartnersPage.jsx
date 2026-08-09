@@ -71,12 +71,16 @@ function CollabCard({ collab, onApprove, onReject, onChat }) {
 }
 
 function mapCollabRequest(r) {
+  // DB status word is "Accepted" (CHK_AssociationStoreRequests_request_status
+  // doesn't allow "Approved") -- the existing UI was written expecting
+  // "approved", so translate it here rather than touch the UI.
+  const rawStatus = (r.requestStatus || "").toLowerCase();
   return {
     id: r.collaborationRequestId,
     orgName: r.associationName,
     orgCity: r.associationCity || "",
     orgTypes: r.associationType || "",
-    status: (r.requestStatus || "").toLowerCase(),
+    status: rawStatus === "accepted" ? "approved" : rawStatus,
     date: new Date(r.requestDate).toLocaleDateString("he-IL")
   };
 }
