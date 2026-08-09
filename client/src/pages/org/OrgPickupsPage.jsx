@@ -97,8 +97,6 @@ export default function OrgPickupsPage() {
   const { sentDonations, updateSentDonation } = useUser();
   const { unreadCount } = useNotifications();
   const [activeFilter, setActiveFilter] = useState("all");
-
-  // מציגים רק בקשות שעברו אישור
   const pickups = sentDonations.filter(d =>
     ["approved", "scheduled", "collected"].includes(d.status)
   );

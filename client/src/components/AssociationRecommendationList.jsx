@@ -36,12 +36,12 @@ export default function AssociationRecommendationList({ bag = null, selectedId =
   const [availableOnly, setAvailableOnly] = useState(() => getRecoProfile(user?.userId).lastFilters.availableOnly || false);
   const [sortBy, setSortBy] = useState(() => getRecoProfile(user?.userId).lastFilters.sortBy || "recommended");
 
-  // רק אם המשתמש עצמו מתחלף (למשל לוגין/לוגאאוט) טוענים מחדש את הפרופיל.
+
   useEffect(() => {
     setProfile(getRecoProfile(user?.userId));
   }, [user?.userId]);
 
-  // טעינת רשימת העמותות ומילון ה-Causes מה-API — פעם אחת, לא תלוי בפילטרים/משתמש.
+  
   useEffect(() => {
     let cancelled = false;
 
