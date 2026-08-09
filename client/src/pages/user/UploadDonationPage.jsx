@@ -5,7 +5,7 @@ import BottomNav from "../../components/BottomNav";
 import PageContainer from "../../components/PageContainer";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { useConfirmDialog } from "../../hooks/useConfirmDialog";
-import { createDonationBag } from "../../services/donationBagService";
+import { createDonationBag, uploadBagMedia } from "../../services/donationBagService";
 import { getBagCategory } from "../../utils/associationRecommendation";
 import { recordDonatedCategory } from "../../utils/recommendationHistory";
 import { validateDonationImage, MAX_IMAGES } from "../../utils/imageValidation";
@@ -169,15 +169,30 @@ export default function UploadDonationPage() {
           targetGender:     bag.gender,
           clothesCondition: bag.condition,
         };
-        await createDonationBag(donationBag);
+        const created = await createDonationBag(donationBag);
+
+        // רק אחרי ששני השלבים הצליחו (יצירת השק + העלאת התמונה)
+        // השק נחשב הושלם. אם ההעלאה נכשלת עוצרים מיד ולא ממשיכים
+        // לשק הבא, כדי לא להשאיר חלק מהשקים בלי תמונה.
+        try {
+          await uploadBagMedia(created.bagId, bag.imageFile);
+        } catch (uploadError) {
+          throw new Error(
+            `השק נשמר אך העלאת התמונה נכשלה: ${uploadError}. נסה/י שוב.`
+          );
+        }
 
         recordDonatedCategory(user.userId, getBagCategory(bag));
       }
-      
+
       setUploaded(true);
     } catch (error) {
       console.error(error);
-      toast.error("שגיאה בהעלאת השק: " + error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "שגיאה בהעלאת השק: " + error
+      );
     } finally {
       setLoading(false);
     }

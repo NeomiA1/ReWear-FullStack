@@ -15,6 +15,20 @@ function getAuthHeaders() {
   };
 }
 
+/*
+ * ללא Content-Type: multipart/form-data דורש שהדפדפן
+ * יגדיר בעצמו את ה-boundary.
+ */
+function getAuthHeaderOnly() {
+  const savedUser = JSON.parse(
+    localStorage.getItem("rewear_user") || "null"
+  );
+
+  const token = savedUser?.token;
+
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 
 /*
  * יצירת שק חדש
@@ -39,6 +53,48 @@ export async function createDonationBag(bag) {
     return JSON.parse(data);
   } catch {
     return data;
+  }
+}
+
+
+/*
+ * העלאת תמונה לשק קיים
+ */
+export async function uploadBagMedia(bagId, file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(
+    `${API_BASE_URL}/DonationBags/${bagId}/media`,
+    {
+      method: "POST",
+      headers: getAuthHeaderOnly(),
+      body: formData
+    }
+  );
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    try {
+      const parsed = JSON.parse(responseText);
+
+      if (parsed?.message) {
+        throw parsed.message;
+      }
+    } catch (error) {
+      if (typeof error === "string") {
+        throw error;
+      }
+    }
+
+    throw responseText || "שגיאה בהעלאת התמונה";
+  }
+
+  try {
+    return JSON.parse(responseText);
+  } catch {
+    return responseText;
   }
 }
 

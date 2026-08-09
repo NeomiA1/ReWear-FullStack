@@ -63,11 +63,14 @@ namespace RewearApi.Controllers
 
             try
             {
-                _donationBagDal
-                    .CreateDonationBag(bag);
+                int bagId =
+                    _donationBagDal
+                        .CreateDonationBag(bag);
 
                 return Ok(new
                 {
+                    bagId,
+
                     message =
                         "Donation bag created successfully"
                 });

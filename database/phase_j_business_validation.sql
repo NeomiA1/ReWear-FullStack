@@ -7,6 +7,13 @@
    DonationBags.item_count here has been deleted rather than
    fixed forward -- there is nothing to add, and no item_count
    column exists or should exist on Azure.
+
+   UPDATE: sp_CreateDonationBag now also selects back the new
+   bag_id (SCOPE_IDENTITY()) so callers can chain the photo
+   upload (POST /DonationBags/{bagId}/media) immediately after
+   creation. This is a completion of this procedure's original
+   contract, not a new phase -- run this file again against
+   Azure to pick up the change.
    ========================================================= */
 
 
@@ -107,6 +114,8 @@ BEGIN
         NULL,
         N'Draft'
     );
+
+    SELECT CAST(SCOPE_IDENTITY() AS INT) AS bag_id;
 END
 GO
 

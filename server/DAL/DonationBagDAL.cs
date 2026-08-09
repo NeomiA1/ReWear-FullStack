@@ -26,7 +26,7 @@ namespace RewearApi.DAL
             "sp_DeleteDonationBag";
 
 
-        public void CreateDonationBag(DonationBag bag)
+        public int CreateDonationBag(DonationBag bag)
         {
             using (
                 SqlConnection con =
@@ -73,7 +73,9 @@ namespace RewearApi.DAL
                     paramDic
                 );
 
-                cmd.ExecuteNonQuery();
+                object result = cmd.ExecuteScalar();
+
+                return Convert.ToInt32(result);
             }
         }
 
