@@ -26,10 +26,22 @@
 --   NEW      sp_RespondToCollectionOffer
 --   NEW      sp_GetCollectionOffersByStore
 --
--- Deliberately excluded: notifications, expiration jobs, a rejection
--- history table (declining simply reverts assignment_status to NULL-
--- equivalent by being overwritten on the next offer -- no audit
--- trail, a named and accepted trade-off from the design review).
+-- Deliberately excluded: expiration jobs, a rejection history table
+-- (declining simply reverts assignment_status to NULL-equivalent by
+-- being overwritten on the next offer -- no audit trail, a named and
+-- accepted trade-off from the design review).
+--
+-- UPDATE (post first end-to-end test): two UX gaps found --
+--   1. sp_RespondToCollectionOffer now also inserts a Notification
+--      for the Association's user, reusing the existing recipient_type
+--      = 'User' convention (same as sp_RespondDonationRequest) -- the
+--      Store's own accept/reject already gets a client-side toast, it
+--      only needed a way to tell the Association something happened.
+--   2. sp_GetCollectionOffersByStore now also joins DonationBags so
+--      the Store can see which bag (description/sizes/gender/
+--      condition) the request refers to -- it previously returned
+--      only Association info. Re-run this whole file against Azure to
+--      pick up both changes.
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -324,10 +336,16 @@ BEGIN
         DECLARE @current_assignment_status NVARCHAR(20);
         DECLARE @normalized_status NVARCHAR(20);
 
+        DECLARE @association_user_id INT;
+        DECLARE @store_name NVARCHAR(200);
+        DECLARE @notification_message NVARCHAR(500);
+
         SELECT
             @assigned_store_id = dr.assigned_store_id,
-            @current_assignment_status = dr.assignment_status
+            @current_assignment_status = dr.assignment_status,
+            @association_user_id = a.user_id
         FROM dbo.DonationRequests dr WITH (UPDLOCK, HOLDLOCK)
+        INNER JOIN dbo.Associations a ON dr.association_id = a.association_id
         WHERE dr.request_id = @request_id;
 
         IF @assigned_store_id IS NULL
@@ -335,7 +353,9 @@ BEGIN
             THROW 50430, 'No collection offer exists for this donation request.', 1;
         END;
 
-        SELECT @owner_store_user_id = user_id
+        SELECT
+            @owner_store_user_id = user_id,
+            @store_name = store_name
         FROM dbo.SecondHandStores
         WHERE store_id = @assigned_store_id;
 
@@ -352,10 +372,12 @@ BEGIN
         IF UPPER(LTRIM(RTRIM(@new_status))) IN (N'APPROVED', N'ACCEPTED')
         BEGIN
             SET @normalized_status = N'Accepted';
+            SET @notification_message = N'החנות ' + ISNULL(@store_name, N'') + N' אישרה את בקשת הסיוע באיסוף.';
         END
         ELSE IF UPPER(LTRIM(RTRIM(@new_status))) = N'REJECTED'
         BEGIN
             SET @normalized_status = N'Declined';
+            SET @notification_message = N'החנות ' + ISNULL(@store_name, N'') + N' דחתה את בקשת הסיוע באיסוף.';
         END
         ELSE
         BEGIN
@@ -365,6 +387,11 @@ BEGIN
         UPDATE dbo.DonationRequests
         SET assignment_status = @normalized_status
         WHERE request_id = @request_id;
+
+        INSERT INTO dbo.Notifications
+        (recipient_type, recipient_id, notification_type, related_entity_id, message_text, is_read, created_at)
+        VALUES
+        (N'User', @association_user_id, N'CollectionOfferResponse', @request_id, @notification_message, 0, SYSDATETIME());
 
         COMMIT TRANSACTION;
 
@@ -396,10 +423,21 @@ BEGIN
         a.city AS association_city,
         a.association_type,
         dr.assignment_status,
-        dr.request_date
+        dr.request_date,
+
+        db.short_description,
+        db.sizes,
+        db.target_gender,
+        db.clothes_condition
+
     FROM dbo.DonationRequests dr
     INNER JOIN dbo.Associations a
         ON dr.association_id = a.association_id
+    INNER JOIN dbo.DonationRequestBags drb
+        ON dr.request_id = drb.request_id
+        AND (drb.is_active = 1 OR drb.is_active IS NULL)
+    INNER JOIN dbo.DonationBags db
+        ON drb.bag_id = db.bag_id
     WHERE dr.assigned_store_id = @store_id
     ORDER BY dr.request_date DESC;
 END

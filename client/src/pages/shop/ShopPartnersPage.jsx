@@ -14,6 +14,7 @@ import {
   getStoreCollectionOffers,
   respondToCollectionOffer
 } from "../../services/donationRequestService";
+import { useToast } from "../../hooks/useToast";
 
 // variant prop kept minimal on purpose: onChat missing => no chat button
 // (collection offers have no chat step), approveLabel lets the button text
@@ -45,6 +46,13 @@ function CollabCard({ collab, onApprove, onReject, onChat, approveLabel = "אש�
           {statusInfo.label}
         </span>
       </div>
+
+      {/* השק המדובר -- רק לבקשות סיוע באיסוף, שיתופי פעולה רגילים אין להם bagLabel */}
+      {collab.bagLabel && (
+        <div className="bg-rw-bg rounded-xl px-3 py-2">
+          <p className="text-rw-title text-xs text-right font-medium">🛍️ {collab.bagLabel}</p>
+        </div>
+      )}
 
       {/* תאריך בקשה */}
       <div className="bg-rw-bg rounded-xl px-3 py-2">
@@ -103,13 +111,17 @@ function mapCollectionOffer(r) {
     rawStatus === "offered" ? "pending" :
     rawStatus === "accepted" ? "approved" :
     rawStatus === "declined" ? "rejected" : rawStatus;
+  const bagLabel =
+    [r.shortDescription, r.sizes, r.targetGender, r.clothesCondition]
+      .filter(Boolean).join(" · ") || null;
   return {
     id: r.requestId,
     orgName: r.associationName,
     orgCity: r.associationCity || "",
     orgTypes: r.associationType || "",
     status,
-    date: new Date(r.requestDate).toLocaleDateString("he-IL")
+    date: new Date(r.requestDate).toLocaleDateString("he-IL"),
+    bagLabel
   };
 }
 
@@ -121,6 +133,7 @@ const TABS = [
 export default function ShopPartnersPage() {
   const navigate = useNavigate();
   const { user } = useUser();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState("partnerships");
   const [collaborations, setCollaborations] = useState([]);
   const [collectionOffers, setCollectionOffers] = useState([]);
@@ -172,12 +185,22 @@ export default function ShopPartnersPage() {
   const handleChat = (id) => navigate(`/shop/chat/${id}`);
 
   const handleAcceptOffer = async (id) => {
-    await respondToCollectionOffer(id, "approved");
-    await loadCollectionOffers();
+    try {
+      await respondToCollectionOffer(id, "approved");
+      await loadCollectionOffers();
+      toast.success("האיסוף אושר! העמותה קיבלה עדכון.");
+    } catch (err) {
+      toast.error(typeof err === "string" ? err : "שגיאה באישור האיסוף");
+    }
   };
   const handleDeclineOffer = async (id) => {
-    await respondToCollectionOffer(id, "rejected");
-    await loadCollectionOffers();
+    try {
+      await respondToCollectionOffer(id, "rejected");
+      await loadCollectionOffers();
+      toast.success("הבקשה נדחתה. העמותה קיבלה עדכון.");
+    } catch (err) {
+      toast.error(typeof err === "string" ? err : "שגיאה בדחיית הבקשה");
+    }
   };
 
   return (
