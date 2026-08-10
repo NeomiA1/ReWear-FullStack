@@ -1,23 +1,55 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import ShopBottomNav from "../../components/ShopBottomNav";
 import PageContainer from "../../components/PageContainer";
 import { useNotifications } from "../../hooks/useNotifications";
+import { getStoreCollaborationRequests } from "../../services/collaborationService";
 import { getCollabStatusInfo } from "../../utils/statusLabels";
+
+// Mirrors ShopPartnersPage's mapCollabRequest: DB status word is "Accepted"
+// (CHK_AssociationStoreRequests_request_status doesn't allow "Approved") --
+// translated here to the "approved" vocabulary this page's UI already expects.
+function mapCollabRequest(r) {
+  const rawStatus = (r.requestStatus || "").toLowerCase();
+  return {
+    id: r.collaborationRequestId,
+    orgName: r.associationName,
+    orgCity: r.associationCity || "",
+    orgTypes: r.associationType || "",
+    status: rawStatus === "accepted" ? "approved" : rawStatus,
+    date: new Date(r.requestDate).toLocaleDateString("he-IL")
+  };
+}
 
 export default function ShopHomePage() {
   const navigate = useNavigate();
-  const { user, logout, collaborations } = useUser();
+  const { user, logout } = useUser();
   const { unreadCount } = useNotifications();
 
   const savedUser = JSON.parse(localStorage.getItem("rewear_user") || "{}");
   const shopName = user?.shopName || savedUser?.shopName || "חנות יד שנייה";
 
-  const pendingRequests = (collaborations || []).filter(
+  const [collaborations, setCollaborations] = useState([]);
+
+  useEffect(() => {
+    if (!user?.userId) return;
+    const loadCollaborations = async () => {
+      try {
+        const requests = await getStoreCollaborationRequests(user.userId);
+        setCollaborations(requests.map(mapCollabRequest));
+      } catch {
+        // best-effort — leave the list as-is on failure
+      }
+    };
+    loadCollaborations();
+  }, [user?.userId]);
+
+  const pendingRequests = collaborations.filter(
     (c) => c.status === "pending"
   );
 
-  const approvedCollaborations = (collaborations || []).filter(
+  const approvedCollaborations = collaborations.filter(
     (c) => c.status === "approved"
   );
 
