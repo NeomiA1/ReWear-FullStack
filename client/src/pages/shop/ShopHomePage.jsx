@@ -171,14 +171,6 @@ export default function ShopHomePage() {
                   className="bg-rw-card rounded-2xl shadow-sm p-4
                              flex items-center justify-between"
                 >
-                  <button
-                    onClick={() => navigate("/shop/partners")}
-                    className="bg-rw-btn text-white rounded-xl px-3 py-2
-                               text-xs font-semibold active:bg-rw-btn-hover"
-                  >
-                    לצפייה
-                  </button>
-
                   <div className="flex items-center gap-3">
                     <div className="flex flex-col items-end gap-0.5">
                       <span className="font-semibold text-rw-title text-sm">
@@ -203,6 +195,14 @@ export default function ShopHomePage() {
                       <span className="text-xl">🤲</span>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => navigate("/shop/partners")}
+                    className="bg-rw-btn text-white rounded-xl px-3 py-2
+                               text-xs font-semibold active:bg-rw-btn-hover"
+                  >
+                    לצפייה
+                  </button>
                 </div>
               ))}
             </div>
@@ -243,21 +243,8 @@ export default function ShopHomePage() {
                 <div
                   key={collab.id}
                   className="bg-rw-card rounded-2xl shadow-sm p-4
-                             flex items-center justify-end gap-4"
+                             flex items-center justify-between"
                 >
-                  <button
-                    onClick={() =>
-                      navigate(`/shop/chat/${collab.id}`)
-                    }
-                    className="bg-rw-btn/10 text-rw-btn
-                               border border-rw-btn/30 rounded-xl
-                               px-3 py-2 text-xs font-semibold
-                               flex items-center gap-1"
-                  >
-                    <span>💬</span>
-                    <span>צ׳אט</span>
-                  </button>
-
                   <div className="flex items-center gap-3">
                     <div className="flex flex-col items-end gap-0.5">
                       <span className="font-semibold text-rw-title text-sm">
@@ -282,6 +269,19 @@ export default function ShopHomePage() {
                       <span className="text-xl">🤝</span>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() =>
+                      navigate(`/shop/chat/${collab.id}`)
+                    }
+                    className="bg-rw-btn/10 text-rw-btn
+                               border border-rw-btn/30 rounded-xl
+                               px-3 py-2 text-xs font-semibold
+                               flex items-center gap-1"
+                  >
+                    <span>💬</span>
+                    <span>צ׳אט</span>
+                  </button>
                 </div>
               ))}
             </div>
