@@ -285,18 +285,6 @@ export default function ProfilePage() {
           };
 
 
-          // REWEAR_DEBUG_SUBMIT: temporary, remove after bagId trace is done
-          console.log("REWEAR_DEBUG_SUBMIT", {
-            selectedBagId: selectedBag.id,
-            requestBagId: request.bagId,
-            request,
-            availableBagIds: availableBags.map((b) => b.id),
-            allBagIds: allBags.map((b) => b.id),
-            serverBagsCount: serverBags.length,
-            serverBagIds: (serverBags || []).map((b) => b.bagId)
-          });
-
-
           /*
            * יצירת בקשת התרומה
            */
@@ -879,17 +867,11 @@ export default function ProfilePage() {
 
                   <div
                     key={bag.id}
-                    onClick={() => {
-                      // REWEAR_DEBUG_SELECT: temporary, remove after selection trace is done
-                      console.log("REWEAR_DEBUG_SELECT", {
-                        clickedBagId: bag.id,
-                        previousSelectedBagId: selectedBag?.id ?? null,
-                        newSelectedBagId: bag.id
-                      });
+                    onClick={() =>
                       setSelectedBag(
                         bag
-                      );
-                    }}
+                      )
+                    }
                     className={`
                       bg-rw-card
                       rounded-2xl
