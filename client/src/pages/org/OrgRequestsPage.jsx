@@ -288,7 +288,7 @@ export default function OrgRequestsPage() {
   }, [user?.userId]);
 
   const pendingRequests    = requests.filter(r => r.requestStatus === "Pending");
-  const inProgressRequests = requests.filter(r => r.requestStatus === "Approved");
+  const inProgressRequests = requests.filter(r => r.requestStatus === "Approved" && !r.selectedPickupDay);
   const approvedCount      = inProgressRequests.length;
 
   const handleApproveSelf = async (requestId) => {

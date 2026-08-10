@@ -2,9 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav";
 import PageContainer from "../../components/PageContainer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getDonationStatusInfo } from "../../utils/statusLabels";
 import { useNotifications } from "../../hooks/useNotifications";
+import { getAssociationDonationRequests } from "../../services/donationRequestService";
 
 const FILTERS = [
   { id: "all",       label: "הכל"     },
@@ -94,12 +95,40 @@ function PickupCard({ pickup, onCollect, onCancel }) {
 
 export default function OrgPickupsPage() {
   const navigate = useNavigate();
-  const { sentDonations, updateSentDonation } = useUser();
+  const { user, updateSentDonation } = useUser();
   const { unreadCount } = useNotifications();
   const [activeFilter, setActiveFilter] = useState("all");
-  const pickups = sentDonations.filter(d =>
-    ["approved", "scheduled", "collected"].includes(d.status)
-  );
+  const [requests, setRequests] = useState([]);
+
+  const loadRequests = async () => {
+    if (!user?.userId) return;
+    try {
+      const data = await getAssociationDonationRequests(user.userId);
+      setRequests(data);
+    } catch {
+      // best-effort — leave the list as-is on failure
+    }
+  };
+
+  useEffect(() => {
+    loadRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]);
+
+  const pickups = requests
+    .filter(r => r.requestStatus === "Approved" && r.selectedPickupDay)
+    .map(r => ({
+      id: r.requestId,
+      status: r.selectedPickupDay ? "scheduled" : "approved",
+      bag: { size: r.sizes, gender: r.targetGender, condition: r.clothesCondition },
+      donor: r.donorName,
+      date: new Date(r.requestDate).toLocaleDateString("he-IL"),
+      availableDays: (r.proposedPickupDays || "").split(",").filter(Boolean),
+      availableTimes: (r.proposedPickupTimes || "").split(",").filter(Boolean),
+      pickupScheduled: Boolean(r.selectedPickupDay),
+      pickupTime: `${r.selectedPickupDay}, ${r.selectedPickupTime}`,
+      pickupAddress: r.pickupAddress,
+    }));
 
   const visiblePickups = activeFilter === "all"
     ? pickups
