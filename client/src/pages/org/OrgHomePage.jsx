@@ -204,20 +204,22 @@ export default function OrgHomePage() {
         </div>
       </div>
 
-      <div className="px-5 pt-5 flex flex-col gap-6">
+      <div className="px-5 pt-5 flex flex-col gap-5">
 
         {/* ── לוח בקרה – KPI מחושב מ-Context ── */}
         <div>
-          <h2 className="font-bold text-rw-title text-base mb-3">לוח בקרה</h2>
+          <h2 className="font-bold text-rw-title text-base mb-4">לוח בקרה</h2>
           <div className="grid grid-cols-2 gap-4">
             {KPI_DATA.map((kpi) => (
               <div key={kpi.id}
-                className="bg-rw-card rounded-2xl p-4 shadow-sm flex flex-col items-end gap-1">
+                className="bg-rw-card rounded-2xl p-4 shadow-sm flex flex-col items-center gap-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm text-rw-sub">{kpi.label}</span>
                   <span className="text-xl">{kpi.icon}</span>
                 </div>
-                <span className="text-2xl font-bold text-rw-title">{kpi.value}</span>
+                <span className="text-3xl font-extrabold text-rw-title leading-tight my-0.5">
+                  {kpi.value}
+                </span>
                 <span className={`text-xs font-medium
                   ${kpi.positive ? "text-green-500" : "text-rw-sub"}`}>
                   {kpi.change}
@@ -229,13 +231,13 @@ export default function OrgHomePage() {
 
         {/* ── צרכים דחופים – ניתנים לעריכה ── */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-rw-title text-base">צרכים דחופים</h2>
             <button
               onClick={() => setIsEditing(prev => !prev)}
               className="text-rw-green text-sm cursor-pointer">
               {isEditing ? "✕ סגור" : "✏️ עריכה"}
             </button>
-            <h2 className="font-bold text-rw-title text-base">צרכים דחופים</h2>
           </div>
 
           {/* שדה הוספה */}
@@ -269,21 +271,25 @@ export default function OrgHomePage() {
               <div key={need.id}
                 className="bg-rw-card rounded-2xl shadow-sm p-4
                            flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="font-semibold text-rw-title text-sm">{need.title}</span>
+                    {need.description && (
+                      <span className="text-rw-sub text-xs">{need.description}</span>
+                    )}
+                  </div>
+                  <div className="w-10 h-10 bg-rw-input rounded-xl
+                                  flex items-center justify-center shrink-0">
+                    <span className="text-xl">{need.icon}</span>
+                  </div>
+                </div>
+
                 {isEditing && (
                   <button onClick={() => handleDeleteNeed(need.id)}
                     className="text-red-400 text-xl shrink-0">
                     🗑️
                   </button>
                 )}
-                <div className="flex flex-col items-end gap-1 flex-1">
-                  <span className="font-semibold text-rw-title text-sm">{need.title}</span>
-                  {need.description && (
-                    <span className="text-rw-sub text-xs">{need.description}</span>
-                  )}
-                </div>
-                <div className="w-10 h-10 bg-rw-input rounded-xl flex items-center justify-center mr-3">
-                  <span className="text-xl">{need.icon}</span>
-                </div>
               </div>
             ))}
           </div>
@@ -291,16 +297,16 @@ export default function OrgHomePage() {
 
         {/* ── שיתוף פעולה עם חנות יד שנייה ── */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-rw-title text-base">
+              שיתוף פעולה עם חנות יד שנייה
+            </h2>
             {selectedStore ? (
               <button onClick={() => setSelectedStore(null)}
                 className="text-rw-green text-sm font-semibold">
                 החלף חנות
               </button>
             ) : <span />}
-            <h2 className="font-bold text-rw-title text-base">
-              שיתוף פעולה עם חנות יד שנייה
-            </h2>
           </div>
 
           {selectedStore ? (
@@ -347,8 +353,8 @@ export default function OrgHomePage() {
                 </div>
               )}
 
-              <div className="bg-rw-card rounded-2xl shadow-sm px-4 py-2
-                              flex items-center gap-2 border border-rw-border">
+              <div className="bg-rw-card rounded-2xl shadow-sm px-4 py-3
+                              flex items-center gap-2">
                 <span className="text-rw-sub text-base">🔍</span>
                 <input type="text" value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -382,6 +388,18 @@ export default function OrgHomePage() {
                   <div key={store.id}
                     className="bg-rw-card rounded-2xl shadow-sm p-4
                                flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="font-semibold text-rw-title text-sm">{store.name}</span>
+                        <span className="text-rw-sub text-xs">{store.city}</span>
+                        <span className="text-rw-green text-xs font-medium">{store.items}</span>
+                      </div>
+                      <div className="w-10 h-10 bg-rw-input rounded-xl
+                                      flex items-center justify-center shrink-0">
+                        <span className="text-xl">🏪</span>
+                      </div>
+                    </div>
+
                     {existingStatus === "approved" ? (
                       <button onClick={() => navigate(`/org/chat/${existing.collaborationRequestId}`)}
                         className="bg-rw-btn/10 text-rw-btn border border-rw-btn/30
@@ -402,17 +420,6 @@ export default function OrgHomePage() {
                         שלח/י בקשת שיתוף
                       </button>
                     )}
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col items-end gap-0.5">
-                        <span className="font-semibold text-rw-title text-sm">{store.name}</span>
-                        <span className="text-rw-sub text-xs">{store.city}</span>
-                        <span className="text-rw-green text-xs font-medium">{store.items}</span>
-                      </div>
-                      <div className="w-10 h-10 bg-rw-input rounded-xl
-                                      flex items-center justify-center shrink-0">
-                        <span className="text-xl">🏪</span>
-                      </div>
-                    </div>
                   </div>
                 );
               })}
