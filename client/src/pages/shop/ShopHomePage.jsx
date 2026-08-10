@@ -150,17 +150,17 @@ export default function ShopHomePage() {
 
         {/* בקשות שיתוף פעולה */}
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-start gap-2 mb-4">
+            <h2 className="font-bold text-rw-title text-base">
+              בקשות שיתוף פעולה
+            </h2>
+
             <button
               onClick={() => navigate("/shop/partners")}
               className="text-rw-green text-sm font-semibold"
             >
               הצג הכל
             </button>
-
-            <h2 className="font-bold text-rw-title text-base">
-              בקשות שיתוף פעולה
-            </h2>
           </div>
 
           {pendingRequests.length > 0 ? (
@@ -224,17 +224,17 @@ export default function ShopHomePage() {
 
         {/* שיתופי פעולה פעילים */}
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-start gap-2 mb-4">
+            <h2 className="font-bold text-rw-title text-base">
+              שותפים פעילים
+            </h2>
+
             <button
               onClick={() => navigate("/shop/partners")}
               className="text-rw-green text-sm font-semibold"
             >
               לכל השותפים
             </button>
-
-            <h2 className="font-bold text-rw-title text-base">
-              שותפים פעילים
-            </h2>
           </div>
 
           {approvedCollaborations.length > 0 ? (
