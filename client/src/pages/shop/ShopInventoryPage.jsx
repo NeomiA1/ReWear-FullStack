@@ -109,7 +109,7 @@ export default function ShopInventoryPage() {
         </div>
       </div>
 
-      <div className="px-5 pt-5 flex flex-col gap-4">
+      <div className="px-5 pt-5 flex flex-col gap-5">
 
         {/* סיכום */}
         <div className="grid grid-cols-3 gap-3">
@@ -119,22 +119,25 @@ export default function ShopInventoryPage() {
             { label: "לעמותה",   value: toOrgCount,   color: "text-blue-500"  },
           ].map(stat => (
             <div key={stat.label}
-              className="bg-rw-card rounded-2xl p-3 shadow-sm text-center">
-              <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="text-rw-sub text-xs mt-0.5">{stat.label}</p>
+              className="bg-rw-card rounded-2xl p-4 shadow-sm
+                         flex flex-col items-center gap-1 text-center">
+              <p className={`text-2xl font-extrabold leading-tight my-0.5 ${stat.color}`}>
+                {stat.value}
+              </p>
+              <p className="text-rw-sub text-xs">{stat.label}</p>
             </div>
           ))}
         </div>
 
         {/* פילטרים */}
-        <div className="flex gap-2 overflow-x-auto pb-1 justify-end">
+        <div className="bg-rw-input rounded-2xl p-1 flex gap-1 overflow-x-auto">
           {FILTERS.map(f => (
             <button key={f.id} onClick={() => setFilter(f.id)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold
+              className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold
                          whitespace-nowrap transition-colors
                          ${filter === f.id
-                           ? "bg-rw-btn text-white"
-                           : "bg-rw-card text-rw-sub border border-rw-border"}`}>
+                           ? "bg-rw-card text-rw-title shadow-sm"
+                           : "text-rw-sub"}`}>
               {f.label}
             </button>
           ))}
@@ -142,17 +145,21 @@ export default function ShopInventoryPage() {
 
         {/* רשימת פריטים */}
         {visible.length > 0 ? (
-          visible.map(item => (
-            <InventoryCard key={item.id} item={item} onMark={handleMark} />
-          ))
+          <div className="flex flex-col gap-3">
+            {visible.map(item => (
+              <InventoryCard key={item.id} item={item} onMark={handleMark} />
+            ))}
+          </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 pt-10">
+          <div className="bg-rw-card rounded-2xl shadow-sm p-8
+                          flex flex-col items-center gap-2 text-center">
             <span className="text-4xl">📭</span>
             <p className="text-rw-title text-sm font-semibold">עדיין לא התקבלו פריטים</p>
             <p className="text-rw-sub text-xs">פריטים שיתקבלו מעמותות יופיעו כאן</p>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3 pt-10">
+          <div className="bg-rw-card rounded-2xl shadow-sm p-8
+                          flex flex-col items-center gap-2 text-center">
             <span className="text-4xl">📭</span>
             <p className="text-rw-sub text-sm">אין פריטים להצגה</p>
           </div>
