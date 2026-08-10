@@ -108,7 +108,7 @@ export default function ShopHomePage() {
           <div className="grid grid-cols-2 gap-4">
             <div
               className="bg-rw-card rounded-2xl p-4 shadow-sm
-                         flex flex-col items-end gap-1"
+                         flex flex-col gap-1"
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm text-rw-sub">
@@ -117,18 +117,20 @@ export default function ShopHomePage() {
                 <span className="text-xl">⏳</span>
               </div>
 
-              <span className="text-3xl font-extrabold text-rw-title leading-tight my-0.5">
-                {pendingRequests.length}
-              </span>
+              <div className="flex flex-col items-center w-full">
+                <span className="text-3xl font-extrabold text-rw-title leading-tight my-0.5">
+                  {pendingRequests.length}
+                </span>
 
-              <span className="text-xs text-rw-sub">
-                בקשות לשיתוף פעולה
-              </span>
+                <span className="text-xs text-rw-sub">
+                  בקשות לשיתוף פעולה
+                </span>
+              </div>
             </div>
 
             <div
               className="bg-rw-card rounded-2xl p-4 shadow-sm
-                         flex flex-col items-end gap-1"
+                         flex flex-col gap-1"
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm text-rw-sub">
@@ -137,13 +139,15 @@ export default function ShopHomePage() {
                 <span className="text-xl">🤝</span>
               </div>
 
-              <span className="text-3xl font-extrabold text-rw-title leading-tight my-0.5">
-                {approvedCollaborations.length}
-              </span>
+              <div className="flex flex-col items-center w-full">
+                <span className="text-3xl font-extrabold text-rw-title leading-tight my-0.5">
+                  {approvedCollaborations.length}
+                </span>
 
-              <span className="text-xs text-rw-sub">
-                עמותות פעילות
-              </span>
+                <span className="text-xs text-rw-sub">
+                  עמותות פעילות
+                </span>
+              </div>
             </div>
           </div>
         </div>
