@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import OrgBottomNav from "../../components/OrgBottomNav"; // ✅ מהקובץ המשותף
 import PageContainer from "../../components/PageContainer";
 import { checkAssociationExists, updateAssociationAvailability } from "../../services/associationService";
+import { getAssociationDonationRequests } from "../../services/donationRequestService";
 import { useToast } from "../../hooks/useToast";
 
 function Toggle({ value, onChange }) {
@@ -20,19 +21,36 @@ function Toggle({ value, onChange }) {
 
 export default function OrgProfilePage() {
   const navigate = useNavigate();
-  const { user, updateOrgSettings, getOrgSettings, logout, sentDonations } = useUser();
+  const { user, updateOrgSettings, getOrgSettings, logout } = useUser();
 
   const savedUser = JSON.parse(localStorage.getItem("rewear_user") || "{}");
   const orgName   = user?.orgName || savedUser?.orgName || "העמותה שלי";
   const currentSettings = getOrgSettings(orgName);
 
-  // מחושב מאותו מקור נתונים ש-OrgHomePage כבר משתמש בו (sentDonations),
-  // במקום שני מספרים קבועים שלא היו קשורים לשום דבר.
-  const donations = sentDonations || [];
-  const totalReceived = donations.filter(d =>
-    ["approved", "scheduled", "collected"].includes(d.status)
+  // מקור הנתונים זהה ל-OrgHomePage (GET /DonationRequests/association/user/{id}),
+  // כדי ששני המסכים יציגו את אותו מספר.
+  const [donationRequests, setDonationRequests] = useState([]);
+
+  useEffect(() => {
+    if (!user?.userId) return;
+    const loadDonationRequests = async () => {
+      try {
+        const requests = await getAssociationDonationRequests(user.userId);
+        setDonationRequests(requests);
+      } catch {
+        // best-effort — leave the list as-is on failure
+      }
+    };
+    loadDonationRequests();
+  }, [user?.userId]);
+
+  const totalReceived = donationRequests.filter(r =>
+    r.requestStatus === "Approved"
   ).length;
-  const totalPickupsCoordinated = donations.filter(d => d.pickupScheduled).length;
+
+  // אין כרגע שדה אמיתי בשרת לתיאום איסוף עצמי (הקצאת ימים/שעות היא
+  // מקומית בלבד -- ראו OrgRequestsPage) -- נשאר 0 עד שהתכונה תתמומש בפועל.
+  const totalPickupsCoordinated = 0;
 
   const [isAvailable,   setIsAvailable]   = useState(currentSettings.isAvailable);
   const [acceptsPickup, setAcceptsPickup] = useState(currentSettings.acceptsPickup);

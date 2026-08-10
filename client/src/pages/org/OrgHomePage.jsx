@@ -9,6 +9,7 @@ import {
   sendCollaborationRequest,
   getAssociationCollaborationRequests
 } from "../../services/collaborationService";
+import { getAssociationDonationRequests } from "../../services/donationRequestService";
 import { useToast } from "../../hooks/useToast";
 import { useNotifications } from "../../hooks/useNotifications";
 import { getCollabStatusInfo } from "../../utils/statusLabels";
@@ -22,7 +23,7 @@ const DEMO_STORES = [
 
 export default function OrgHomePage() {
   const navigate = useNavigate();
-  const { user, logout, sentDonations,
+  const { user, logout,
            getUrgentNeeds, updateUrgentNeeds } = useUser();
   const toast = useToast();
   const { unreadCount } = useNotifications();
@@ -77,6 +78,7 @@ export default function OrgHomePage() {
   const [loadingStores, setLoadingStores] = useState(true);
   const [storesError, setStoresError] = useState(null);
   const [myCollabRequests, setMyCollabRequests] = useState([]);
+  const [donationRequests, setDonationRequests] = useState([]);
 
   const refreshCollabRequests = async () => {
     if (!user?.userId) return;
@@ -88,8 +90,19 @@ export default function OrgHomePage() {
     }
   };
 
+  const refreshDonationRequests = async () => {
+    if (!user?.userId) return;
+    try {
+      const requests = await getAssociationDonationRequests(user.userId);
+      setDonationRequests(requests);
+    } catch {
+      // best-effort — leave the list as-is on failure
+    }
+  };
+
   useEffect(() => {
     refreshCollabRequests();
+    refreshDonationRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userId]);
 
@@ -138,18 +151,17 @@ export default function OrgHomePage() {
     return () => { cancelled = true; };
   }, [orgName, user?.email]);
 
-  const donations     = sentDonations || [];
-  const totalReceived = donations.filter(d =>
-    ["approved","scheduled","collected"].includes(d.status)
+  const totalReceived = donationRequests.filter(r =>
+    r.requestStatus === "Approved"
   ).length;
-  const pendingRequests = donations.filter(d => d.status === "pending").length;
+  const pendingRequests = donationRequests.filter(r => r.requestStatus === "Pending").length;
 
   const KPI_DATA = [
     {
       id: 1,
       label:    "בקשות ממתינות",
       value:    String(pendingRequests),
-      change:   pendingRequests > 0 ? `מתוך ${donations.length} בקשות סה״כ` : "אין נתונים עדיין",
+      change:   pendingRequests > 0 ? `מתוך ${donationRequests.length} בקשות סה״כ` : "אין נתונים עדיין",
       positive: pendingRequests > 0,
       icon:     "⏳",
     },
@@ -157,7 +169,7 @@ export default function OrgHomePage() {
       id: 2,
       label:    "פריטים שהתקבלו",
       value:    String(totalReceived),
-      change:   totalReceived > 0 ? `${donations.length} בקשות סה״כ` : "אין נתונים עדיין",
+      change:   totalReceived > 0 ? `${donationRequests.length} בקשות סה״כ` : "אין נתונים עדיין",
       positive: totalReceived > 0,
       icon:     "📦",
     },
