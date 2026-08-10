@@ -167,3 +167,56 @@ export async function getStoreCollectionOffers(userId) {
 
   return await response.json();
 }
+
+/**
+ * Association proposes pickup day/time options for a request that's
+ * ready to be scheduled (self collection, or a store already accepted).
+ *
+ * @param {number} requestId
+ * @param {string} proposedDays - comma-separated day labels
+ * @param {string} proposedTimes - comma-separated time-range labels
+ * @throws {string} user-facing error message
+ */
+export async function proposePickupOptions(requestId, proposedDays, proposedTimes) {
+  const response = await fetch(
+    `${API_BASE_URL}/DonationRequests/${requestId}/propose-pickup`,
+    {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ proposedDays, proposedTimes })
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return await response.text();
+}
+
+/**
+ * Donor selects exactly one of the proposed pickup day/time options.
+ *
+ * @param {number} requestId
+ * @param {string} selectedDay
+ * @param {string} selectedTime
+ * @throws {string} user-facing error message
+ */
+export async function selectPickupOption(requestId, selectedDay, selectedTime) {
+  const response = await fetch(
+    `${API_BASE_URL}/DonationRequests/${requestId}/pickup-selection`,
+    {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ selectedDay, selectedTime })
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return await response.text();
+}

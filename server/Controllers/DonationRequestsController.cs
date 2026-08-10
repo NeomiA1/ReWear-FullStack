@@ -496,5 +496,126 @@ namespace RewearApi.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+
+        [HttpPost("{requestId}/propose-pickup")]
+        public ActionResult ProposePickupOptions(
+            int requestId,
+            [FromBody] ProposePickupOptionsDto dto
+        )
+        {
+            if (requestId <= 0)
+            {
+                return BadRequest(new { message = "requestId must be greater than 0" });
+            }
+
+            if (dto == null
+                || string.IsNullOrWhiteSpace(dto.ProposedDays)
+                || string.IsNullOrWhiteSpace(dto.ProposedTimes))
+            {
+                return BadRequest(new { message = "proposedDays and proposedTimes are required" });
+            }
+
+            int currentAssociationUserId = User.GetCurrentUserId();
+
+            try
+            {
+                _donationRequestDal.ProposePickupOptions(
+                    requestId,
+                    currentAssociationUserId,
+                    dto.ProposedDays,
+                    dto.ProposedTimes
+                );
+
+                return Ok(new { message = "ימי ושעות האיסוף נשלחו לתורם/ת" });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("does not exist", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new { message = "בקשת התרומה לא נמצאה." });
+                }
+
+                if (ex.Message.Contains("does not belong", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new { message = "בקשת התרומה לא נמצאה." });
+                }
+
+                if (ex.Message.Contains("must be approved", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new { message = "יש לאשר את הבקשה לפני הצעת מועדי איסוף." });
+                }
+
+                if (ex.Message.Contains("self-managed or accepted", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new { message = "האיסוף חייב להיות מנוהל עצמאית או מאושר על ידי חנות לפני הצעת מועדים." });
+                }
+
+                if (ex.Message.Contains("day and one proposed time are required", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new { message = "יש לבחור לפחות יום ושעה אחת." });
+                }
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+
+        [HttpPut("{requestId}/pickup-selection")]
+        public ActionResult SelectPickupOption(
+            int requestId,
+            [FromBody] SelectPickupOptionDto dto
+        )
+        {
+            if (requestId <= 0)
+            {
+                return BadRequest(new { message = "requestId must be greater than 0" });
+            }
+
+            if (dto == null
+                || string.IsNullOrWhiteSpace(dto.SelectedDay)
+                || string.IsNullOrWhiteSpace(dto.SelectedTime))
+            {
+                return BadRequest(new { message = "selectedDay and selectedTime are required" });
+            }
+
+            int currentDonorUserId = User.GetCurrentUserId();
+
+            try
+            {
+                _donationRequestDal.SelectPickupOption(
+                    requestId,
+                    currentDonorUserId,
+                    dto.SelectedDay,
+                    dto.SelectedTime
+                );
+
+                return Ok(new { message = "מועד האיסוף נבחר בהצלחה" });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("does not exist", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new { message = "בקשת התרומה לא נמצאה." });
+                }
+
+                if (ex.Message.Contains("does not belong", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new { message = "בקשת התרומה לא נמצאה." });
+                }
+
+                if (ex.Message.Contains("No pickup options have been proposed", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new { message = "טרם הוצעו מועדי איסוף עבור בקשה זו." });
+                }
+
+                if (ex.Message.Contains("not one of the proposed options", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new { message = "המועד שנבחר אינו אחת מהאפשרויות שהוצעו." });
+                }
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

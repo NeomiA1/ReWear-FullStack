@@ -208,7 +208,43 @@ namespace RewearApi.DAL
                                 UpdatedAt =
                                     Convert.ToDateTime(
                                         reader["updated_at"]
-                                    )
+                                    ),
+
+                                RequestId =
+                                    reader["request_id"]
+                                        == DBNull.Value
+                                        ? null
+                                        : Convert.ToInt32(
+                                            reader["request_id"]
+                                          ),
+
+                                ProposedPickupDays =
+                                    reader["proposed_pickup_days"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["proposed_pickup_days"]
+                                            .ToString(),
+
+                                ProposedPickupTimes =
+                                    reader["proposed_pickup_times"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["proposed_pickup_times"]
+                                            .ToString(),
+
+                                SelectedPickupDay =
+                                    reader["selected_pickup_day"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["selected_pickup_day"]
+                                            .ToString(),
+
+                                SelectedPickupTime =
+                                    reader["selected_pickup_time"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["selected_pickup_time"]
+                                            .ToString()
                             };
 
                         bags.Add(bag);

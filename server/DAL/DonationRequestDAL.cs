@@ -28,6 +28,12 @@ namespace RewearApi.DAL
         private const string SP_GET_COLLECTION_OFFERS_BY_STORE =
             "sp_GetCollectionOffersByStore";
 
+        private const string SP_PROPOSE_PICKUP_OPTIONS =
+            "sp_ProposePickupOptions";
+
+        private const string SP_SELECT_PICKUP_OPTION =
+            "sp_SelectPickupOption";
+
 
         public List<UserDonationRequestDto> GetByUserId(
             int userId
@@ -448,6 +454,34 @@ namespace RewearApi.DAL
                                         == DBNull.Value
                                         ? null
                                         : reader["assignment_status"]
+                                            .ToString(),
+
+                                ProposedPickupDays =
+                                    reader["proposed_pickup_days"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["proposed_pickup_days"]
+                                            .ToString(),
+
+                                ProposedPickupTimes =
+                                    reader["proposed_pickup_times"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["proposed_pickup_times"]
+                                            .ToString(),
+
+                                SelectedPickupDay =
+                                    reader["selected_pickup_day"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["selected_pickup_day"]
+                                            .ToString(),
+
+                                SelectedPickupTime =
+                                    reader["selected_pickup_time"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["selected_pickup_time"]
                                             .ToString()
                             };
 
@@ -641,6 +675,64 @@ namespace RewearApi.DAL
             }
 
             return results;
+        }
+
+
+        public void ProposePickupOptions(
+            int requestId,
+            int associationUserId,
+            string proposedDays,
+            string proposedTimes
+        )
+        {
+            using (SqlConnection con = Connect(CON_STR_NAME))
+            {
+                Dictionary<string, object> paramDic =
+                    new Dictionary<string, object>
+                    {
+                        { "@request_id", requestId },
+                        { "@association_user_id", associationUserId },
+                        { "@proposed_days", proposedDays },
+                        { "@proposed_times", proposedTimes }
+                    };
+
+                SqlCommand cmd = CreateCommand(
+                    SP_PROPOSE_PICKUP_OPTIONS,
+                    con,
+                    paramDic
+                );
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
+        public void SelectPickupOption(
+            int requestId,
+            int donorUserId,
+            string selectedDay,
+            string selectedTime
+        )
+        {
+            using (SqlConnection con = Connect(CON_STR_NAME))
+            {
+                Dictionary<string, object> paramDic =
+                    new Dictionary<string, object>
+                    {
+                        { "@request_id", requestId },
+                        { "@donor_user_id", donorUserId },
+                        { "@selected_day", selectedDay },
+                        { "@selected_time", selectedTime }
+                    };
+
+                SqlCommand cmd = CreateCommand(
+                    SP_SELECT_PICKUP_OPTION,
+                    con,
+                    paramDic
+                );
+
+                cmd.ExecuteNonQuery();
+            }
         }
     }
 }

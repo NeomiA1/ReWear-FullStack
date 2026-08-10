@@ -9,7 +9,8 @@ import { getDonationStatusInfo } from "../../utils/statusLabels";
 import {
   getAssociationDonationRequests,
   respondToDonationRequest,
-  offerCollectionToStore
+  offerCollectionToStore,
+  proposePickupOptions
 } from "../../services/donationRequestService";
 import { getAssociationCollaborationRequests } from "../../services/collaborationService";
 
@@ -19,11 +20,12 @@ const TIME_OPTIONS = ["08:00–10:00", "10:00–12:00", "12:00–14:00",
                       "14:00–16:00", "16:00–18:00", "18:00–20:00"];
 
 
-function RequestCard({ req, activeStores, onApproveSelf, onApproveAssistance, onReject, onOfferStore }) {
+function RequestCard({ req, activeStores, onApproveSelf, onApproveAssistance, onReject, onOfferStore, onProposePickup }) {
   const [choosingMode, setChoosingMode] = useState(false);
   const [selectedDays,  setSelectedDays]  = useState([]);
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [showSchedule,  setShowSchedule]  = useState(false);
+  const [sendingSchedule, setSendingSchedule] = useState(false);
   const toast = useToast();
 
   const toggleDay  = (d) => setSelectedDays(prev =>
@@ -31,15 +33,23 @@ function RequestCard({ req, activeStores, onApproveSelf, onApproveAssistance, on
   const toggleTime = (t) => setSelectedTimes(prev =>
     prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
 
-  const handleSendSchedule = () => {
+  const handleSendSchedule = async () => {
     if (!selectedDays.length || !selectedTimes.length) {
       toast.warning("אנא בחר/י לפחות יום ושעה אחד");
       return;
     }
-    // Pickup day/time scheduling has no backend persistence yet --
-    // unchanged from the existing behavior, kept local-only exactly
-    // as it was before this feature.
-    toast.success("ימי ושעות האיסוף נשלחו לתורם/ת");
+    setSendingSchedule(true);
+    try {
+      await onProposePickup(req.requestId, selectedDays.join(","), selectedTimes.join(","));
+      setShowSchedule(false);
+      setSelectedDays([]);
+      setSelectedTimes([]);
+      toast.success("ימי ושעות האיסוף נשלחו לתורם/ת");
+    } catch (err) {
+      toast.error(typeof err === "string" ? err : "שגיאה בשליחת מועדי האיסוף");
+    } finally {
+      setSendingSchedule(false);
+    }
   };
 
   const bagLabel  = [req.shortDescription, req.sizes, req.targetGender, req.clothesCondition]
@@ -55,6 +65,9 @@ function RequestCard({ req, activeStores, onApproveSelf, onApproveAssistance, on
   const needsStorePick =
     req.requestStatus === "Approved" && needsAssistance &&
     (!req.assignmentStatus || req.assignmentStatus === "Declined");
+
+  const hasProposal  = Boolean(req.proposedPickupDays);
+  const hasSelection = Boolean(req.selectedPickupDay);
 
   const statusKey = req.requestStatus === "Pending" ? "pending" : "approved";
 
@@ -156,8 +169,26 @@ function RequestCard({ req, activeStores, onApproveSelf, onApproveAssistance, on
         </div>
       )}
 
+      {/* התורם/ת בחר/ה מועד */}
+      {readyToSchedule && hasSelection && (
+        <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+          <p className="text-green-700 text-xs text-right font-semibold">
+            נבחר מועד איסוף: {req.selectedPickupDay}, {req.selectedPickupTime}
+          </p>
+        </div>
+      )}
+
+      {/* ממתין לבחירת התורם/ת */}
+      {readyToSchedule && hasProposal && !hasSelection && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+          <p className="text-amber-600 text-xs text-right">
+            ממתין/ה לבחירת מועד מהתורם/ת
+          </p>
+        </div>
+      )}
+
       {/* מוכן לתיאום איסוף */}
-      {readyToSchedule && !showSchedule && (
+      {readyToSchedule && !hasProposal && !showSchedule && (
         <button onClick={() => setShowSchedule(true)}
           className="w-full bg-rw-btn text-white rounded-xl py-2
                      text-xs font-semibold active:bg-rw-btn-hover">
@@ -165,7 +196,7 @@ function RequestCard({ req, activeStores, onApproveSelf, onApproveAssistance, on
         </button>
       )}
 
-      {readyToSchedule && showSchedule && (
+      {readyToSchedule && !hasProposal && showSchedule && (
         <div className="flex flex-col gap-3 border-t border-rw-border pt-3">
 
           <p className="text-xs font-bold text-rw-title text-right">
@@ -199,15 +230,16 @@ function RequestCard({ req, activeStores, onApproveSelf, onApproveAssistance, on
           </div>
 
           <div className="flex gap-2">
-            <button onClick={() => setShowSchedule(false)}
+            <button onClick={() => setShowSchedule(false)} disabled={sendingSchedule}
               className="flex-1 border border-rw-border text-rw-sub rounded-xl
-                         py-2 text-xs font-semibold">
+                         py-2 text-xs font-semibold disabled:opacity-50">
               ביטול
             </button>
-            <button onClick={handleSendSchedule}
+            <button onClick={handleSendSchedule} disabled={sendingSchedule}
               className="flex-1 bg-rw-btn text-white rounded-xl
-                         py-2 text-xs font-semibold active:bg-rw-btn-hover">
-              שלח אישור ✓
+                         py-2 text-xs font-semibold active:bg-rw-btn-hover
+                         disabled:opacity-60">
+              {sendingSchedule ? "שולח..." : "שלח אישור ✓"}
             </button>
           </div>
         </div>
@@ -295,6 +327,11 @@ export default function OrgRequestsPage() {
     }
   };
 
+  const handleProposePickup = async (requestId, proposedDays, proposedTimes) => {
+    await proposePickupOptions(requestId, proposedDays, proposedTimes);
+    await loadRequests();
+  };
+
   const visibleRequests = [...pendingRequests, ...inProgressRequests];
 
   return (
@@ -343,7 +380,8 @@ export default function OrgRequestsPage() {
               onApproveSelf={handleApproveSelf}
               onApproveAssistance={handleApproveAssistance}
               onReject={handleReject}
-              onOfferStore={handleOfferStore} />
+              onOfferStore={handleOfferStore}
+              onProposePickup={handleProposePickup} />
           ))
         ) : (
           <div className="flex flex-col items-center gap-3 pt-16">

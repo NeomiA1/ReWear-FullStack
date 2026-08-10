@@ -114,6 +114,24 @@ export default function DonationStatusPage() {
                 </div>
               </div>
               <DonationJourneyTimeline steps={steps} progressPercent={progressPercent} />
+
+              {bag.requestId && bag.proposedPickupDays && !bag.selectedPickupDay && (
+                <button onClick={() => navigate(`/pickup/${bag.requestId}`)}
+                  className="w-full mt-4 bg-rw-btn text-white rounded-xl py-2.5
+                             text-xs font-semibold flex items-center justify-center gap-2
+                             active:bg-rw-btn-hover">
+                  <span>📅</span>
+                  <span>בחר/י מועד איסוף</span>
+                </button>
+              )}
+
+              {bag.selectedPickupDay && (
+                <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2 mt-4">
+                  <p className="text-green-700 text-xs text-right font-semibold">
+                    נבחר מועד איסוף: {bag.selectedPickupDay}, {bag.selectedPickupTime}
+                  </p>
+                </div>
+              )}
             </div>
           );
         })}

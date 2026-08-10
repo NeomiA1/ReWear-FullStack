@@ -33,5 +33,10 @@ namespace RewearApi.BL
         public int? AssignedStoreId { get; set; }
         public string? AssignedStoreName { get; set; }
         public string? AssignmentStatus { get; set; }
+
+        public string? ProposedPickupDays { get; set; }
+        public string? ProposedPickupTimes { get; set; }
+        public string? SelectedPickupDay { get; set; }
+        public string? SelectedPickupTime { get; set; }
     }
 }

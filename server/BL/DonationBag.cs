@@ -29,6 +29,18 @@ namespace RewearApi.BL
 
         public DateTime UpdatedAt { get; set; }
 
+        // Pickup-scheduling fields, joined in from the bag's active
+        // DonationRequest (if any) -- read-only, not part of bag CRUD.
+        public int? RequestId { get; set; }
+
+        public string? ProposedPickupDays { get; set; }
+
+        public string? ProposedPickupTimes { get; set; }
+
+        public string? SelectedPickupDay { get; set; }
+
+        public string? SelectedPickupTime { get; set; }
+
 
         public static readonly HashSet<string> AllowedDonationStatuses =
             new HashSet<string>
