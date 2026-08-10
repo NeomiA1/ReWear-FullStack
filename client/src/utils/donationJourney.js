@@ -147,9 +147,7 @@ export function buildDonationJourney(bag, sendRecord) {
     id: "approved",
     icon: "✅",
     title: "העמותה אישרה",
-    description: orgName
-      ? `${orgName} אישרה את בקשת התרומה`
-      : "העמותה אישרה את בקשת התרומה",
+    description: "העמותה אישרה את בקשת התרומה.",
     timestamp: null,
 
     state:
@@ -166,9 +164,8 @@ export function buildDonationJourney(bag, sendRecord) {
   steps.push({
     id: "pickup_scheduled",
     icon: "📅",
-    title: "תואם איסוף",
-    description:
-      "נקבע מועד לאיסוף השק ממך",
+    title: "נקבע מועד איסוף",
+    description: "נקבע מועד לאיסוף התרומה.",
     timestamp: null,
 
     state:
@@ -192,29 +189,8 @@ export function buildDonationJourney(bag, sendRecord) {
     {
       id: "collected",
       icon: "🚚",
-      title: "השק נאסף",
-      description:
-        "השק נאסף מהמיקום שלך",
-      timestamp: null,
-      state: finalState,
-    },
-
-    {
-      id: "received_by_association",
-      icon: "🏢",
-      title: "התקבל בעמותה",
-      description:
-        "העמותה קיבלה וסיווגה את הפריטים",
-      timestamp: null,
-      state: finalState,
-    },
-
-    {
-      id: "sold_or_donated",
-      icon: "👕",
-      title: "חולק הלאה",
-      description:
-        "הפריטים הגיעו למי שזקוק להם",
+      title: "התרומה נאספה",
+      description: "התרומה נאספה ממך בהצלחה.",
       timestamp: null,
       state: finalState,
     },
@@ -222,9 +198,8 @@ export function buildDonationJourney(bag, sendRecord) {
     {
       id: "completed",
       icon: "🎉",
-      title: "התרומה הושלמה",
-      description:
-        "מסע התרומה שלך הושלם. תודה שתרמת! 💚",
+      title: "התרומה הגיעה ליעדה",
+      description: "תודה שתרמת! התרומה הגיעה ליעדה.",
       timestamp: null,
       state: finalState,
     }
