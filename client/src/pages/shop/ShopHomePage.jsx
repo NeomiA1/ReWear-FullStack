@@ -101,7 +101,7 @@ export default function ShopHomePage() {
 
         {/* לוח בקרה */}
         <div>
-          <h2 className="font-bold text-rw-title text-base mb-3">
+          <h2 className="font-bold text-rw-title text-base mb-4">
             לוח בקרה
           </h2>
 
@@ -117,7 +117,7 @@ export default function ShopHomePage() {
                 <span className="text-xl">⏳</span>
               </div>
 
-              <span className="text-2xl font-bold text-rw-title">
+              <span className="text-3xl font-extrabold text-rw-title leading-tight my-0.5">
                 {pendingRequests.length}
               </span>
 
@@ -137,7 +137,7 @@ export default function ShopHomePage() {
                 <span className="text-xl">🤝</span>
               </div>
 
-              <span className="text-2xl font-bold text-rw-title">
+              <span className="text-3xl font-extrabold text-rw-title leading-tight my-0.5">
                 {approvedCollaborations.length}
               </span>
 
@@ -150,7 +150,7 @@ export default function ShopHomePage() {
 
         {/* בקשות שיתוף פעולה */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => navigate("/shop/partners")}
               className="text-rw-green text-sm font-semibold"
@@ -208,8 +208,8 @@ export default function ShopHomePage() {
             </div>
           ) : (
             <div
-              className="bg-rw-card rounded-2xl shadow-sm p-5
-                         flex flex-col items-center gap-2"
+              className="bg-rw-card rounded-2xl shadow-sm p-3
+                         flex flex-col items-center gap-1"
             >
               <span className="text-3xl">📭</span>
               <p className="font-semibold text-rw-title text-sm">
@@ -224,7 +224,7 @@ export default function ShopHomePage() {
 
         {/* שיתופי פעולה פעילים */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => navigate("/shop/partners")}
               className="text-rw-green text-sm font-semibold"
@@ -243,7 +243,7 @@ export default function ShopHomePage() {
                 <div
                   key={collab.id}
                   className="bg-rw-card rounded-2xl shadow-sm p-4
-                             flex items-center justify-between"
+                             flex items-center justify-end gap-4"
                 >
                   <button
                     onClick={() =>
