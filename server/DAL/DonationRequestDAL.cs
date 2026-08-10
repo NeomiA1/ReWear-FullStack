@@ -34,6 +34,9 @@ namespace RewearApi.DAL
         private const string SP_SELECT_PICKUP_OPTION =
             "sp_SelectPickupOption";
 
+        private const string SP_MARK_DONATION_COLLECTED =
+            "sp_MarkDonationCollected";
+
 
         public List<UserDonationRequestDto> GetByUserId(
             int userId
@@ -482,6 +485,13 @@ namespace RewearApi.DAL
                                         == DBNull.Value
                                         ? null
                                         : reader["selected_pickup_time"]
+                                            .ToString(),
+
+                                DonationStatus =
+                                    reader["donation_status"]
+                                        == DBNull.Value
+                                        ? null
+                                        : reader["donation_status"]
                                             .ToString()
                             };
 
@@ -727,6 +737,31 @@ namespace RewearApi.DAL
 
                 SqlCommand cmd = CreateCommand(
                     SP_SELECT_PICKUP_OPTION,
+                    con,
+                    paramDic
+                );
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
+        public void MarkDonationCollected(
+            int requestId,
+            int associationUserId
+        )
+        {
+            using (SqlConnection con = Connect(CON_STR_NAME))
+            {
+                Dictionary<string, object> paramDic =
+                    new Dictionary<string, object>
+                    {
+                        { "@request_id", requestId },
+                        { "@association_user_id", associationUserId }
+                    };
+
+                SqlCommand cmd = CreateCommand(
+                    SP_MARK_DONATION_COLLECTED,
                     con,
                     paramDic
                 );

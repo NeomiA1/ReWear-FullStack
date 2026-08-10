@@ -38,5 +38,7 @@ namespace RewearApi.BL
         public string? ProposedPickupTimes { get; set; }
         public string? SelectedPickupDay { get; set; }
         public string? SelectedPickupTime { get; set; }
+
+        public string? DonationStatus { get; set; }
     }
 }

@@ -220,3 +220,27 @@ export async function selectPickupOption(requestId, selectedDay, selectedTime) {
 
   return await response.text();
 }
+
+/**
+ * Association marks a scheduled pickup as collected — the final step
+ * of the donor journey.
+ *
+ * @param {number} requestId
+ * @throws {string} user-facing error message
+ */
+export async function markDonationCollected(requestId) {
+  const response = await fetch(
+    `${API_BASE_URL}/DonationRequests/${requestId}/mark-collected`,
+    {
+      method: "POST",
+      headers: getAuthHeaders()
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw errorText;
+  }
+
+  return await response.text();
+}

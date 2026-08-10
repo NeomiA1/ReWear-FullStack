@@ -617,5 +617,53 @@ namespace RewearApi.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+
+        [HttpPost("{requestId}/mark-collected")]
+        public ActionResult MarkDonationCollected(
+            int requestId
+        )
+        {
+            if (requestId <= 0)
+            {
+                return BadRequest(new { message = "requestId must be greater than 0" });
+            }
+
+            int currentAssociationUserId = User.GetCurrentUserId();
+
+            try
+            {
+                _donationRequestDal.MarkDonationCollected(
+                    requestId,
+                    currentAssociationUserId
+                );
+
+                return Ok(new { message = "התרומה סומנה כנאספה" });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("does not exist", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new { message = "בקשת התרומה לא נמצאה." });
+                }
+
+                if (ex.Message.Contains("does not belong", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new { message = "בקשת התרומה לא נמצאה." });
+                }
+
+                if (ex.Message.Contains("must be approved", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new { message = "יש לאשר את הבקשה לפני סימונה כנאספה." });
+                }
+
+                if (ex.Message.Contains("pickup day must be selected", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new { message = "יש לתאם מועד איסוף עם התורם/ת לפני סימון כנאסף." });
+                }
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

@@ -5,7 +5,11 @@ import PageContainer from "../../components/PageContainer";
 import { useState, useEffect } from "react";
 import { getDonationStatusInfo } from "../../utils/statusLabels";
 import { useNotifications } from "../../hooks/useNotifications";
-import { getAssociationDonationRequests } from "../../services/donationRequestService";
+import { useToast } from "../../hooks/useToast";
+import {
+  getAssociationDonationRequests,
+  markDonationCollected
+} from "../../services/donationRequestService";
 
 const FILTERS = [
   { id: "all",       label: "הכל"     },
@@ -97,6 +101,7 @@ export default function OrgPickupsPage() {
   const navigate = useNavigate();
   const { user, updateSentDonation } = useUser();
   const { unreadCount } = useNotifications();
+  const toast = useToast();
   const [activeFilter, setActiveFilter] = useState("all");
   const [requests, setRequests] = useState([]);
 
@@ -119,7 +124,9 @@ export default function OrgPickupsPage() {
     .filter(r => r.requestStatus === "Approved" && r.selectedPickupDay)
     .map(r => ({
       id: r.requestId,
-      status: r.selectedPickupDay ? "scheduled" : "approved",
+      status: r.donationStatus === "Completed"
+        ? "collected"
+        : r.selectedPickupDay ? "scheduled" : "approved",
       bag: { size: r.sizes, gender: r.targetGender, condition: r.clothesCondition },
       donor: r.donorName,
       date: new Date(r.requestDate).toLocaleDateString("he-IL"),
@@ -138,7 +145,14 @@ export default function OrgPickupsPage() {
     p.status === "approved" && !p.pickupScheduled
   ).length;
 
-  const handleCollect = (id) => updateSentDonation(id, { status: "collected" });
+  const handleCollect = async (id) => {
+    try {
+      await markDonationCollected(id);
+      await loadRequests();
+    } catch (err) {
+      toast.error(typeof err === "string" ? err : "שגיאה בסימון התרומה כנאספה");
+    }
+  };
   const handleCancel  = (id) => updateSentDonation(id, { status: "rejected"  });
 
   return (
